@@ -50,3 +50,9 @@ anthropic
 xai-sdk
 mistralai
 nltk
+gensim
+scikit-learn
+spacy
+textblob
+tiktoken
+lxml
