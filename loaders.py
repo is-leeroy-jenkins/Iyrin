@@ -54,7 +54,6 @@ import docx2txt
 from boogr import Error, Logger
 import config as cfg
 import glob
-from langchain_community.chat_models import ChatOpenAI
 from langchain_text_splitters import Language, RecursiveCharacterTextSplitter, CharacterTextSplitter
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
