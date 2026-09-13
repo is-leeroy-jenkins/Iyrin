@@ -43,3 +43,9 @@ pinecone
 llama-cpp-python
 unstructured
 pyreadline3; sys_platform == "win32"
+PyMuPDF
+openai
+anthropic
+xai-sdk
+mistralai
+nltk
