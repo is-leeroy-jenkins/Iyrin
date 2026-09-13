@@ -72,7 +72,6 @@ app = app.replace( "\t\tif opensky_client:\n\t\t\tst.session_state.opensky_api_c
 app = app.replace( "st.session_state.purpleair_key = purpleair_key",
     "st.session_state.purpleair_api_key = purpleair_key", 1 )
 
-# Keep config constants synchronized with session overrides used by provider wrappers.
 credential_assignments = {
     "os.environ[ 'OPENAI_API_KEY' ] = openai_key": "os.environ[ 'OPENAI_API_KEY' ] = openai_key\n\t\t\tcfg.OPENAI_API_KEY = openai_key",
     "os.environ[ 'GEMINI_API_KEY' ] = gemini_key": "os.environ[ 'GEMINI_API_KEY' ] = gemini_key\n\t\t\tcfg.GEMINI_API_KEY = gemini_key",
@@ -90,14 +89,13 @@ for old_value, new_value in credential_assignments.items( ):
 # Loading-mode processing contracts
 # -----------------------------------------------------------------------------
 pattern = re.compile(
-    r"(?P<indent>\t+)render_source_processing_controls\( '(?P<loader>[A-Za-z0-9_]+)', '(?P<key>loader_[A-Za-z0-9_]+)' \)" )
+    r"(?P<indent>\t+)render_source_processing_controls\( '(?P<loader>[A-Za-z0-9_]+)', '(?P<key>[^']+)' \)" )
 app, replaced_count = pattern.subn(
     lambda match: (f"{match.group( 'indent' )}render_document_processing_controls( "
                    f"'{match.group( 'loader' )}', '{match.group( 'key' )}' )"), app )
 if replaced_count != 18:
     raise RuntimeError( f'Expected 18 invalid loader processing calls; replaced {replaced_count}.' )
 
-# Remove the non-formatting f-prefix flagged by static analysis.
 app = app.replace( 'st.markdown( f"""\n    <div class="foo-status-bar">',
     'st.markdown( """\n    <div class="foo-status-bar">', 1 )
 
@@ -363,9 +361,6 @@ def render_loading_tabs( ) -> None:
 '''
 processing = processing.replace( processing_anchor, loader_helpers + processing_anchor, 1 )
 
-# -----------------------------------------------------------------------------
-# Geometry-aware PDF parser
-# -----------------------------------------------------------------------------
 processors_path = Path( 'processors.py' )
 processors = r'''\'\'\'
 ******************************************************************************************
@@ -455,9 +450,6 @@ class PdfParser( ):
 '''
 processors_path.write_text( processors, encoding='utf-8' )
 
-# -----------------------------------------------------------------------------
-# Runtime dependencies used directly by app execution paths
-# -----------------------------------------------------------------------------
 required_packages = [ 'PyMuPDF', 'openai', 'anthropic', 'xai-sdk', 'mistralai', 'nltk' ]
 lines = requirements.splitlines( )
 for package in required_packages:
