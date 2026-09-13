@@ -797,3 +797,61 @@ def render_web_document_processing( ) -> None:
 						'Vector': vector,
 					} )
 				st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True )
+
+def clear_loader_documents( loader_name: str ) -> int:
+	"""
+		Purpose:
+		--------
+		Remove documents owned by one loader and return the remaining document count.
+
+		Parameters:
+		-----------
+		loader_name (str): Loader metadata name to clear.
+
+		Returns:
+		--------
+		int: Number of documents remaining in shared loading state.
+	"""
+	throw_if( 'loader_name', loader_name )
+	clear_if_active( loader_name )
+	return len( st.session_state.get( 'documents', [ ] ) or [ ] )
+
+
+def promote_loader_documents( documents: List[ Document ], loader_name: str ) -> int:
+	"""
+		Purpose:
+		--------
+		Promote loader output into shared document-processing state.
+
+		Parameters:
+		-----------
+		documents (List[Document]): Documents returned by the loader.
+		loader_name (str): Loader metadata name assigned to promoted documents.
+
+		Returns:
+		--------
+		int: Number of documents promoted.
+	"""
+	throw_if( 'documents', documents )
+	throw_if( 'loader_name', loader_name )
+	initialize_loading_state( )
+	clear_if_active( loader_name )
+	promoted: List[ Document ] = [ ]
+	for document in documents:
+		metadata = dict( document.metadata or { } )
+		metadata[ 'loader' ] = loader_name
+		document.metadata = metadata
+		promoted.append( document )
+	remaining = st.session_state.get( 'documents', [ ] ) or [ ]
+	st.session_state[ 'documents' ] = list( remaining ) + promoted
+	st.session_state[ 'raw_documents' ] = list( st.session_state[ 'documents' ] )
+	st.session_state[ 'raw_text' ] = rebuild_raw_text_from_documents( )
+	st.session_state[ 'active_loader' ] = loader_name
+	st.session_state[ 'processed_text' ] = None
+	st.session_state[ 'lines' ] = None
+	st.session_state[ 'chunked_documents' ] = [ ]
+	st.session_state[ 'df_chunks' ] = pd.DataFrame( )
+	st.session_state[ 'embeddings' ] = [ ]
+	st.session_state[ 'embedder' ] = None
+	st.session_state[ 'vector_store' ] = None
+	return len( promoted )
