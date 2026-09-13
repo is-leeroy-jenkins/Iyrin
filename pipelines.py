@@ -1,16 +1,16 @@
 '''
   ******************************************************************************************
       Assembly:                Iryin
-      Filename:                processing.py
+      Filename:                pipelines.py
       Author:                  Terry D. Eppler
       Created:                 05-31-2022
 
       Last Modified By:        Terry D. Eppler
       Last Modified On:        05-01-2025
   ******************************************************************************************
-  <copyright file="processing.py" company="Terry D. Eppler">
+  <copyright file="pipelines.py" company="Terry D. Eppler">
 
-	     processing.py
+	     pipelines.py
 	     Copyright ©  2022  Terry Eppler
 
      Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,10 +37,10 @@
 
   </copyright>
   <summary>
-    processing.py — multi-provider generative AI clients and orchestration helpers.
+    pipelines.py — application processing pipelines and orchestration helpers.
 
     Purpose:
-        Provides Iyrin's documnet processing functionality
+        Provides Iyrin's document processing pipelines and orchestration functionality
   </summary>
   ******************************************************************************************
 '''
@@ -54,6 +54,7 @@ import pandas as pd
 import streamlit as st
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from processors import PdfParser
 
 import config as cfg
 from embedders import EmbeddingFactory

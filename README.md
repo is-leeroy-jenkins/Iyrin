@@ -317,7 +317,7 @@ iyr/
 ├── sources.py              Live operational provider clients
 ├── history.py              Live World SQLite persistence and replay
 ├── tools.py                Provider-neutral agent/tool-calling functions
-├── processing.py           Chunking, embedding, and vector-storage workflows
+├── pipelines.py           Chunking, embedding, and vector-storage workflows
 ├── embedders.py            Embedding providers and local GGUF embeddings
 ├── fetchers.py             Scientific, environmental, weather, and web providers
 ├── maps.py                 Mapping gateway
