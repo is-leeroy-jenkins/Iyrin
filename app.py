@@ -566,27 +566,16 @@ def render_celestial_map( asset_root: str = 'assets/starmap', height: int = 1400
 		
 		default_zoom = int( zoom if zoom is not None else st.session_state.get( 'zoom', 8 ) or 8 )
 		
-		default_payload = {
-				'latitude': default_latitude,
-				'longitude': default_longitude,
-				'location': default_location,
-				'zoom': default_zoom,
-		}
+		default_payload = { 'latitude': default_latitude, 'longitude': default_longitude,
+				'location': default_location, 'zoom': default_zoom, }
 		
-		html = html.replace(
-			'<link rel="stylesheet" href="style.css">',
+		html = html.replace( '<link rel="stylesheet" href="style.css">',
 			f'<style>\n{css}\n</style>' )
 		
-		for relative_path in [
-				'js/modules/CelestialMath.js',
-				'js/modules/StarData.js',
-				'js/modules/MapRenderer.js',
-				'js/modules/LocationPicker.js',
-				'js/modules/UIController.js',
-				'js/modules/StarDetailsPanel.js',
-				'js/modules/ImageExporter.js',
-				'js/main.js',
-		]:
+		for relative_path in [ 'js/modules/CelestialMath.js', 'js/modules/StarData.js',
+				'js/modules/MapRenderer.js', 'js/modules/LocationPicker.js',
+				'js/modules/UIController.js', 'js/modules/StarDetailsPanel.js',
+				'js/modules/ImageExporter.js', 'js/main.js', ]:
 			html = re.sub(
 				rf'\s*<script\s+src="{re.escape( relative_path )}"></script>',
 				'',
@@ -1010,7 +999,7 @@ def set_global_coordinates_from_result( latitude: object, longitude: object,
 		longitude=float( longitude ) )
 
 def create_bounding_box_from_center( latitude: object, longitude: object,
-		delta: float = 0.125 ) -> Dict[ str, float ]:
+		delta: float=0.125 ) -> Dict[ str, float ]:
 	"""
 	
 		Purpose:
@@ -2268,9 +2257,7 @@ def make_display_safe( df: pd.DataFrame ) -> pd.DataFrame:
 	display_df = df.copy( )
 	
 	for col in display_df.columns:
-		display_df[ col ] = display_df[ col ].map(
-			lambda x: '' if x is None else str( x )
-		)
+		display_df[ col ] = display_df[ col ].map( lambda x: '' if x is None else str( x ) )
 	
 	return display_df
 
