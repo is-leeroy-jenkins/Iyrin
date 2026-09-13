@@ -58,7 +58,7 @@ from excel import Excel
 from caches import InMemoryCache, SQLiteCache
 from langchain_core.documents import Document
 from lxml import etree
-from pipelines import (PdfParser, clear_if_active, initialize_loading_state,
+from pipelines import (PdfParser, clear_if_active, clear_loader_documents, promote_loader_documents, initialize_loading_state, sync_mode_document,
                         rebuild_raw_text_from_documents, render_document_processing_actions,
                         render_document_processing_controls, render_document_processing_inputs,
                         render_loading_tabs, render_mode_document_tabs,
@@ -75,7 +75,7 @@ from fetchers import (GoogleWeather, OpenWeather, HistoricalWeather, ClimateData
                       AirNow, UvIndex, OpenAQ, PurpleAir, EnviroFacts, Firms, EoNet,
                       USGSEarthquakes, USGSWaterData, USGSTheNationalMap, GlobalImagery,
                       NavalObservatory, SatelliteCenter, SpaceWeather, AstroCatalog, AstroQuery,
-                      StarMap, StarChart, WebFetcher)
+                      StarMap, StarChart, WebFetcher, CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder)
 
 # ---------------------------------------------------------------------
 # SESSION STATE INITIALIZATION
@@ -386,6 +386,138 @@ def throw_if( name: str, value: object ) -> None:
 	if isinstance( value, str ) and not value.strip( ):
 		raise ValueError( f'Argument "{name}" cannot be empty.' )
 	
+def render_result_metadata( result: Dict[ str, Any ] ) -> None:
+	"""
+		Purpose:
+		--------
+		Render common metadata returned by an API fetcher.
+
+		Parameters:
+		-----------
+		result (Dict[str, Any]): Structured fetcher result.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'result', result )
+	metadata = { key: result.get( key ) for key in [ 'source', 'mode', 'status', 'url' ]
+		if result.get( key ) not in [ None, '' ] }
+	if metadata:
+		st.caption( ' | '.join( f'{key.title( )}: {value}' for key, value in metadata.items( ) ) )
+
+
+def render_summary_kv( title: str, values: Dict[ str, Any ] ) -> None:
+	"""
+		Purpose:
+		--------
+		Render a two-column key/value summary table.
+
+		Parameters:
+		-----------
+		title (str): Markdown heading displayed above the summary.
+		values (Dict[str, Any]): Summary values to display.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'title', title )
+	throw_if( 'values', values )
+	st.markdown( title )
+	rows = [ { 'Field': key, 'Value': value } for key, value in values.items( ) ]
+	st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True, disabled=True )
+
+
+def render_rows_table( title: str, rows: List[ Dict[ str, Any ] ] ) -> None:
+	"""
+		Purpose:
+		--------
+		Render structured API rows in a read-only data editor.
+
+		Parameters:
+		-----------
+		title (str): Markdown heading displayed above the rows.
+		rows (List[Dict[str, Any]]): Records to display.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'title', title )
+	st.markdown( title )
+	if rows:
+		st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True,
+			disabled=True )
+	else:
+		st.info( 'No rows returned.' )
+
+
+def render_fallback_raw( result: Dict[ str, Any ] ) -> None:
+	"""
+		Purpose:
+		--------
+		Expose the complete structured API response for inspection.
+
+		Parameters:
+		-----------
+		result (Dict[str, Any]): Structured fetcher result.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'result', result )
+	with st.expander( 'Raw Response', expanded=False ):
+		st.json( result )
+
+
+def render_html_preview( title: str, html_text: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Render returned HTML content in an isolated Streamlit component.
+
+		Parameters:
+		-----------
+		title (str): Markdown heading displayed above the preview.
+		html_text (str): HTML payload to render.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'title', title )
+	throw_if( 'html_text', html_text )
+	st.markdown( title )
+	components.html( html_text, height=500, scrolling=True )
+
+
+def render_xml_preview( title: str, xml_text: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Pretty-print returned XML content.
+
+		Parameters:
+		-----------
+		title (str): Markdown heading displayed above the preview.
+		xml_text (str): XML payload to display.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'title', title )
+	throw_if( 'xml_text', xml_text )
+	st.markdown( title )
+	try:
+		root = etree.fromstring( xml_text.encode( 'utf-8' ) )
+		formatted = etree.tostring( root, pretty_print=True, encoding='unicode' )
+	except Exception:
+		formatted = xml_text
+	st.code( formatted, language='xml' )
+
 def style_subheaders( ) -> None:
 	"""
 	
@@ -9096,7 +9228,7 @@ elif mode == 'Demographic':
 			if census_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
 			
-			render_source_processing_controls( 'u_s_census_bureau', 'api_u_s_census_bureau' )
+			render_source_processing_controls( 'demographic', 'census_results', 'demographic_active_source', 'u_s_census_bureau', 'api_u_s_census_bureau' )
 		
 		# ---------------------
 		# ---- Expander CDC SOCRATA
@@ -9238,7 +9370,7 @@ elif mode == 'Demographic':
 			if socrata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
 			
-			render_source_processing_controls( 'cdc_socrata', 'api_cdc_socrata' )
+			render_source_processing_controls( 'demographic', 'socrata_results', 'demographic_active_source', 'cdc_socrata', 'api_cdc_socrata' )
 		
 		# ---------------------
 		# ---- Expander US Health Data
@@ -9382,7 +9514,7 @@ elif mode == 'Demographic':
 			if healthdata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
 			
-			render_source_processing_controls( 'u_s_health', 'api_u_s_health' )
+			render_source_processing_controls( 'demographic', 'healthdata_results', 'demographic_active_source', 'u_s_health', 'api_u_s_health' )
 		
 		# ---------------------
 		# ---- Expander WHO Global Health
@@ -9502,7 +9634,7 @@ elif mode == 'Demographic':
 			if who_submit:
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
 			
-			render_source_processing_controls( 'who_global', 'api_who_global' )
+			render_source_processing_controls( 'demographic', 'who_results', 'demographic_active_source', 'who_global', 'api_who_global' )
 		
 		# ---------------------
 		# ---- Expander United Nations Data
@@ -9611,7 +9743,7 @@ elif mode == 'Demographic':
 			if un_submit:
 				st.session_state[ 'demographic_active_source' ] = 'united_nations'
 			
-			render_source_processing_controls( 'united_nations', 'api_united_nations' )
+			render_source_processing_controls( 'demographic', 'un_results', 'demographic_active_source', 'united_nations', 'api_united_nations' )
 		
 		# ---------------------
 		# ---- Expander World Population
@@ -9762,7 +9894,7 @@ elif mode == 'Demographic':
 			if worldpop_submit:
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
 			
-			render_source_processing_controls( 'world_population', 'api_world_population' )
+			render_source_processing_controls( 'demographic', 'worldpop_results', 'demographic_active_source', 'world_population', 'api_world_population' )
 		
 		# ---------------------
 		# ---- Expander CDC WONDER
@@ -9888,7 +10020,7 @@ elif mode == 'Demographic':
 			if wonder_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
 			
-			render_source_processing_controls( 'cdc_wonder', 'api_cdc_wonder' )
+			render_source_processing_controls( 'demographic', 'wonder_results', 'demographic_active_source', 'cdc_wonder', 'api_cdc_wonder' )
 		
 		# ---------------------
 		# ---- Expander Pub Med
@@ -9951,7 +10083,7 @@ elif mode == 'Demographic':
 			if pubmed_submit:
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
 			
-			render_source_processing_controls( 'pub_med_search', 'api_pub_med_search' )
+			render_source_processing_controls( 'demographic', 'pubmed_results', 'demographic_active_source', 'pub_med_search', 'api_pub_med_search' )
 		
 		# ---------------------
 		# ---- Expander Open City
@@ -10083,7 +10215,7 @@ elif mode == 'Demographic':
 			if open_city_submit:
 				st.session_state[ 'demographic_active_source' ] = 'open_city_data'
 			
-			render_source_processing_controls( 'open_city_data', 'api_open_city_data' )
+			render_source_processing_controls( 'demographic', 'open_city_results', 'demographic_active_source', 'open_city_data', 'api_open_city_data' )
 	
 	with right:
 		st.markdown( '##### Results' )
@@ -10136,7 +10268,7 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				
 				if result.get( 'mode', '' ) == 'variables':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
@@ -10153,22 +10285,22 @@ elif mode == 'Demographic':
 								               'Group': meta.get( 'group', '' ),
 								               'Limit': meta.get( 'limit', '' ), } )
 					
-					_render_summary_kv( '#### Summary',
+					render_summary_kv( '#### Summary',
 						{ 'Year': census_year, 'Dataset': census_dataset,
 						  'VariableCount': len( rows ), } )
-					_render_rows_table( '#### Variables', rows )
+					render_rows_table( '#### Variables', rows )
 				
 				elif result.get( 'mode', '' ) == 'data':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
-					_render_summary_kv( '#### Summary',
+					render_summary_kv( '#### Summary',
 						{ 'Year': census_year, 'Dataset': census_dataset, 'Fields': census_fields,
 						  'For': census_for, 'In': census_in,
 						  'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-					_render_rows_table( '#### Data Rows',
+					render_rows_table( '#### Data Rows',
 						rows if isinstance( rows, list ) else [ ] )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- CDC SOCRATA
 		elif active_source == 'cdc_socrata':
@@ -10192,10 +10324,10 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				if result.get( 'mode', '' ) == 'metadata':
 					payload = result.get( 'data', { } )
-					_render_summary_kv( '#### Summary', { 'Name': payload.get( 'name', '' ),
+					render_summary_kv( '#### Summary', { 'Name': payload.get( 'name', '' ),
 							'Description': payload.get( 'description', '' ),
 							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ),
 							'ViewType': payload.get( 'viewType', '' ),
@@ -10210,18 +10342,18 @@ elif mode == 'Demographic':
 							               'DataType': item.get( 'dataTypeName', '' ),
 							               'Description': item.get( 'description', '' ), } )
 					
-					_render_rows_table( '#### Columns', rows )
+					render_rows_table( '#### Columns', rows )
 				
 				elif result.get( 'mode', '' ) == 'rows':
 					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
 					
-					_render_summary_kv( '#### Summary',
+					render_summary_kv( '#### Summary',
 						{ 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
 						  'Limit': int( socrata_limit ), 'Offset': int( socrata_offset ),
 						  'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+					render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- US Health Data
 		elif active_source == 'u_s_health':
@@ -10249,12 +10381,12 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				
 				if result.get( 'mode', '' ) == 'metadata':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
-					_render_summary_kv( '#### Summary',
+					render_summary_kv( '#### Summary',
 						{ 'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
 								'Description': payload.get( 'description', '' ) if isinstance(
 									payload, dict ) else '',
@@ -10275,18 +10407,18 @@ elif mode == 'Demographic':
 							               'DataType': item.get( 'dataTypeName', '' ),
 							               'Description': item.get( 'description', '' ), } )
 					
-					_render_rows_table( '#### Columns', rows )
+					render_rows_table( '#### Columns', rows )
 				
 				elif result.get( 'mode', '' ) == 'rows':
 					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
 					
-					_render_summary_kv( '#### Summary',
+					render_summary_kv( '#### Summary',
 						{ 'Domain': healthdata_domain, 'DatasetId': healthdata_dataset_id,
 						  'Limit': int( healthdata_limit ), 'Offset': int( healthdata_offset ),
 						  'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
-					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+					render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- WHO Global Health
 		elif active_source == 'who_global':
@@ -10317,18 +10449,18 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				
 				if result.get( 'mode', '' ) == 'indicator_registry':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
-					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
 					                                      'HasHtml': (isinstance( payload,
 						                                      dict ) and bool(
 						                                      payload.get( 'html', '' ) )), } )
 					
 					if isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview( '#### Indicator Registry Preview',
+						render_html_preview( '#### Indicator Registry Preview',
 							str( payload.get( 'html', '' ) ) )
 					else:
 						st.json( payload )
@@ -10339,12 +10471,12 @@ elif mode == 'Demographic':
 					if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ),
 							list ):
 						rows = payload.get( 'value', [ ] )
-						_render_summary_kv( '#### Summary',
+						render_summary_kv( '#### Summary',
 							{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
 									'Format': who_format, 'ResultCount': len( rows ), } )
-						_render_rows_table( '#### Athena Results', rows )
+						render_rows_table( '#### Athena Results', rows )
 					elif isinstance( payload, dict ) and payload.get( 'text', '' ):
-						_render_summary_kv( '#### Summary',
+						render_summary_kv( '#### Summary',
 							{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
 									'Format': who_format, 'HasText': True, } )
 						st.markdown( '#### Response' )
@@ -10352,7 +10484,7 @@ elif mode == 'Demographic':
 					else:
 						st.json( payload )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- United Nations Data
 		elif active_source == 'united_nations':
@@ -10383,18 +10515,18 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				
 				if result.get( 'mode', '' ) == 'datasets':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
-					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
 					                                      'HasHtml': (isinstance( payload,
 						                                      dict ) and bool(
 						                                      payload.get( 'html', '' ) )), } )
 					
 					if isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview( '#### Dataset Catalog Preview',
+						render_html_preview( '#### Dataset Catalog Preview',
 							str( payload.get( 'html', '' ) ) )
 					else:
 						st.json( payload )
@@ -10402,7 +10534,7 @@ elif mode == 'Demographic':
 				elif result.get( 'mode', '' ) == 'sdmx_query':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
-					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
 					                                      'QueryPath': st.session_state.get(
 						                                      'un_query_path', '' ),
 					                                      'TextPayload': (isinstance( payload,
@@ -10415,12 +10547,12 @@ elif mode == 'Demographic':
 						st.markdown( '#### Query Response' )
 						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
 					elif isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview( '#### Query Response',
+						render_html_preview( '#### Query Response',
 							str( payload.get( 'html', '' ) ) )
 					else:
 						st.json( payload )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- World Population
 		elif active_source == 'world_population':
@@ -10458,18 +10590,18 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				
 				if result.get( 'mode', '' ) == 'catalog':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
-					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
 					                                      'HasHtml': (isinstance( payload,
 						                                      dict ) and bool(
 						                                      payload.get( 'html', '' ) )), } )
 					
 					if isinstance( payload, dict ) and payload.get( 'html', '' ):
-						_render_html_preview( '#### Catalog Preview',
+						render_html_preview( '#### Catalog Preview',
 							str( payload.get( 'html', '' ) ) )
 					else:
 						st.json( payload )
@@ -10480,18 +10612,18 @@ elif mode == 'Demographic':
 					if isinstance( payload, dict ) and isinstance( payload.get( 'results', [ ] ),
 							list ):
 						rows = payload.get( 'results', [ ] )
-						_render_summary_kv( '#### Summary',
+						render_summary_kv( '#### Summary',
 							{ 'Query': st.session_state.get( 'worldpop_query', '' ),
 									'Page': worldpop_page, 'PageSize': worldpop_page_size,
 									'ResultCount': len( rows ), } )
-						_render_rows_table( '#### Search Results', rows )
+						render_rows_table( '#### Search Results', rows )
 					else:
 						st.json( payload )
 				
 				elif result.get( 'mode', '' ) == 'raster_metadata':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
-					_render_summary_kv( '#### Summary',
+					render_summary_kv( '#### Summary',
 						{ 'AssetPath': st.session_state.get( 'worldpop_asset_path', '' ),
 								'HasText': (isinstance( payload, dict ) and bool(
 									payload.get( 'text', '' ) )), } )
@@ -10502,7 +10634,7 @@ elif mode == 'Demographic':
 					else:
 						st.json( payload )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- CDC WONDER
 		elif active_source == 'cdc_wonder':
@@ -10541,19 +10673,19 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_result_metadata( result )
+				render_result_metadata( result )
 				
 				if result.get( 'mode', '' ) == 'metadata_template':
 					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
 					
 					if isinstance( payload, dict ):
-						_render_summary_kv( '#### Template Summary',
+						render_summary_kv( '#### Template Summary',
 							{ 'DatasetId': payload.get( 'dataset_id', '' ),
 									'Notes': payload.get( 'notes', '' ), } )
 						
 						template_xml = str( payload.get( 'request_xml', '' ) )
 						if template_xml:
-							_render_xml_preview( '#### Starter XML', template_xml )
+							render_xml_preview( '#### Starter XML', template_xml )
 						else:
 							st.info( 'No starter XML returned.' )
 				
@@ -10563,22 +10695,22 @@ elif mode == 'Demographic':
 					if isinstance( payload, dict ):
 						xml_text = str( payload.get( 'xml', '' ) )
 						
-						_render_summary_kv( '#### Response Summary',
+						render_summary_kv( '#### Response Summary',
 							{ 'DatasetId': st.session_state.get( 'wonder_dataset_id', '' ),
 									'Characters': len( xml_text ),
 									'HasXml': bool( xml_text.strip( ) ), } )
 						
-						_render_xml_preview( '#### XML Response', xml_text )
+						render_xml_preview( '#### XML Response', xml_text )
 					else:
 						st.info( 'No XML response returned.' )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- Pub Med
 		elif active_source == 'pub_med_search':
 			st.markdown( '##### Pub Med Search' )
 			if pubmed_clear:
-				remaining = _clear_loader_documents( 'PubMedSearchLoader' )
+				remaining = clear_loader_documents( 'PubMedSearchLoader' )
 				st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
 			
 			if pubmed_submit:
@@ -10590,7 +10722,7 @@ elif mode == 'Demographic':
 						documents = loader.load( query=pubmed_query.strip( ),
 							max_docs=int( pubmed_max_docs ) ) or [ ]
 						
-						count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
+						count = promote_loader_documents( documents, 'PubMedSearchLoader' )
 						
 						items: list[ dict[ str, Any ] ] = [ ]
 						
@@ -10624,7 +10756,7 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_summary_kv( '#### Summary',
+				render_summary_kv( '#### Summary',
 					{ 'Mode': result.get( 'mode', '' ), 'Query': result.get( 'query', '' ),
 					  'MaxDocs': result.get( 'max_docs', 0 ),
 					  'Returned': result.get( 'count', 0 ), } )
@@ -10639,7 +10771,7 @@ elif mode == 'Demographic':
 					st.markdown( '#### Results' )
 					st.data_editor( df_pubmed, use_container_width=True, hide_index=True )
 					first = items[ 0 ]
-					_render_summary_kv( '#### First Result', { 'Title': first.get( 'Title', '' ),
+					render_summary_kv( '#### First Result', { 'Title': first.get( 'Title', '' ),
 					                                           'Published': first.get( 'Published',
 						                                           '' ),
 					                                           'Copyright': first.get( 'Copyright',
@@ -10666,13 +10798,13 @@ elif mode == 'Demographic':
 				else:
 					st.info( 'No PubMed records returned.' )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		# -------- Open City
 		elif active_source == 'open_city_data':
 			st.markdown( '##### Open City Data' )
 			if open_city_clear:
-				remaining = _clear_loader_documents( 'OpenCityLoader' )
+				remaining = clear_loader_documents( 'OpenCityLoader' )
 				st.info( f'Open City Data Loader state cleared. Remaining documents: '
 				         f'{remaining}.' )
 			
@@ -10687,7 +10819,7 @@ elif mode == 'Demographic':
 					documents = loader.load( city_id=clean_city_id, dataset_id=clean_dataset_id,
 						limit=int( limit ) ) or [ ]
 					
-					count = _promote_loader_documents( documents, 'OpenCityLoader' )
+					count = promote_loader_documents( documents, 'OpenCityLoader' )
 					
 					items: list[ dict[ str, Any ] ] = [ ]
 					for i, doc in enumerate( documents, start=1 ):
@@ -10716,7 +10848,7 @@ elif mode == 'Demographic':
 			if not result:
 				st.text( 'No results.' )
 			else:
-				_render_summary_kv( '#### Summary',
+				render_summary_kv( '#### Summary',
 					{ 'Mode': result.get( 'mode', '' ), 'CityId': result.get( 'city_id', '' ),
 					  'DatasetId': result.get( 'dataset_id', '' ),
 					  'Limit': result.get( 'limit', 0 ), 'Returned': result.get( 'count', 0 ), } )
@@ -10751,7 +10883,7 @@ elif mode == 'Demographic':
 				else:
 					st.info( 'No city records returned.' )
 				
-				_render_fallback_raw( result )
+				render_fallback_raw( result )
 		
 		demographic_result_keys: Dict[ str, str ] = { 'u_s_census_bureau': 'census_results',
 				'cdc_socrata': 'socrata_results', 'u_s_health': 'healthdata_results',
@@ -10759,9 +10891,9 @@ elif mode == 'Demographic':
 				'world_population': 'worldpop_results', 'cdc_wonder': 'wonder_results',
 				'pub_med_search': 'pubmed_results', 'open_city_data': 'open_city_results', }
 		if active_source in demographic_result_keys:
-			promote_source_result( mode_name='Demographic', source_name=active_source,
-				result=st.session_state.get( demographic_result_keys[ active_source ] ) )
-		render_document_processing_tabs( key_prefix='demographic' )
+			sync_mode_document( 'demographic', demographic_result_keys[ active_source ],
+				'demographic_active_source' )
+		render_mode_document_tabs( 'demographic', '📄 Loaded' )
 		
 # ==============================================================================
 # TEXT GENERATION MODE
