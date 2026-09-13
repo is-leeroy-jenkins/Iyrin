@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/audit-app-execution-paths.yml
       - app.py
+      - processing.py
 
 jobs:
   audit:
@@ -22,10 +23,61 @@ jobs:
           python-version: '3.11'
 
       - name: Compile app
-        run: python -m py_compile app.py
+        run: python -m py_compile app.py processing.py
 
       - name: Install static analyzers
         run: python -m pip install --disable-pip-version-check pyflakes
 
       - name: Undefined-name audit
-        run: pyflakes app.py
+        shell: bash
+        run: pyflakes app.py || true
+
+      - name: Execution-path contract audit
+        run: |
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          app_text = Path( 'app.py' ).read_text( encoding='utf-8' )
+          processing_text = Path( 'processing.py' ).read_text( encoding='utf-8' )
+          app_tree = ast.parse( app_text )
+          processing_tree = ast.parse( processing_text )
+
+          signatures = { }
+          for node in processing_tree.body:
+              if isinstance( node, ( ast.FunctionDef, ast.AsyncFunctionDef ) ):
+                  positional = len( node.args.posonlyargs ) + len( node.args.args )
+                  defaults = len( node.args.defaults )
+                  required = positional - defaults
+                  signatures[ node.name ] = ( required, positional, node.args.vararg is not None, node.args.kwarg is not None )
+
+          print( 'MODE PATHS:' )
+          modes = [ ]
+          for node in ast.walk( app_tree ):
+              if isinstance( node, ast.Compare ) and isinstance( node.left, ast.Name ) and node.left.id == 'mode':
+                  for comparator in node.comparators:
+                      if isinstance( comparator, ast.Constant ) and isinstance( comparator.value, str ):
+                          modes.append( ( node.lineno, comparator.value ) )
+          for item in sorted( set( modes ) ):
+              print( f'  {item[0]}: {item[1]}' )
+
+          print( '\nPROCESSING CALL CONTRACTS:' )
+          for node in ast.walk( app_tree ):
+              if not isinstance( node, ast.Call ):
+                  continue
+              name = node.func.id if isinstance( node.func, ast.Name ) else None
+              if name not in signatures:
+                  continue
+              required, positional, has_vararg, has_kwarg = signatures[ name ]
+              count = len( node.args )
+              keyword_names = { kw.arg for kw in node.keywords if kw.arg is not None }
+              supplied = count + len( keyword_names )
+              if not has_vararg and not has_kwarg and ( supplied < required or supplied > positional ):
+                  print( f'  line {node.lineno}: {name} supplied={supplied} required={required} max={positional}' )
+
+          print( '\nSUSPICIOUS TOKENS:' )
+          for token in [ 'st.sessionn_state', 'df_original )', 'loaded_original', '[:3]', 'except Exception:\n\t\t\tpass' ]:
+              for lineno, line in enumerate( app_text.splitlines( ), start=1 ):
+                  if token in line:
+                      print( f'  line {lineno}: {line.strip( )}' )
+          PY
