@@ -365,6 +365,258 @@ def render_mode_document_tabs( prefix: str, loaded_label: str = '📄 Loaded' ) 
 				} )
 			st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True )
 
+def initialize_loading_state( ) -> None:
+	"""
+		Purpose:
+		--------
+		Initialize the shared document-loading state used by every Loading-mode execution path.
+
+		Returns:
+		--------
+		None
+	"""
+	defaults = {
+		'documents': [ ], 'raw_documents': [ ], 'raw_text': '', 'processed_text': None,
+		'lines': None, 'tokens': [ ], 'chunked_documents': [ ], 'df_chunks': pd.DataFrame( ),
+		'embeddings': [ ], 'embedder': None, 'vector_store': None, 'active_loader': None,
+		'pdf_pages': None,
+	}
+	for key, value in defaults.items( ):
+		if key not in st.session_state:
+			st.session_state[ key ] = value
+
+def rebuild_raw_text_from_documents( ) -> str:
+	"""
+		Purpose:
+		--------
+		Rebuild the shared raw-text representation from the currently loaded documents.
+
+		Returns:
+		--------
+		str: Concatenated document text.
+	"""
+	initialize_loading_state( )
+	return '\n\n'.join(
+		document.page_content for document in st.session_state[ 'documents' ]
+		if isinstance( getattr( document, 'page_content', None ), str )
+		and document.page_content.strip( ) )
+
+def reset_document_processing_controls( key_prefix: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Clear derived chunk, embedding, and vector-store state for one loader workflow.
+
+		Parameters:
+		-----------
+		key_prefix (str): Stable loader-control key prefix.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'key_prefix', key_prefix )
+	initialize_loading_state( )
+	st.session_state[ 'chunked_documents' ] = [ ]
+	st.session_state[ 'df_chunks' ] = pd.DataFrame( )
+	st.session_state[ 'embeddings' ] = [ ]
+	st.session_state[ 'embedder' ] = None
+	st.session_state[ 'vector_store' ] = None
+	st.session_state.pop( f'{key_prefix}_processing_settings', None )
+
+def clear_if_active( loader_name: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Remove documents owned by the selected loader while preserving documents from other loaders.
+
+		Parameters:
+		-----------
+		loader_name (str): Loader metadata name to clear.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'loader_name', loader_name )
+	initialize_loading_state( )
+	documents = st.session_state.get( 'documents', [ ] ) or [ ]
+	remaining = [
+		document for document in documents
+		if ( getattr( document, 'metadata', { } ) or { } ).get( 'loader' ) != loader_name ]
+	st.session_state[ 'documents' ] = remaining
+	st.session_state[ 'raw_documents' ] = list( remaining )
+	st.session_state[ 'raw_text' ] = rebuild_raw_text_from_documents( )
+	if st.session_state.get( 'active_loader' ) == loader_name:
+		st.session_state[ 'active_loader' ] = (
+			( getattr( remaining[ -1 ], 'metadata', { } ) or { } ).get( 'loader' )
+			if remaining else None )
+	st.session_state[ 'processed_text' ] = None
+	st.session_state[ 'lines' ] = None
+	st.session_state[ 'chunked_documents' ] = [ ]
+	st.session_state[ 'df_chunks' ] = pd.DataFrame( )
+	st.session_state[ 'embeddings' ] = [ ]
+	st.session_state[ 'embedder' ] = None
+	st.session_state[ 'vector_store' ] = None
+
+def render_document_processing_inputs( loader_name: str, key_prefix: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Render chunking, embedding, and vector-storage controls for a document loader.
+
+		Parameters:
+		-----------
+		loader_name (str): Loader metadata name.
+		key_prefix (str): Stable Streamlit widget key prefix.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'loader_name', loader_name )
+	throw_if( 'key_prefix', key_prefix )
+	initialize_loading_state( )
+	st.session_state[ f'{key_prefix}_processing_settings' ] = render_processing_inputs(
+		key_prefix, f'iyr-{key_prefix}-documents' )
+
+def get_loader_documents( loader_name: str ) -> List[ Document ]:
+	"""Return documents owned by one loader from shared Loading-mode state."""
+	throw_if( 'loader_name', loader_name )
+	initialize_loading_state( )
+	documents = st.session_state.get( 'documents', [ ] ) or [ ]
+	matched = [
+		document for document in documents
+		if ( getattr( document, 'metadata', { } ) or { } ).get( 'loader' ) == loader_name ]
+	if matched:
+		return matched
+	if st.session_state.get( 'active_loader' ) == loader_name:
+		return list( documents )
+	return [ ]
+
+def render_document_processing_actions( loader_name: str, key_prefix: str ) -> None:
+	"""
+		Purpose:
+		--------
+		Execute chunking, embedding, and vector-storage actions for one document loader.
+
+		Parameters:
+		-----------
+		loader_name (str): Loader metadata name.
+		key_prefix (str): Stable Streamlit widget key prefix.
+
+		Returns:
+		--------
+		None
+	"""
+	throw_if( 'loader_name', loader_name )
+	throw_if( 'key_prefix', key_prefix )
+	initialize_loading_state( )
+	settings = st.session_state.get( f'{key_prefix}_processing_settings', None )
+	if not isinstance( settings, dict ):
+		st.warning( 'Processing controls are not initialized.' )
+		return
+
+	chunk_col, embed_col, store_col = st.columns( 3 )
+	chunk_run = chunk_col.button( 'Chunk', icon='✂️', key=f'{key_prefix}_loader_chunk',
+		use_container_width=True )
+	embed_run = embed_col.button( 'Embed', icon='🧬', key=f'{key_prefix}_loader_embed',
+		use_container_width=True )
+	store_run = store_col.button( 'Store', icon='🗄️', key=f'{key_prefix}_loader_store',
+		use_container_width=True )
+
+	if chunk_run:
+		try:
+			documents = get_loader_documents( loader_name )
+			throw_if( 'documents', documents )
+			chunks = chunk_documents( documents, settings[ 'chunk_size' ], settings[ 'chunk_overlap' ] )
+			st.session_state[ 'chunked_documents' ] = chunks
+			st.session_state[ 'df_chunks' ] = pd.DataFrame( [ {
+				'Chunk': index,
+				'Chunk ID': ( document.metadata or { } ).get( 'chunk_id', '' ),
+				'Source': ( document.metadata or { } ).get( 'source', '' ),
+				'Characters': len( document.page_content ),
+				'Text': document.page_content,
+			} for index, document in enumerate( chunks, start=1 ) ] )
+			st.session_state[ 'embeddings' ] = [ ]
+			st.session_state[ 'embedder' ] = None
+			st.session_state[ 'vector_store' ] = None
+			st.success( f'Created {len( chunks ):,} chunk(s).' )
+		except Exception as exc:
+			st.error( str( exc ) )
+
+	if embed_run:
+		try:
+			chunks = st.session_state.get( 'chunked_documents', [ ] ) or [ ]
+			throw_if( 'chunks', chunks )
+			embedder, vectors = create_embeddings( chunks, settings[ 'provider' ],
+				settings[ 'model' ], settings[ 'model_path' ] )
+			st.session_state[ 'embedder' ] = embedder
+			st.session_state[ 'embeddings' ] = vectors
+			st.session_state[ 'vector_store' ] = None
+			st.success( f'Created {len( vectors ):,} embedding vector(s).' )
+		except Exception as exc:
+			st.error( str( exc ) )
+
+	if store_run:
+		try:
+			chunks = st.session_state.get( 'chunked_documents', [ ] ) or [ ]
+			embedder = st.session_state.get( 'embedder', None )
+			throw_if( 'chunks', chunks )
+			throw_if( 'embedder', embedder )
+			st.session_state[ 'vector_store' ] = store_documents(
+				chunks, embedder, settings[ 'vector_backend' ], settings[ 'vector_target' ],
+				settings[ 'persist_directory' ], settings[ 'namespace' ] )
+			st.success( f"Stored {len( chunks ):,} chunk(s) in {settings[ 'vector_backend' ]}." )
+		except Exception as exc:
+			st.error( str( exc ) )
+
+def render_document_processing_controls( loader_name: str, key_prefix: str ) -> None:
+	"""Render document-processing inputs and actions for one loader."""
+	render_document_processing_inputs( loader_name, key_prefix )
+	render_document_processing_actions( loader_name, key_prefix )
+
+def render_loading_tabs( ) -> None:
+	"""Render shared Loaded, Chunks, and Embeddings tabs for Loading mode."""
+	initialize_loading_state( )
+	loaded_tab, chunks_tab, embeddings_tab = st.tabs(
+		[ '📄 Loaded', '✂️ Chunks', '🔢 Embeddings' ] )
+	with loaded_tab:
+		documents = st.session_state.get( 'documents', [ ] ) or [ ]
+		if not documents:
+			st.info( 'Load a document to display its content.' )
+		else:
+			rows = [ {
+				'Document': index,
+				'Loader': ( document.metadata or { } ).get( 'loader', '' ),
+				'Source': ( document.metadata or { } ).get( 'source', '' ),
+				'Characters': len( document.page_content ),
+				'Text': document.page_content,
+			} for index, document in enumerate( documents, start=1 ) ]
+			st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True,
+				disabled=True )
+	with chunks_tab:
+		df_chunks = st.session_state.get( 'df_chunks', pd.DataFrame( ) )
+		if not isinstance( df_chunks, pd.DataFrame ) or df_chunks.empty:
+			st.info( 'Run Chunk to display document chunks.' )
+		else:
+			st.data_editor( df_chunks, use_container_width=True, hide_index=True, disabled=True )
+	with embeddings_tab:
+		vectors = st.session_state.get( 'embeddings', [ ] ) or [ ]
+		chunks = st.session_state.get( 'chunked_documents', [ ] ) or [ ]
+		if not vectors:
+			st.info( 'Run Embed to display embedding vectors.' )
+		else:
+			rows = [ {
+				'Chunk': index + 1,
+				'Dimensions': len( vector ),
+				'Source': ( chunks[ index ].metadata or { } ).get( 'source', '' )
+					if index < len( chunks ) else '',
+				'Vector': vector,
+			} for index, vector in enumerate( vectors ) ]
+			st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True,
+				disabled=True )
+
 def initialize_web_state( ) -> None:
 	"""Initialize isolated web-document state."""
 	defaults = { 'web_documents': [ ], 'web_document_url': '', 'web_chunks': [ ],
