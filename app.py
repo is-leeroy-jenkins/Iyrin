@@ -58,7 +58,7 @@ from excel import Excel
 from caches import InMemoryCache, SQLiteCache
 from langchain_core.documents import Document
 from lxml import etree
-from processing import (clear_if_active, initialize_loading_state,
+from pipelines import (PdfParser, clear_if_active, initialize_loading_state,
                         rebuild_raw_text_from_documents, render_document_processing_actions,
                         render_document_processing_controls, render_document_processing_inputs,
                         render_loading_tabs, render_mode_document_tabs,
@@ -71,7 +71,6 @@ from loaders import (TextLoader, CsvLoader, PdfLoader, ExcelLoader, WordLoader, 
 	AwsFileLoader, OneDriveDocLoader, GoogleCloudFileLoader, GoogleSpeechToTextLoader,
 	GoogleBucketLoader, AwsBucketLoader, EmailLoader, SpfxLoader, WebCrawler as LoaderWebCrawler)
 from generators import Chat, Gemini, Grok, Mistral
-from processors import PdfParser
 from fetchers import (GoogleWeather, OpenWeather, HistoricalWeather, ClimateData, TidesAndCurrents,
                       AirNow, UvIndex, OpenAQ, PurpleAir, EnviroFacts, Firms, EoNet,
                       USGSEarthquakes, USGSWaterData, USGSTheNationalMap, GlobalImagery,
