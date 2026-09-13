@@ -1,0 +1,95 @@
+name: Rename Processing Module
+
+on:
+  push:
+    branches:
+      - refactor/processing-pipelines
+    paths:
+      - .github/workflows/rename-processing-pipelines.yml
+      - .github/scripts/rename_processing_to_pipelines.py
+
+jobs:
+  rename-and-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/processing-pipelines
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Rename processing module
+        run: python .github/scripts/rename_processing_to_pipelines.py
+
+      - name: Compile processing execution paths
+        run: python -m py_compile app.py pipelines.py processors.py
+
+      - name: Compile repository Python
+        run: python -m compileall -q .
+
+      - name: Verify processing module contracts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import ast
+
+          app = Path( 'app.py' ).read_text( encoding='utf-8' )
+          pipelines = Path( 'pipelines.py' ).read_text( encoding='utf-8' )
+          readme = Path( 'README.md' ).read_text( encoding='utf-8' )
+
+          if Path( 'processing.py' ).exists( ):
+              raise RuntimeError( 'processing.py still exists.' )
+          if not Path( 'pipelines.py' ).exists( ):
+              raise RuntimeError( 'pipelines.py was not created.' )
+          if 'from processing import' in app:
+              raise RuntimeError( 'app.py still imports processing.py.' )
+          if 'from processors import PdfParser' in app:
+              raise RuntimeError( 'app.py bypasses the processing pipeline facade for PdfParser.' )
+          if 'from pipelines import (PdfParser,' not in app:
+              raise RuntimeError( 'app.py does not import PdfParser through pipelines.py.' )
+          if 'from processors import PdfParser' not in pipelines:
+              raise RuntimeError( 'pipelines.py does not expose PdfParser.' )
+          if 'processing.py' in readme:
+              raise RuntimeError( 'README.md still references processing.py.' )
+
+          pipeline_tree = ast.parse( pipelines )
+          pipeline_functions = {
+              node.name for node in pipeline_tree.body if isinstance( node, ast.FunctionDef ) }
+          required = {
+              'render_processing_inputs', 'chunk_documents', 'create_embeddings',
+              'store_documents', 'render_source_processing_controls',
+              'render_document_processing_controls', 'render_loading_tabs',
+              'render_web_document_processing',
+          }
+          missing = sorted( required - pipeline_functions )
+          if missing:
+              raise RuntimeError( f'Missing pipeline functions: {missing}' )
+          PY
+
+      - name: Reject stale processing module references
+        shell: bash
+        run: |
+          stale=$(grep -R --line-number --exclude-dir=.git --exclude-dir=.github \
+            --include='*.py' --include='*.md' 'processing.py\|from processing import' . || true)
+          if [ -n "$stale" ]; then
+            echo "$stale"
+            exit 1
+          fi
+
+      - name: Commit production changes
+        shell: bash
+        run: |
+          git config user.name 'Terry Eppler'
+          git config user.email 'terry.eppler@gmail.com'
+          git add app.py README.md pipelines.py processing.py
+          if git diff --cached --quiet; then
+            echo 'No production changes detected.'
+            exit 1
+          fi
+          git commit -m 'Rename processing module to pipelines'
+          git push origin refactor/processing-pipelines
