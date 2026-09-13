@@ -27,8 +27,10 @@ from bs4 import BeautifulSoup
 from collections import deque, Counter
 from exceptions import NotFound
 import html as html_lib
+import inspect
 import json
 import os
+import tempfile
 from typing import Optional
 import matplotlib
 import pandas as pd
@@ -56,14 +58,20 @@ from excel import Excel
 from caches import InMemoryCache, SQLiteCache
 from langchain_core.documents import Document
 from lxml import etree
-from processing import (render_web_document_processing, render_source_processing_controls,
-                        render_mode_document_tabs)
+from processing import (clear_if_active, initialize_loading_state,
+                        rebuild_raw_text_from_documents, render_document_processing_actions,
+                        render_document_processing_controls, render_document_processing_inputs,
+                        render_loading_tabs, render_mode_document_tabs,
+                        render_source_processing_controls, reset_document_processing_controls,
+                        render_web_document_processing)
 from world import render_live_world_map, render_live_world_sidebar
 from loaders import (TextLoader, CsvLoader, PdfLoader, ExcelLoader, WordLoader, MarkdownLoader,
 	HtmlLoader, JsonLoader, PowerPointLoader, WikiLoader, GithubLoader, WebLoader, ArXivLoader,
 	XmlLoader, PubMedSearchLoader, OpenCityLoader, OutlookLoader, JupyterNotebookLoader,
 	AwsFileLoader, OneDriveDocLoader, GoogleCloudFileLoader, GoogleSpeechToTextLoader,
 	GoogleBucketLoader, AwsBucketLoader, EmailLoader, SpfxLoader, WebCrawler as LoaderWebCrawler)
+from generators import Chat, Gemini, Grok, Mistral
+from processors import PdfParser
 from fetchers import (GoogleWeather, OpenWeather, HistoricalWeather, ClimateData, TidesAndCurrents,
                       AirNow, UvIndex, OpenAQ, PurpleAir, EnviroFacts, Firms, EoNet,
                       USGSEarthquakes, USGSWaterData, USGSTheNationalMap, GlobalImagery,
@@ -349,6 +357,8 @@ if st.session_state.purpleair_api_key == '':
 	if default:
 		st.session_state.purpleair_api_key = default
 		os.environ[ 'PURPLEAIR_API_KEY' ] = default
+
+initialize_loading_state( )
 
 # ---------------------------------------------------------------------
 # UTILITIES
@@ -3106,6 +3116,40 @@ def _model_selector( key_prefix: str, label: str, options: list[ str ], default_
 	
 	return selected
 
+def invoke_provider( provider: object, prompt: str, parameters: Dict[ str, object ] ) -> object:
+	"""
+		Purpose:
+		--------
+		Invoke a provider's text-generation method using only parameters declared by the
+		provider method signature.
+
+		Parameters:
+		-----------
+		provider (object): Provider wrapper instance.
+		prompt (str): Prompt submitted to the provider.
+		parameters (Dict[str, object]): Candidate provider parameters.
+
+		Returns:
+		--------
+		object: Provider response.
+	"""
+	throw_if( 'provider', provider )
+	throw_if( 'prompt', prompt )
+	throw_if( 'parameters', parameters )
+	method = getattr( provider, 'generate_text', None )
+	if not callable( method ):
+		raise TypeError( 'Provider does not expose generate_text( ).' )
+
+	signature = inspect.signature( method )
+	accepted = {
+		name for name, parameter in signature.parameters.items( )
+		if parameter.kind in ( inspect.Parameter.POSITIONAL_OR_KEYWORD,
+			inspect.Parameter.KEYWORD_ONLY ) }
+	first_parameter = next( iter( signature.parameters ), '' )
+	accepted.discard( first_parameter )
+	filtered = { key: value for key, value in parameters.items( ) if key in accepted }
+	return method( prompt, **filtered )
+
 # ------------- DATASET UTILITIES
 
 def has_loaded_dataset( df_frame: object ) -> bool:
@@ -3196,7 +3240,7 @@ with st.sidebar:
 		if mode:
 			st.session_state[ 'mode' ] = mode
 		else:
-			st.sessionn_state[ 'mode' ] = 'Geocoding'
+			st.session_state[ 'mode' ] = 'Geocoding'
 			
 		previous_mode = st.session_state.get( 'previous_mode', None )
 		if previous_mode != mode:
@@ -3264,6 +3308,8 @@ with st.sidebar:
 		
 		uploaded = st.file_uploader( label='Upload Spreadsheet', type=[ 'xlsx', 'xls', 'csv' ],
 			key='source_uploader' )
+		df_default = pd.DataFrame( )
+		df_original: pd.DataFrame | None = None
 		
 		if source == 'Default Data':
 			with sqlite3.connect( cfg.DB_PATH ) as connection:
@@ -3295,7 +3341,7 @@ with st.sidebar:
 						""",
 						connection )
 					
-					table_options = df_tables[ 'name' ].tolist( )[ :3 ]
+					table_options = df_tables[ 'name' ].tolist( )
 					if table_options:
 						selected_table = st.selectbox( label='Select Database Table',
 							options=table_options, key='database_table_selectbox' )
@@ -3304,7 +3350,8 @@ with st.sidebar:
 							df_default = pd.read_sql_query( f'SELECT * FROM "{selected_table}"',
 								connection )
 							
-							loaded_original = df_default.copy( )
+							df_original = df_default.copy( )
+							st.session_state[ 'map_mode_table' ] = selected_table
 							log_step( f'Loaded Database Table: {selected_table}' )
 					else:
 						st.warning( 'No tables were found in the database.' )
@@ -3318,7 +3365,7 @@ with st.sidebar:
 				else:
 					df_default = pd.read_csv( uploaded )
 				
-				loaded_original = df_default.copy( )
+				df_original = df_default.copy( )
 				log_step( f'Loaded uploaded file: {uploaded.name}' )
 			else:
 				st.info( 'Upload a spreadsheet to load data.' )
@@ -3342,6 +3389,7 @@ with st.sidebar:
 		if openai_key:
 			st.session_state.openai_api_key = openai_key
 			os.environ[ 'OPENAI_API_KEY' ] = openai_key
+			cfg.OPENAI_API_KEY = openai_key
 
 		gemini_key = st.text_input( 'Gemini API Key', type='password',
 			value=st.session_state.gemini_api_key or '',
@@ -3349,6 +3397,7 @@ with st.sidebar:
 		if gemini_key:
 			st.session_state.gemini_api_key = gemini_key
 			os.environ[ 'GEMINI_API_KEY' ] = gemini_key
+			cfg.GEMINI_API_KEY = gemini_key
 
 		xai_key = st.text_input( 'Grok / xAI API Key', type='password',
 			value=st.session_state.xai_api_key or '',
@@ -3356,6 +3405,7 @@ with st.sidebar:
 		if xai_key:
 			st.session_state.xai_api_key = xai_key
 			os.environ[ 'XAI_API_KEY' ] = xai_key
+			cfg.XAI_API_KEY = xai_key
 
 		claude_key = st.text_input( 'Claude API Key', type='password',
 			value=st.session_state.claude_api_key or '',
@@ -3363,6 +3413,7 @@ with st.sidebar:
 		if claude_key:
 			st.session_state.claude_api_key = claude_key
 			os.environ[ 'CLAUDE_API_KEY' ] = claude_key
+			cfg.CLAUDE_API_KEY = claude_key
 
 		mistral_key = st.text_input( 'Mistral API Key', type='password',
 			value=st.session_state.mistral_api_key or '',
@@ -3370,6 +3421,7 @@ with st.sidebar:
 		if mistral_key:
 			st.session_state.mistral_api_key = mistral_key
 			os.environ[ 'MISTRAL_API_KEY' ] = mistral_key
+			cfg.MISTRAL_API_KEY = mistral_key
 
 		google_key = st.text_input( 'Google API Key', type='password',
 			value=st.session_state.google_api_key or '',
@@ -3378,6 +3430,7 @@ with st.sidebar:
 		if google_key:
 			st.session_state.google_api_key = google_key
 			os.environ[ 'GOOGLE_API_KEY' ] = google_key
+			cfg.GOOGLE_API_KEY = google_key
 		
 		googlemaps_key = st.text_input( 'Google Maps API Key', type='password',
 			value=st.session_state.googlemaps_api_key or '',
@@ -3386,6 +3439,7 @@ with st.sidebar:
 		if googlemaps_key:
 			st.session_state.googlemaps_api_key = googlemaps_key
 			os.environ[ 'GOOGLEMAPS_API_KEY' ] = googlemaps_key
+			cfg.GOOGLEMAPS_API_KEY = googlemaps_key
 		
 		googleweather_key = st.text_input( 'Google Weather API Key', type='password',
 			value=st.session_state.google_weather_api_key or '',
@@ -3449,7 +3503,7 @@ with st.sidebar:
 		
 		if openaq_key:
 			st.session_state.openaq_api_key = openaq_key
-			os.environ[ 'AIRNOW_API_KEY' ] = openaq_key
+			os.environ[ 'OPENAQ_API_KEY' ] = openaq_key
 		
 		opensky_client = st.text_input( 'Open Sky Client ID', type='password',
 			value=st.session_state.opensky_api_client_id or '',
@@ -3460,7 +3514,7 @@ with st.sidebar:
 			os.environ[ 'OPENSKY_API_CLIENT_ID' ] = opensky_client
 		
 		firms_key = st.text_input( 'FIRMS Map Client', type='password',
-			value=st.session_state.opensky_api_client_id or '',
+			value=st.session_state.firms_map_key or '',
 			help='Overrides FIRMS_MAP_KEY from config.py for this session only.' )
 		
 		if firms_key:
@@ -3471,7 +3525,7 @@ with st.sidebar:
 			value=st.session_state.opensky_api_credentials or '',
 			help='Overrides OPENSKY_API_CREDENTIALS from config.py for this session only.' )
 		
-		if opensky_client:
+		if opensky_credentials:
 			st.session_state.opensky_api_credentials = opensky_credentials
 			os.environ[ 'OPENSKY_API_CREDENTIALS' ] = opensky_credentials
 			
@@ -3480,7 +3534,7 @@ with st.sidebar:
 			help='Overrides Purple Air API from config.py for this session only.' )
 		
 		if purpleair_key:
-			st.session_state.purpleair_key = purpleair_key
+			st.session_state.purpleair_api_key = purpleair_key
 			os.environ[ 'PURPLEAIR_API_KEY' ] = purpleair_key
 	
 	maps = Maps( qps=qps, )
@@ -4059,7 +4113,7 @@ if mode == 'Loading':
 					else:
 						st.warning( 'No documents were loaded.' )
 				
-				render_source_processing_controls( 'NLTKLoader', 'loader_corpora_loader' )
+				render_document_processing_controls( 'NLTKLoader', 'loader_corpora_loader' )
 			
 			# ----------------------------
 			# ------ Expander Text Loader
@@ -4366,7 +4420,7 @@ if mode == 'Loading':
 						           'overlap_amount': getattr( xml_loader, 'overlap_amount',
 							           None ), } )
 				
-				render_source_processing_controls( 'XmlLoader', 'loader_xml_loader' )
+				render_document_processing_controls( 'XmlLoader', 'loader_xml_loader' )
 			
 			# ----------------------------
 			# ------- Expander Word Loader
@@ -4742,7 +4796,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} notebook document(s).'
 				
-				render_source_processing_controls( 'JupyterNotebookLoader',
+				render_document_processing_controls( 'JupyterNotebookLoader',
 					'loader_jupyter_notebook_loader' )
 			
 			# ----------------------------
@@ -5150,7 +5204,7 @@ if mode == 'Loading':
 						st.session_state[
 							'_loader_status' ] = f'Fetched {len( documents )} document(s).'
 				
-				render_source_processing_controls( 'ArXivLoader', 'loader_arxiv_loader' )
+				render_document_processing_controls( 'ArXivLoader', 'loader_arxiv_loader' )
 			
 			# ----------------------------
 			# ---- Expander Wikipedia Loader
@@ -5212,7 +5266,7 @@ if mode == 'Loading':
 						st.session_state[ '_loader_status' ] = (
 								f'Fetched {len( documents )} Wikipedia document(s).')
 				
-				render_source_processing_controls( 'WikiLoader', 'loader_wikipedia_loader' )
+				render_document_processing_controls( 'WikiLoader', 'loader_wikipedia_loader' )
 			
 			# ----------------------------
 			# ----- Expander GitHub Loader
@@ -5281,7 +5335,7 @@ if mode == 'Loading':
 						st.session_state[
 							'_loader_status' ] = f'Fetched {len( documents )} GitHub document(s).'
 				
-				render_source_processing_controls( 'GithubLoader', 'loader_github_loader' )
+				render_document_processing_controls( 'GithubLoader', 'loader_github_loader' )
 			
 			# ----------------------------
 			# -------- Expander Outlook Loader
@@ -5356,7 +5410,7 @@ if mode == 'Loading':
 							f'Loaded {len( documents )} Outlook message document('
 							f's).')
 				
-				render_source_processing_controls( 'OutlookLoader', 'loader_outlook_loader' )
+				render_document_processing_controls( 'OutlookLoader', 'loader_outlook_loader' )
 			
 			# ----------------------------
 			# ------- Expander Web Loader
@@ -5419,7 +5473,7 @@ if mode == 'Loading':
 						st.session_state[
 							'_loader_status' ] = f'Fetched {len( new_docs )} web document(s).'
 				
-				render_source_processing_controls( 'WebLoader', 'loader_web_loader' )
+				render_document_processing_controls( 'WebLoader', 'loader_web_loader' )
 			
 			# ----------------------------
 			# ----- Expander Web Crawler
@@ -5493,7 +5547,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Crawled {len( documents )} document(s).'
 				
-				render_source_processing_controls( 'WebCrawler', 'loader_web_crawler' )
+				render_document_processing_controls( 'WebCrawler', 'loader_web_crawler' )
 			
 			# ----------------------------
 			# ----- Expander Email Loader
@@ -5574,7 +5628,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} email document(s).'
 				
-				render_source_processing_controls( 'EmailLoader', 'loader_e_mail_loader' )
+				render_document_processing_controls( 'EmailLoader', 'loader_e_mail_loader' )
 			
 			# ----------------------------
 			# ---- Expander PubMed Loader
@@ -5647,7 +5701,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} PubMed document(s).'
 				
-				render_source_processing_controls( 'PubMedSearchLoader', 'loader_pub_med_loader' )
+				render_document_processing_controls( 'PubMedSearchLoader', 'loader_pub_med_loader' )
 			
 			# ----------------------------
 			# --- Expander Open City Loader
@@ -5730,7 +5784,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} Open City document(s).'
 				
-				render_source_processing_controls( 'OpenCityLoader', 'loader_open_city_loader' )
+				render_document_processing_controls( 'OpenCityLoader', 'loader_open_city_loader' )
 		
 		with st.expander( label='Cloud Documents', expanded=False ):
 			# ----------------------------
@@ -5814,7 +5868,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} OneDrive document(s).'
 				
-				render_source_processing_controls( 'OneDriveDocLoader', 'loader_onedrive_loader' )
+				render_document_processing_controls( 'OneDriveDocLoader', 'loader_onedrive_loader' )
 			
 			# ----------------------------
 			# ---- Expander Google Cloud File Loader
@@ -5895,7 +5949,7 @@ if mode == 'Loading':
 							f'Loaded {len( documents )} Google Cloud file '
 							f'document(s).')
 				
-				render_source_processing_controls( 'GoogleCloudFileLoader',
+				render_document_processing_controls( 'GoogleCloudFileLoader',
 					'loader_google_cloud_file_loader' )
 			
 			# ----------------------------
@@ -6007,7 +6061,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} AWS file document(s).'
 				
-				render_source_processing_controls( 'AwsFileLoader', 'loader_aws_file_loader' )
+				render_document_processing_controls( 'AwsFileLoader', 'loader_aws_file_loader' )
 			
 			# ----------------------------
 			# ----- Expander Google Bucket Loader
@@ -6101,7 +6155,7 @@ if mode == 'Loading':
 					st.session_state[ '_loader_status' ] = (
 							f'Loaded {len( documents )} Google bucket document(s).')
 				
-				render_source_processing_controls( 'GoogleBucketLoader',
+				render_document_processing_controls( 'GoogleBucketLoader',
 					'loader_google_bucket_loader' )
 			
 			# ----------------------------
@@ -6224,7 +6278,7 @@ if mode == 'Loading':
 					st.session_state[
 						'_loader_status' ] = f'Loaded {len( documents )} AWS bucket document(s).'
 				
-				render_source_processing_controls( 'AwsBucketLoader', 'loader_aws_bucket_loader' )
+				render_document_processing_controls( 'AwsBucketLoader', 'loader_aws_bucket_loader' )
 			
 			# ---------------------------
 			# ---- Expander SharePoint Loader
@@ -6305,7 +6359,7 @@ if mode == 'Loading':
 					st.session_state[ '_loader_status' ] = \
 						f'Loaded {len( documents )} SharePoint document(s).'
 				
-				render_source_processing_controls( 'SpfxLoader', 'loader_sharepoint_loader' )
+				render_document_processing_controls( 'SpfxLoader', 'loader_sharepoint_loader' )
 	
 	# ------------------------------------------------------------------
 	# RIGHT COLUMN — DOCUMENT RENDERING
@@ -9208,7 +9262,7 @@ elif mode == 'Generative AI':
 					
 					params = { key: value for key, value in params.items( ) if value is not None }
 					
-					result = _invoke_provider( fetcher, chat_prompt, params )
+					result = invoke_provider( fetcher, chat_prompt, params )
 					_promote_generation_result( provider='ChatGPT', result=result )
 				
 				except Exception as exc:
@@ -9461,7 +9515,7 @@ elif mode == 'Generative AI':
 					           'parallel_tool_calls': True, 'tool_choice': 'auto', }
 					
 					params = { key: value for key, value in params.items( ) if value is not None }
-					result = _invoke_provider( fetcher, groq_prompt, params )
+					result = invoke_provider( fetcher, groq_prompt, params )
 					_promote_generation_result( provider='Grok', result=result )
 				
 				except Exception as exc:
@@ -9967,7 +10021,7 @@ elif mode == 'Generative AI':
 					
 					params = { key: value for key, value in params.items( ) if value is not None }
 					
-					result = _invoke_provider( fetcher, gemini_prompt, params )
+					result = invoke_provider( fetcher, gemini_prompt, params )
 					_promote_generation_result( provider='Gemini', result=result )
 				
 				except Exception as exc:
@@ -10083,7 +10137,7 @@ elif mode == 'Generative AI':
 					
 					params = { key: value for key, value in params.items( ) if value is not None }
 					
-					result = _invoke_provider( fetcher, mistral_prompt, params )
+					result = invoke_provider( fetcher, mistral_prompt, params )
 					_promote_generation_result( provider='Mistral', result=result )
 				
 				except Exception as exc:
@@ -10867,7 +10921,7 @@ st.markdown( """
 	""", unsafe_allow_html=True, )
 
 # ---- Rendering Method
-st.markdown( f"""
+st.markdown( """
     <div class="foo-status-bar">
         <div class="foo-status-inner">
             <span> </span>
