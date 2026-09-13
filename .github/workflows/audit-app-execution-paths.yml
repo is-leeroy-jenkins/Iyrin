@@ -26,6 +26,15 @@ jobs:
       - name: Apply execution-path repairs
         run: python .github/scripts/fix_app_execution_paths.py
 
+      - name: Repair generated processor header
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path( 'processors.py' )
+          text = path.read_text( encoding='utf-8' ).replace( "\\'\\'\\'", "'''" )
+          path.write_text( text, encoding='utf-8' )
+          PY
+
       - name: Compile production Python
         run: python -m py_compile app.py processing.py processors.py generators.py loaders.py
 
@@ -37,7 +46,6 @@ jobs:
         run: |
           set +e
           output=$(pyflakes app.py 2>&1)
-          status=$?
           set -e
           echo "$output"
           undefined=$(printf '%s\n' "$output" | grep 'undefined name' || true)
@@ -45,7 +53,6 @@ jobs:
             echo "$undefined"
             exit 1
           fi
-          exit 0
 
       - name: Verify mode and processing contracts
         run: |
