@@ -59,12 +59,23 @@ jobs:
           python - <<'PY'
           import ast
           from pathlib import Path
-          import config as cfg
 
           app_text = Path( 'app.py' ).read_text( encoding='utf-8' )
           processing_text = Path( 'processing.py' ).read_text( encoding='utf-8' )
+          config_text = Path( 'config.py' ).read_text( encoding='utf-8' )
           app_tree = ast.parse( app_text )
           processing_tree = ast.parse( processing_text )
+          config_tree = ast.parse( config_text )
+
+          modes = [ ]
+          for node in config_tree.body:
+              if isinstance( node, ast.Assign ) and any(
+                      isinstance( target, ast.Name ) and target.id == 'MODES'
+                      for target in node.targets ):
+                  modes = ast.literal_eval( node.value )
+                  break
+          if not modes:
+              raise RuntimeError( 'Could not resolve config.MODES.' )
 
           discovered = set( )
           for node in ast.walk( app_tree ):
@@ -72,7 +83,7 @@ jobs:
                   for comparator in node.comparators:
                       if isinstance( comparator, ast.Constant ) and isinstance( comparator.value, str ):
                           discovered.add( comparator.value )
-          missing_modes = [ mode for mode in cfg.MODES if mode not in discovered ]
+          missing_modes = [ mode for mode in modes if mode not in discovered ]
           if missing_modes:
               raise RuntimeError( f'Missing mode execution paths: {missing_modes}' )
 
