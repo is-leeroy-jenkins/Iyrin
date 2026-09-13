@@ -37,7 +37,7 @@ langchain-chroma
 langchain-pinecone
 langchain-google-community
 sentence-transformers
-doc2txt
+docx2txt
 chromadb
 pinecone
 llama-cpp-python
