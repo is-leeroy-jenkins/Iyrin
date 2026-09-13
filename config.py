@@ -135,7 +135,7 @@ MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
 
 MODES = [ 'Geocoding', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
           'Loading', 'Weather', 'Environmental', 'Geological', 'Astronomical', 'Celestial Map',
-          'Generative AI', 'Data Upload', 'Data Management' ]
+          'Demographic', 'Generative AI', 'Data Upload', 'Data Management' ]
 
 
 AGENTS = ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '

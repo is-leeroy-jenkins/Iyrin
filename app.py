@@ -8930,6 +8930,1838 @@ elif mode == 'Geological':
 		
 		with geo_c2:
 			render_mode_document_tabs( 'geo', '📄 Loaded' )
+
+# ==============================================================================
+# DEMOGRAPHIC MODE
+# ==============================================================================
+elif mode == 'Demographic':
+	st.subheader( f'🩺 Demographics & Public Health' )
+	st.divider( )
+	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
+	if 'demographic_active_source' not in st.session_state:
+		st.session_state[ 'demographic_active_source' ] = ''
+	
+	with left:
+		
+		# ---------------------
+		# ---- Expander U.S. Census Bureau
+		# ---------------------
+		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
+			CENSUS_MODES = [ 'variables', 'data' ]
+			
+			def _clear_census_state( ) -> None:
+				st.session_state[ 'census_clear_request' ] = True
+			
+			def _validate_census_year( value: object ) -> str:
+				text = str( value or '' ).strip( )
+				if not re.fullmatch( r'\d{4}', text ):
+					raise ValueError( 'Year must be a four-digit Census API vintage year.' )
+				
+				return text
+			
+			def _validate_census_dataset( value: object ) -> str:
+				text = str( value or '' ).strip( ).strip( '/' )
+				if not text:
+					raise ValueError( 'Dataset is required.' )
+				
+				if not re.fullmatch( r'[A-Za-z0-9_\-/]+', text ):
+					raise ValueError( 'Dataset may only contain letters, numbers, underscores, '
+					                  'hyphens, '
+					                  'and forward slashes.' )
+				
+				return text
+			
+			def _validate_census_fields( value: object ) -> str:
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError( 'Fields are required for Census data mode.' )
+				
+				fields = [ item.strip( ) for item in text.split( ',' ) if item.strip( ) ]
+				
+				if not fields:
+					raise ValueError( 'Fields are required for Census data mode.' )
+				
+				for field in fields:
+					if not re.fullmatch( r'[A-Za-z0-9_]+', field ):
+						raise ValueError( f'Invalid Census field name: {field}' )
+				
+				return ','.join( fields )
+			
+			def _validate_census_geography_clause( name: str, value: object,
+			                                       required: bool = False ) -> str:
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					if required:
+						raise ValueError( f'{name} is required.' )
+					return ''
+				
+				if ':' not in text:
+					raise ValueError( f'{name} must use Census geography syntax such as state:*.' )
+				
+				return text
+			
+			if 'census_results' not in st.session_state:
+				st.session_state[ 'census_results' ] = { }
+			
+			if 'census_clear_request' not in st.session_state:
+				st.session_state[ 'census_clear_request' ] = False
+			
+			if st.session_state.get( 'census_mode', 'variables' ) not in CENSUS_MODES:
+				st.session_state[ 'census_mode' ] = 'variables'
+			
+			if 'census_year' not in st.session_state:
+				st.session_state[ 'census_year' ] = '2022'
+			
+			if 'census_dataset' not in st.session_state:
+				st.session_state[ 'census_dataset' ] = 'acs/acs5'
+			
+			if 'census_fields' not in st.session_state:
+				st.session_state[ 'census_fields' ] = 'NAME,B01001_001E'
+			
+			if 'census_for' not in st.session_state:
+				st.session_state[ 'census_for' ] = 'state:*'
+			
+			if 'census_in' not in st.session_state:
+				st.session_state[ 'census_in' ] = ''
+			
+			if 'census_predicates' not in st.session_state:
+				st.session_state[ 'census_predicates' ] = ''
+			
+			if 'census_timeout' not in st.session_state:
+				st.session_state[ 'census_timeout' ] = 20
+			
+			if st.session_state.get( 'census_clear_request', False ):
+				st.session_state[ 'census_mode' ] = 'variables'
+				st.session_state[ 'census_year' ] = '2022'
+				st.session_state[ 'census_dataset' ] = 'acs/acs5'
+				st.session_state[ 'census_fields' ] = 'NAME,B01001_001E'
+				st.session_state[ 'census_for' ] = 'state:*'
+				st.session_state[ 'census_in' ] = ''
+				st.session_state[ 'census_predicates' ] = ''
+				st.session_state[ 'census_timeout' ] = 20
+				st.session_state[ 'census_results' ] = { }
+				st.session_state[ 'census_clear_request' ] = False
+			
+			census_mode = st.selectbox( 'Mode', options=CENSUS_MODES,
+				index=CENSUS_MODES.index( st.session_state.get( 'census_mode', 'variables' ) ),
+				key='census_mode', help=('variables = dataset variable metadata; '
+				                         'data = tabular Census query using get/for/in.') )
+			
+			census_year = st.text_input( 'Year',
+				value=st.session_state.get( 'census_year', '2022' ), key='census_year',
+				placeholder='2022' )
+			
+			census_dataset = st.text_input( 'Dataset',
+				value=st.session_state.get( 'census_dataset', 'acs/acs5' ), key='census_dataset',
+				placeholder='acs/acs5' )
+			
+			census_fields = st.text_area( 'Fields (get)',
+				value=st.session_state.get( 'census_fields', 'NAME,B01001_001E' ), height=90,
+				key='census_fields', placeholder='NAME,B01001_001E',
+				disabled=(census_mode != 'data') )
+			
+			c1, c2 = st.columns( 2 )
+			with c1:
+				census_for = st.text_input( 'For',
+					value=st.session_state.get( 'census_for', 'state:*' ), key='census_for',
+					placeholder='state:*', disabled=(census_mode != 'data') )
+			
+			with c2:
+				census_in = st.text_input( 'In', value=st.session_state.get( 'census_in', '' ),
+					key='census_in', placeholder='state:24', disabled=(census_mode != 'data') )
+			
+			census_predicates = st.text_area( 'Predicates',
+				value=st.session_state.get( 'census_predicates', '' ), height=90,
+				key='census_predicates', placeholder='SEX=1\nAGE=15',
+				disabled=(census_mode != 'data'),
+				help='Optional newline-delimited key=value filters.' )
+			
+			census_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'census_timeout', 20 ) ), step=1,
+				key='census_timeout' )
+			
+			st.caption( 'Examples: dataset = acs/acs5, fields = NAME,B01001_001E, '
+			            'for = state:*' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				census_submit = st.button( 'Submit', key='census_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='census_clear', on_click=_clear_census_state,
+					width='stretch' )
+			
+			if census_submit:
+				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
+			
+			render_source_processing_controls( 'u_s_census_bureau', 'api_u_s_census_bureau' )
+		
+		# ---------------------
+		# ---- Expander CDC SOCRATA
+		# ---------------------
+		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
+			SOCRATA_MODES = [ 'rows', 'metadata' ]
+			
+			SOCRATA_CDC_DOMAINS = [ 'data.cdc.gov', 'chronicdata.cdc.gov' ]
+			
+			def _clear_socrata_state( ) -> None:
+				st.session_state[ 'socrata_clear_request' ] = True
+			
+			def _validate_socrata_dataset_id( value: object ) -> str:
+				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset ID is required.' )
+				
+				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
+					raise ValueError( 'Dataset ID must use the Socrata four-by-four format, '
+					                  'such as q8xq-ygsk.' )
+				
+				return text.lower( )
+			
+			if 'socrata_results' not in st.session_state:
+				st.session_state[ 'socrata_results' ] = { }
+			
+			if 'socrata_clear_request' not in st.session_state:
+				st.session_state[ 'socrata_clear_request' ] = False
+			
+			if st.session_state.get( 'socrata_mode', 'rows' ) not in SOCRATA_MODES:
+				st.session_state[ 'socrata_mode' ] = 'rows'
+			
+			if st.session_state.get( 'socrata_domain', 'data.cdc.gov' ) not in SOCRATA_CDC_DOMAINS:
+				st.session_state[ 'socrata_domain' ] = 'data.cdc.gov'
+			
+			if 'socrata_dataset_id' not in st.session_state:
+				st.session_state[ 'socrata_dataset_id' ] = 'q8xq-ygsk'
+			
+			if 'socrata_select' not in st.session_state:
+				st.session_state[ 'socrata_select' ] = ''
+			
+			if 'socrata_where' not in st.session_state:
+				st.session_state[ 'socrata_where' ] = ''
+			
+			if 'socrata_order' not in st.session_state:
+				st.session_state[ 'socrata_order' ] = ''
+			
+			if 'socrata_group' not in st.session_state:
+				st.session_state[ 'socrata_group' ] = ''
+			
+			if 'socrata_limit' not in st.session_state:
+				st.session_state[ 'socrata_limit' ] = 25
+			
+			if 'socrata_offset' not in st.session_state:
+				st.session_state[ 'socrata_offset' ] = 0
+			
+			if 'socrata_timeout' not in st.session_state:
+				st.session_state[ 'socrata_timeout' ] = 20
+			
+			if st.session_state.get( 'socrata_clear_request', False ):
+				st.session_state[ 'socrata_mode' ] = 'rows'
+				st.session_state[ 'socrata_domain' ] = 'data.cdc.gov'
+				st.session_state[ 'socrata_dataset_id' ] = 'q8xq-ygsk'
+				st.session_state[ 'socrata_select' ] = ''
+				st.session_state[ 'socrata_where' ] = ''
+				st.session_state[ 'socrata_order' ] = ''
+				st.session_state[ 'socrata_group' ] = ''
+				st.session_state[ 'socrata_limit' ] = 25
+				st.session_state[ 'socrata_offset' ] = 0
+				st.session_state[ 'socrata_timeout' ] = 20
+				st.session_state[ 'socrata_results' ] = { }
+				st.session_state[ 'socrata_clear_request' ] = False
+			
+			socrata_mode = st.selectbox( 'Mode', options=SOCRATA_MODES,
+				index=SOCRATA_MODES.index( st.session_state.get( 'socrata_mode', 'rows' ) ),
+				key='socrata_mode', help='rows = '
+				                         'query '
+				                         'dataset rows; metadata = inspect dataset metadata.' )
+			
+			socrata_domain = st.selectbox( 'Domain', options=SOCRATA_CDC_DOMAINS,
+				index=SOCRATA_CDC_DOMAINS.index(
+					st.session_state.get( 'socrata_domain', 'data.cdc.gov' ) ),
+				key='socrata_domain', help='CDC Socrata portal domain.' )
+			
+			socrata_dataset_id = st.text_input( 'Dataset ID',
+				value=st.session_state.get( 'socrata_dataset_id', 'q8xq-ygsk' ),
+				key='socrata_dataset_id', placeholder='q8xq-ygsk' )
+			
+			socrata_select = st.text_area( 'Select',
+				value=st.session_state.get( 'socrata_select', '' ), height=80, key='socrata_select',
+				placeholder='locationname,datavaluetype,'
+				            'datavalue', disabled=(socrata_mode != 'rows') )
+			
+			socrata_where = st.text_area( 'Where',
+				value=st.session_state.get( 'socrata_where', '' ), height=100, key='socrata_where',
+				placeholder="year = '2020'", disabled=(socrata_mode != 'rows') )
+			
+			c1, c2 = st.columns( 2 )
+			with c1:
+				socrata_order = st.text_input( 'Order',
+					value=st.session_state.get( 'socrata_order', '' ), key='socrata_order',
+					placeholder='locationname ASC', disabled=(socrata_mode != 'rows') )
+			
+			with c2:
+				socrata_group = st.text_input( 'Group',
+					value=st.session_state.get( 'socrata_group', '' ), key='socrata_group',
+					placeholder='locationname', disabled=(socrata_mode != 'rows') )
+			
+			c3, c4, c5 = st.columns( 3 )
+			with c3:
+				socrata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+					value=int( st.session_state.get( 'socrata_limit', 25 ) ), step=1,
+					key='socrata_limit', disabled=(socrata_mode != 'rows'),
+					help='Socrata SODA 2.0 endpoints allow $limit '
+					     'values up to 50,000.' )
+			
+			with c4:
+				socrata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+					value=int( st.session_state.get( 'socrata_offset', 0 ) ), step=1,
+					key='socrata_offset', disabled=(socrata_mode != 'rows') )
+			
+			with c5:
+				socrata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'socrata_timeout', 20 ) ), step=1,
+					key='socrata_timeout' )
+			
+			st.caption( 'Example dataset: q8xq-ygsk on data.cdc.gov. '
+			            'Use SoQL clauses for select, where, order, and group.' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				socrata_submit = st.button( 'Submit', key='socrata_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='socrata_clear', on_click=_clear_socrata_state,
+					width='stretch' )
+			
+			if socrata_submit:
+				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
+			
+			render_source_processing_controls( 'cdc_socrata', 'api_cdc_socrata' )
+		
+		# ---------------------
+		# ---- Expander US Health Data
+		# ---------------------
+		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
+			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
+			HEALTHDATA_DOMAINS = [ 'healthdata.gov' ]
+			
+			def _clear_healthdata_state( ) -> None:
+				st.session_state[ 'healthdata_clear_request' ] = True
+			
+			def _validate_healthdata_dataset_id( value: object ) -> str:
+				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset ID is required.' )
+				
+				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
+					raise ValueError( 'Dataset ID must use the Socrata four-by-four format, '
+					                  'such as abcd-1234.' )
+				
+				return text.lower( )
+			
+			if 'healthdata_results' not in st.session_state:
+				st.session_state[ 'healthdata_results' ] = { }
+			
+			if 'healthdata_clear_request' not in st.session_state:
+				st.session_state[ 'healthdata_clear_request' ] = False
+			
+			if st.session_state.get( 'healthdata_mode', 'rows' ) not in HEALTHDATA_MODES:
+				st.session_state[ 'healthdata_mode' ] = 'rows'
+			
+			if st.session_state.get( 'healthdata_domain',
+					'healthdata.gov' ) not in HEALTHDATA_DOMAINS:
+				st.session_state[ 'healthdata_domain' ] = 'healthdata.gov'
+			
+			if 'healthdata_dataset_id' not in st.session_state:
+				st.session_state[ 'healthdata_dataset_id' ] = ''
+			
+			if 'healthdata_select' not in st.session_state:
+				st.session_state[ 'healthdata_select' ] = ''
+			
+			if 'healthdata_where' not in st.session_state:
+				st.session_state[ 'healthdata_where' ] = ''
+			
+			if 'healthdata_order' not in st.session_state:
+				st.session_state[ 'healthdata_order' ] = ''
+			
+			if 'healthdata_group' not in st.session_state:
+				st.session_state[ 'healthdata_group' ] = ''
+			
+			if 'healthdata_limit' not in st.session_state:
+				st.session_state[ 'healthdata_limit' ] = 25
+			
+			if 'healthdata_offset' not in st.session_state:
+				st.session_state[ 'healthdata_offset' ] = 0
+			
+			if 'healthdata_timeout' not in st.session_state:
+				st.session_state[ 'healthdata_timeout' ] = 20
+			
+			if st.session_state.get( 'healthdata_clear_request', False ):
+				st.session_state[ 'healthdata_mode' ] = 'rows'
+				st.session_state[ 'healthdata_domain' ] = 'healthdata.gov'
+				st.session_state[ 'healthdata_dataset_id' ] = ''
+				st.session_state[ 'healthdata_select' ] = ''
+				st.session_state[ 'healthdata_where' ] = ''
+				st.session_state[ 'healthdata_order' ] = ''
+				st.session_state[ 'healthdata_group' ] = ''
+				st.session_state[ 'healthdata_limit' ] = 25
+				st.session_state[ 'healthdata_offset' ] = 0
+				st.session_state[ 'healthdata_timeout' ] = 20
+				st.session_state[ 'healthdata_results' ] = { }
+				st.session_state[ 'healthdata_clear_request' ] = False
+			
+			healthdata_mode = st.selectbox( 'Mode', options=HEALTHDATA_MODES,
+				index=HEALTHDATA_MODES.index( st.session_state.get( 'healthdata_mode', 'rows' ) ),
+				key='healthdata_mode', help='rows = query dataset rows; metadata = inspect dataset '
+				                            'metadata.' )
+			
+			healthdata_domain = st.selectbox( 'Domain', options=HEALTHDATA_DOMAINS,
+				index=HEALTHDATA_DOMAINS.index(
+					st.session_state.get( 'healthdata_domain', 'healthdata.gov' ) ),
+				key='healthdata_domain', help='HealthData.gov Socrata '
+				                              'portal domain.' )
+			
+			healthdata_dataset_id = st.text_input( 'Dataset ID',
+				value=st.session_state.get( 'healthdata_dataset_id', '' ),
+				key='healthdata_dataset_id', placeholder='abcd-1234' )
+			
+			healthdata_select = st.text_area( 'Select',
+				value=st.session_state.get( 'healthdata_select', '' ), height=80,
+				key='healthdata_select', placeholder='column1,column2',
+				disabled=(healthdata_mode != 'rows') )
+			
+			healthdata_where = st.text_area( 'Where',
+				value=st.session_state.get( 'healthdata_where', '' ), height=100,
+				key='healthdata_where', placeholder="year = "
+				                                    "'2024'", disabled=(healthdata_mode != 'rows') )
+			
+			c1, c2 = st.columns( 2 )
+			with c1:
+				healthdata_order = st.text_input( 'Order',
+					value=st.session_state.get( 'healthdata_order', '' ), key='healthdata_order',
+					placeholder='column1 ASC', disabled=(healthdata_mode != 'rows') )
+			
+			with c2:
+				healthdata_group = st.text_input( 'Group',
+					value=st.session_state.get( 'healthdata_group', '' ), key='healthdata_group',
+					placeholder='column1', disabled=(healthdata_mode != 'rows') )
+			
+			c3, c4, c5 = st.columns( 3 )
+			
+			with c3:
+				healthdata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
+					value=int( st.session_state.get( 'healthdata_limit', 25 ) ), step=1,
+					key='healthdata_limit', disabled=(healthdata_mode != 'rows'),
+					help='Socrata SODA 2.0 endpoints allow $limit '
+					     'values up to 50,000.' )
+			
+			with c4:
+				healthdata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
+					value=int( st.session_state.get( 'healthdata_offset', 0 ) ), step=1,
+					key='healthdata_offset', disabled=(healthdata_mode != 'rows') )
+			
+			with c5:
+				healthdata_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'healthdata_timeout', 20 ) ), step=1,
+					key='healthdata_timeout' )
+			
+			st.caption( 'HealthData.gov exposes open API access through Socrata. '
+			            'Use SoQL-style clauses for select, where, order, and group.' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				healthdata_submit = st.button( 'Submit', key='healthdata_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
+					width='stretch' )
+			
+			if healthdata_submit:
+				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
+			
+			render_source_processing_controls( 'u_s_health', 'api_u_s_health' )
+		
+		# ---------------------
+		# ---- Expander WHO Global Health
+		# ---------------------
+		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
+			WHO_MODES = [ 'indicator_registry', 'athena' ]
+			WHO_QUERY_PRESETS = [ 'Indicator', 'Dimension', 'DIMENSION/COUNTRY/DimensionValues',
+			                      'DIMENSION/REGION', 'WHOSIS_000001', 'Custom...' ]
+			
+			WHO_FORMATS = [ 'json', 'xml', 'csv', 'csv&profile=text', 'csv&profile=verbose' ]
+			
+			def _clear_who_state( ) -> None:
+				st.session_state[ 'who_clear_request' ] = True
+			
+			def _validate_who_query_path( value: object ) -> str:
+				text = str( value or '' ).strip( ).lstrip( '/' )
+				
+				if not text:
+					raise ValueError( 'Query Path is required for WHO Athena mode.' )
+				
+				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
+					raise ValueError( 'Query Path must be a path segment only, not a full URL.' )
+				
+				if '..' in text:
+					raise ValueError( 'Query Path cannot contain parent-directory markers.' )
+				
+				if not re.fullmatch( r"[A-Za-z0-9_\-/$(),.'% =]+(?:\?.*)?", text ):
+					raise ValueError( 'Query Path contains unsupported characters for this '
+					                  'request.' )
+				
+				return text
+			
+			if 'who_results' not in st.session_state:
+				st.session_state[ 'who_results' ] = { }
+			
+			if 'who_clear_request' not in st.session_state:
+				st.session_state[ 'who_clear_request' ] = False
+			
+			if st.session_state.get( 'who_mode', 'indicator_registry' ) not in WHO_MODES:
+				st.session_state[ 'who_mode' ] = 'indicator_registry'
+			
+			if 'who_query_path' not in st.session_state:
+				st.session_state[ 'who_query_path' ] = ''
+			
+			if st.session_state.get( 'who_query_path', '' ) in WHO_QUERY_PRESETS:
+				default_who_query_choice = st.session_state.get( 'who_query_path', 'Indicator' )
+			elif str( st.session_state.get( 'who_query_path', '' ) ).strip( ):
+				default_who_query_choice = 'Custom...'
+			else:
+				default_who_query_choice = 'Indicator'
+			
+			if 'who_query_choice' not in st.session_state:
+				st.session_state[ 'who_query_choice' ] = default_who_query_choice
+			
+			if st.session_state.get( 'who_query_choice', 'Indicator' ) not in WHO_QUERY_PRESETS:
+				st.session_state[ 'who_query_choice' ] = default_who_query_choice
+			
+			if 'who_custom_query_path' not in st.session_state:
+				st.session_state[ 'who_custom_query_path' ] = (
+						'' if default_who_query_choice != 'Custom...' else st.session_state.get(
+							'who_query_path', '' ))
+			
+			if st.session_state.get( 'who_format', 'json' ) not in WHO_FORMATS:
+				st.session_state[ 'who_format' ] = 'json'
+			
+			if 'who_timeout' not in st.session_state:
+				st.session_state[ 'who_timeout' ] = 20
+			
+			if st.session_state.get( 'who_clear_request', False ):
+				st.session_state[ 'who_mode' ] = 'indicator_registry'
+				st.session_state[ 'who_query_path' ] = ''
+				st.session_state[ 'who_query_choice' ] = 'Indicator'
+				st.session_state[ 'who_custom_query_path' ] = ''
+				st.session_state[ 'who_format' ] = 'json'
+				st.session_state[ 'who_timeout' ] = 20
+				st.session_state[ 'who_results' ] = { }
+				st.session_state[ 'who_clear_request' ] = False
+			
+			who_mode = st.selectbox( 'Mode', options=WHO_MODES,
+				index=WHO_MODES.index( st.session_state.get( 'who_mode', 'indicator_registry' ) ),
+				key='who_mode', help=('indicator_registry = WHO metadata landing content; '
+				                      'athena = configurable WHO GHO query path.') )
+			
+			who_query_choice = st.selectbox( 'Query Path Preset', options=WHO_QUERY_PRESETS,
+				index=WHO_QUERY_PRESETS.index(
+					st.session_state.get( 'who_query_choice', 'Indicator' ) ),
+				key='who_query_choice', disabled=(who_mode != 'athena'),
+				help='Common WHO GHO OData query paths.' )
+			
+			who_custom_query_path = st.text_area( 'Custom Query Path',
+				value=st.session_state.get( 'who_custom_query_path', '' ), height=100,
+				key='who_custom_query_path', placeholder="WHOSIS_000001?$filter=Dim1 eq 'MLE'",
+				disabled=(who_mode != 'athena' or who_query_choice != 'Custom...'),
+				help='Path appended '
+				     'after the WHO '
+				     'GHO API base '
+				     'endpoint.' )
+			
+			who_format = st.selectbox( 'Format', options=WHO_FORMATS,
+				index=WHO_FORMATS.index( st.session_state.get( 'who_format', 'json' ) ),
+				key='who_format', disabled=(who_mode != 'athena') )
+			
+			who_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'who_timeout', 20 ) ), step=1, key='who_timeout' )
+			
+			st.caption( 'WHO supports GHO OData paths such as Indicator, Dimension, '
+			            'DIMENSION/COUNTRY/DimensionValues, and direct indicator-code '
+			            'queries.' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				who_submit = st.button( 'Submit', key='who_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='who_clear', on_click=_clear_who_state, width='stretch' )
+			
+			if who_submit:
+				st.session_state[ 'demographic_active_source' ] = 'who_global'
+			
+			render_source_processing_controls( 'who_global', 'api_who_global' )
+		
+		# ---------------------
+		# ---- Expander United Nations Data
+		# ---------------------
+		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
+			UN_MODES = [ 'datasets', 'sdmx_query' ]
+			UN_QUERY_PRESETS = [ 'dataflow', 'datastructure', 'codelist', 'conceptscheme',
+			                     'dataflow/all/all/latest', 'datastructure/all/all/latest',
+			                     'codelist/all/all/latest', 'conceptscheme/all/all/latest',
+			                     'Custom...' ]
+			
+			def _clear_un_state( ) -> None:
+				st.session_state[ 'un_clear_request' ] = True
+			
+			def _validate_un_query_path( value: object ) -> str:
+				text = str( value or '' ).strip( ).lstrip( '/' )
+				
+				if not text:
+					raise ValueError( 'Query Path is required for sdmx_query mode.' )
+				
+				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
+					raise ValueError( 'Query Path must be a path segment only, not a full URL.' )
+				
+				if '..' in text:
+					raise ValueError( 'Query Path cannot contain parent-directory markers.' )
+				
+				if not re.fullmatch( r'[A-Za-z0-9_\-./(),:*?=&%]+', text ):
+					raise ValueError( 'Query Path contains unsupported characters for a UNdata '
+					                  'REST request.' )
+				
+				return text
+			
+			if 'un_results' not in st.session_state:
+				st.session_state[ 'un_results' ] = { }
+			
+			if 'un_clear_request' not in st.session_state:
+				st.session_state[ 'un_clear_request' ] = False
+			
+			if st.session_state.get( 'un_mode', 'datasets' ) not in UN_MODES:
+				st.session_state[ 'un_mode' ] = 'datasets'
+			
+			if 'un_query_path' not in st.session_state:
+				st.session_state[ 'un_query_path' ] = ''
+			
+			if st.session_state.get( 'un_query_path', '' ) in UN_QUERY_PRESETS:
+				default_un_query_choice = st.session_state.get( 'un_query_path', 'dataflow' )
+			elif str( st.session_state.get( 'un_query_path', '' ) ).strip( ):
+				default_un_query_choice = 'Custom...'
+			else:
+				default_un_query_choice = 'dataflow'
+			
+			if 'un_query_choice' not in st.session_state:
+				st.session_state[ 'un_query_choice' ] = default_un_query_choice
+			
+			if st.session_state.get( 'un_query_choice', 'dataflow' ) not in UN_QUERY_PRESETS:
+				st.session_state[ 'un_query_choice' ] = default_un_query_choice
+			
+			if 'un_custom_query_path' not in st.session_state:
+				st.session_state[ 'un_custom_query_path' ] = (
+						'' if default_un_query_choice != 'Custom...' else st.session_state.get(
+							'un_query_path', '' ))
+			
+			if 'un_timeout' not in st.session_state:
+				st.session_state[ 'un_timeout' ] = 20
+			
+			if st.session_state.get( 'un_clear_request', False ):
+				st.session_state[ 'un_mode' ] = 'datasets'
+				st.session_state[ 'un_query_path' ] = ''
+				st.session_state[ 'un_query_choice' ] = 'dataflow'
+				st.session_state[ 'un_custom_query_path' ] = ''
+				st.session_state[ 'un_timeout' ] = 20
+				st.session_state[ 'un_results' ] = { }
+				st.session_state[ 'un_clear_request' ] = False
+			
+			un_mode = st.selectbox( 'Mode', options=UN_MODES,
+				index=UN_MODES.index( st.session_state.get( 'un_mode', 'datasets' ) ),
+				key='un_mode', help=('datasets = UNdata dataset catalog landing content; '
+				                     'sdmx_query = direct REST SDMX query path.') )
+			
+			un_query_choice = st.selectbox( 'Query Path Preset', options=UN_QUERY_PRESETS,
+				index=UN_QUERY_PRESETS.index(
+					st.session_state.get( 'un_query_choice', 'dataflow' ) ), key='un_query_choice',
+				disabled=(un_mode != 'sdmx_query'), help='Common UNdata SDMX REST artifact paths.' )
+			
+			un_custom_query_path = st.text_area( 'Custom Query Path',
+				value=st.session_state.get( 'un_custom_query_path', '' ), height=120,
+				key='un_custom_query_path', placeholder='data/DF_SDG_GLH/..SI_POV_DAY1...........?',
+				disabled=(un_mode != 'sdmx_query' or un_query_choice != 'Custom...'), help='Path '
+				                                                                           'appended '
+				                                                                           'after '
+				                                                                           'https://data.un.org/WS/rest/' )
+			
+			un_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'un_timeout', 20 ) ), step=1, key='un_timeout' )
+			
+			st.caption( 'UNdata exposes SDMX REST artifacts such as dataflow, datastructure, '
+			            'codelist, and conceptscheme. Use Custom for dataset-specific paths.' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				un_submit = st.button( 'Submit', key='un_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='un_clear', on_click=_clear_un_state, width='stretch' )
+			
+			if un_submit:
+				st.session_state[ 'demographic_active_source' ] = 'united_nations'
+			
+			render_source_processing_controls( 'united_nations', 'api_united_nations' )
+		
+		# ---------------------
+		# ---- Expander World Population
+		# ---------------------
+		with st.expander( label='World Population', icon='👥', expanded=False ):
+			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
+			WORLDPOP_ASSET_PRESETS = [ 'data/pop', 'data/pop/wpgp', 'data/pop/wpgp?iso3=GHA',
+			                           'data/pop/wpgp?iso3=AUS', 'data/pop/wpgp?iso3=USA',
+			                           'data/pop/wpgp?iso3=GBR', 'data/pop/wpgp?iso3=NGA',
+			                           'data/pop/wpgp?iso3=KEN', 'data/pop/wpgp?iso3=IND',
+			                           'data/pop/wpgp?iso3=BRA', 'Custom...' ]
+			
+			def _clear_worldpop_state( ) -> None:
+				st.session_state[ 'worldpop_clear_request' ] = True
+			
+			def _validate_worldpop_query( value: object ) -> str:
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError( 'Query is required for World Population search mode.' )
+				
+				return text
+			
+			def _validate_worldpop_asset_path( value: object ) -> str:
+				text = str( value or '' ).strip( ).lstrip( '/' )
+				
+				if not text:
+					raise ValueError( 'Asset Path is required for raster_metadata mode.' )
+				
+				if text.startswith( 'http://' ) or text.startswith( 'https://' ):
+					raise ValueError( 'Asset Path must be a path segment only, not a full URL.' )
+				
+				if '..' in text:
+					raise ValueError( 'Asset Path cannot contain parent-directory markers.' )
+				
+				if not re.fullmatch( r'[A-Za-z0-9_\-./?=&%]+', text ):
+					raise ValueError( 'Asset Path contains unsupported characters for a WorldPop '
+					                  'request.' )
+				
+				return text
+			
+			if 'worldpop_results' not in st.session_state:
+				st.session_state[ 'worldpop_results' ] = { }
+			
+			if 'worldpop_clear_request' not in st.session_state:
+				st.session_state[ 'worldpop_clear_request' ] = False
+			
+			if st.session_state.get( 'worldpop_mode', 'catalog' ) not in WORLDPOP_MODES:
+				st.session_state[ 'worldpop_mode' ] = 'catalog'
+			
+			if 'worldpop_query' not in st.session_state:
+				st.session_state[ 'worldpop_query' ] = ''
+			
+			if 'worldpop_asset_path' not in st.session_state:
+				st.session_state[ 'worldpop_asset_path' ] = ''
+			
+			if st.session_state.get( 'worldpop_asset_path', '' ) in WORLDPOP_ASSET_PRESETS:
+				default_asset_choice = st.session_state.get( 'worldpop_asset_path',
+					'data/pop/wpgp?iso3=GHA' )
+			elif str( st.session_state.get( 'worldpop_asset_path', '' ) ).strip( ):
+				default_asset_choice = 'Custom...'
+			else:
+				default_asset_choice = 'data/pop/wpgp?iso3=GHA'
+			
+			if 'worldpop_asset_choice' not in st.session_state:
+				st.session_state[ 'worldpop_asset_choice' ] = default_asset_choice
+			
+			if st.session_state.get( 'worldpop_asset_choice',
+					'data/pop/wpgp?iso3=GHA' ) not in WORLDPOP_ASSET_PRESETS:
+				st.session_state[ 'worldpop_asset_choice' ] = default_asset_choice
+			
+			if 'worldpop_custom_asset_path' not in st.session_state:
+				st.session_state[ 'worldpop_custom_asset_path' ] = (
+						'' if default_asset_choice != 'Custom...' else st.session_state.get(
+							'worldpop_asset_path', '' ))
+			
+			if 'worldpop_page' not in st.session_state:
+				st.session_state[ 'worldpop_page' ] = 1
+			
+			if 'worldpop_page_size' not in st.session_state:
+				st.session_state[ 'worldpop_page_size' ] = 25
+			
+			if 'worldpop_timeout' not in st.session_state:
+				st.session_state[ 'worldpop_timeout' ] = 20
+			
+			if st.session_state.get( 'worldpop_clear_request', False ):
+				st.session_state[ 'worldpop_mode' ] = 'catalog'
+				st.session_state[ 'worldpop_query' ] = ''
+				st.session_state[ 'worldpop_asset_path' ] = ''
+				st.session_state[ 'worldpop_asset_choice' ] = 'data/pop/wpgp?iso3=GHA'
+				st.session_state[ 'worldpop_custom_asset_path' ] = ''
+				st.session_state[ 'worldpop_page' ] = 1
+				st.session_state[ 'worldpop_page_size' ] = 25
+				st.session_state[ 'worldpop_timeout' ] = 20
+				st.session_state[ 'worldpop_results' ] = { }
+				st.session_state[ 'worldpop_clear_request' ] = False
+			
+			worldpop_mode = st.selectbox( 'Mode', options=WORLDPOP_MODES,
+				index=WORLDPOP_MODES.index( st.session_state.get( 'worldpop_mode', 'catalog' ) ),
+				key='worldpop_mode', help=('catalog = API landing content; '
+				                           'search = catalog-style search; '
+				                           'raster_metadata = direct asset or metadata path.') )
+			
+			worldpop_query = st.text_area( 'Query',
+				value=st.session_state.get( 'worldpop_query', '' ), height=90, key='worldpop_query',
+				placeholder='population Ghana 2020', disabled=(worldpop_mode != 'search') )
+			
+			worldpop_asset_choice = st.selectbox( 'Asset Path Preset',
+				options=WORLDPOP_ASSET_PRESETS, index=WORLDPOP_ASSET_PRESETS.index(
+					st.session_state.get( 'worldpop_asset_choice', 'data/pop/wpgp?iso3=GHA' ) ),
+				key='worldpop_asset_choice', disabled=(worldpop_mode != 'raster_metadata'),
+				help='Common WorldPop API metadata paths. '
+				     'Use Custom for another path.' )
+			
+			worldpop_custom_asset_path = st.text_area( 'Custom Asset Path',
+				value=st.session_state.get( 'worldpop_custom_asset_path', '' ), height=100,
+				key='worldpop_custom_asset_path', placeholder='data/pop/wpgp?iso3=GHA', disabled=(
+						worldpop_mode != 'raster_metadata' or worldpop_asset_choice != 'Custom...') )
+			
+			c1, c2, c3 = st.columns( 3 )
+			with c1:
+				worldpop_page = st.number_input( 'Page', min_value=1, max_value=100000,
+					value=int( st.session_state.get( 'worldpop_page', 1 ) ), step=1,
+					key='worldpop_page', disabled=(worldpop_mode != 'search') )
+			
+			with c2:
+				worldpop_page_size = st.number_input( 'Page Size', min_value=1, max_value=500,
+					value=int( st.session_state.get( 'worldpop_page_size', 25 ) ), step=1,
+					key='worldpop_page_size', disabled=(worldpop_mode != 'search') )
+			
+			with c3:
+				worldpop_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+					value=int( st.session_state.get( 'worldpop_timeout', 20 ) ), step=1,
+					key='worldpop_timeout' )
+			
+			st.caption( 'WorldPop exposes API access to population and demographic datasets. '
+			            'Raster metadata mode appends a selected path to the current wrapper '
+			            'base URL.' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				worldpop_submit = st.button( 'Submit', key='worldpop_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='worldpop_clear', on_click=_clear_worldpop_state,
+					width='stretch' )
+			
+			if worldpop_submit:
+				st.session_state[ 'demographic_active_source' ] = 'world_population'
+			
+			render_source_processing_controls( 'world_population', 'api_world_population' )
+		
+		# ---------------------
+		# ---- Expander CDC WONDER
+		# ---------------------
+		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
+			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
+			
+			WONDER_DATASETS = [ 'D76', 'D140', 'D176', 'D158', 'D159', 'D160', 'D161', 'D162',
+			                    'D163', 'D164', 'D165', 'D166', 'D167', 'D168', 'D169', 'D170',
+			                    'D171', 'D172', 'D173', 'D174', 'D175', 'Other' ]
+			
+			def _clear_wonder_state( ) -> None:
+				st.session_state[ 'wonder_clear_request' ] = True
+			
+			def _validate_wonder_dataset_id( value: object ) -> str:
+				text = str( value or '' ).strip( ).upper( )
+				
+				if not text:
+					raise ValueError( 'CDC WONDER Dataset ID is required.' )
+				
+				if not re.fullmatch( r'D\d{1,4}', text ):
+					raise ValueError( 'CDC WONDER Dataset ID must use the format D followed by '
+					                  'digits, '
+					                  'such as D76.' )
+				
+				return text
+			
+			def _validate_wonder_xml( value: object ) -> str:
+				text = str( value or '' ).strip( )
+				
+				if not text:
+					raise ValueError( 'Request XML is required for query_xml mode.' )
+				
+				if '<request-parameters>' not in text and '<query-parameters>' not in text:
+					raise ValueError( 'Request XML should contain CDC WONDER request/query '
+					                  'parameters.' )
+				
+				return text
+			
+			if 'wonder_results' not in st.session_state:
+				st.session_state[ 'wonder_results' ] = { }
+			
+			if 'wonder_clear_request' not in st.session_state:
+				st.session_state[ 'wonder_clear_request' ] = False
+			
+			if st.session_state.get( 'wonder_mode', 'metadata_template' ) not in WONDER_MODES:
+				st.session_state[ 'wonder_mode' ] = 'metadata_template'
+			
+			if 'wonder_dataset_id' not in st.session_state:
+				st.session_state[ 'wonder_dataset_id' ] = 'D76'
+			
+			if st.session_state.get( 'wonder_dataset_id', 'D76' ) in WONDER_DATASETS:
+				default_dataset_choice = st.session_state.get( 'wonder_dataset_id', 'D76' )
+			else:
+				default_dataset_choice = 'Other'
+			
+			if 'wonder_dataset_choice' not in st.session_state:
+				st.session_state[ 'wonder_dataset_choice' ] = default_dataset_choice
+			
+			if st.session_state.get( 'wonder_dataset_choice', 'D76' ) not in WONDER_DATASETS:
+				st.session_state[ 'wonder_dataset_choice' ] = default_dataset_choice
+			
+			if 'wonder_custom_dataset_id' not in st.session_state:
+				st.session_state[ 'wonder_custom_dataset_id' ] = (
+						'' if default_dataset_choice != 'Other' else st.session_state.get(
+							'wonder_dataset_id', '' ))
+			
+			if 'wonder_request_xml' not in st.session_state:
+				st.session_state[ 'wonder_request_xml' ] = ''
+			
+			if 'wonder_timeout' not in st.session_state:
+				st.session_state[ 'wonder_timeout' ] = 20
+			
+			if st.session_state.get( 'wonder_clear_request', False ):
+				st.session_state[ 'wonder_mode' ] = 'metadata_template'
+				st.session_state[ 'wonder_dataset_id' ] = 'D76'
+				st.session_state[ 'wonder_dataset_choice' ] = 'D76'
+				st.session_state[ 'wonder_custom_dataset_id' ] = ''
+				st.session_state[ 'wonder_request_xml' ] = ''
+				st.session_state[ 'wonder_timeout' ] = 20
+				st.session_state[ 'wonder_results' ] = { }
+				st.session_state[ 'wonder_clear_request' ] = False
+			
+			wonder_mode = st.selectbox( 'Mode', options=WONDER_MODES, index=WONDER_MODES.index(
+				st.session_state.get( 'wonder_mode', 'metadata_template' ) ), key='wonder_mode',
+				help=('metadata_template = build a starter XML request; '
+				      'query_xml = submit a raw XML request to CDC WONDER.') )
+			
+			wonder_dataset_choice = st.selectbox( 'Dataset ID', options=WONDER_DATASETS,
+				index=WONDER_DATASETS.index(
+					st.session_state.get( 'wonder_dataset_choice', 'D76' ) ),
+				key='wonder_dataset_choice', help='Common CDC WONDER database '
+				                                  'identifiers. Use Other for newer'
+				                                  ' IDs.' )
+			
+			wonder_custom_dataset_id = st.text_input( 'Custom Dataset ID',
+				value=st.session_state.get( 'wonder_custom_dataset_id', '' ),
+				key='wonder_custom_dataset_id', placeholder='D76',
+				disabled=(wonder_dataset_choice != 'Other') )
+			
+			wonder_request_xml = st.text_area( 'Request XML',
+				value=st.session_state.get( 'wonder_request_xml', '' ), height=240,
+				key='wonder_request_xml',
+				placeholder='<request-parameters>...</request-parameters>',
+				disabled=(wonder_mode != 'query_xml') )
+			
+			wonder_timeout = st.number_input( 'Timeout', min_value=1, max_value=120,
+				value=int( st.session_state.get( 'wonder_timeout', 20 ) ), step=1,
+				key='wonder_timeout' )
+			
+			st.caption( 'CDC WONDER requires POST requests with request_xml and acceptance '
+			            'of data-use restrictions. The wrapper submits '
+			            'accept_datause_restrictions=true.' )
+			
+			b1, b2 = st.columns( 2 )
+			with b1:
+				wonder_submit = st.button( 'Submit', key='wonder_submit', width='stretch' )
+			
+			with b2:
+				st.button( 'Clear', key='wonder_clear', on_click=_clear_wonder_state,
+					width='stretch' )
+			
+			if wonder_submit:
+				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
+			
+			render_source_processing_controls( 'cdc_wonder', 'api_cdc_wonder' )
+		
+		# ---------------------
+		# ---- Expander Pub Med
+		# ---------------------
+		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
+			def _clear_pubmed_state( ) -> None:
+				st.session_state[ 'pubmed_clear_request' ] = True
+			
+			if 'pubmed_results' not in st.session_state:
+				st.session_state[ 'pubmed_results' ] = { }
+			
+			if 'pubmed_clear_request' not in st.session_state:
+				st.session_state[ 'pubmed_clear_request' ] = False
+			
+			if 'pubmed_query' not in st.session_state:
+				st.session_state[ 'pubmed_query' ] = ''
+			
+			if 'pubmed_max_docs' not in st.session_state:
+				st.session_state[ 'pubmed_max_docs' ] = 5
+			
+			if st.session_state.get( 'pubmed_clear_request', False ):
+				st.session_state[ 'pubmed_results' ] = { }
+				st.session_state[ 'pubmed_query' ] = ''
+				st.session_state[ 'pubmed_max_docs' ] = 5
+				st.session_state[ 'pubmed_clear_request' ] = False
+			
+			pubmed_query = st.text_input( 'PubMed Query',
+				value=st.session_state.get( 'pubmed_query', '' ), key='pubmed_query',
+				placeholder='Example: machine learning '
+				            'cancer diagnosis' )
+			
+			pubmed_max_docs = st.number_input( 'Max Documents', min_value=1, max_value=100,
+				value=int( st.session_state.get( 'pubmed_max_docs', 5 ) ), step=1,
+				key='pubmed_max_docs' )
+			
+			st.caption( 'PubMed search uses the LangChain PubMedSearchLoader and promotes '
+			            'returned documents into the shared loader state for downstream use.' )
+			
+			b1, b2, b3 = st.columns( 3 )
+			with b1:
+				pubmed_submit = st.button( 'Submit', key='pubmed_submit', use_container_width=True )
+			
+			with b2:
+				pubmed_clear = st.button( 'Clear', key='pubmed_clear', on_click=_clear_pubmed_state,
+					use_container_width=True )
+			
+			with b3:
+				can_save = (st.session_state.get(
+					'active_loader' ) == 'PubMedSearchLoader' and isinstance(
+					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+					'raw_text' ).strip( ))
+				
+				if can_save:
+					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='pubmed_loader_output.txt', mime='text/plain', key='pubmed_save',
+						width='stretch' )
+				else:
+					st.button( 'Save', key='pubmed_save_disabled', disabled=True, width='stretch' )
+			
+			if pubmed_submit:
+				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
+			
+			render_source_processing_controls( 'pub_med_search', 'api_pub_med_search' )
+		
+		# ---------------------
+		# ---- Expander Open City
+		# ---------------------
+		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
+			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
+			                      'data.cityofchicago.org', 'data.lacity.org', 'data.seattle.gov',
+			                      'data.austintexas.gov', 'data.cincinnati-oh.gov',
+			                      'data.baltimorecity.gov', 'data.cityofboston.gov',
+			                      'data.nashville.gov', 'Other' ]
+			
+			def _clear_open_city_state( ) -> None:
+				st.session_state[ 'open_city_clear_request' ] = True
+			
+			def _validate_open_city_domain( value: object ) -> str:
+				text = str( value or '' ).strip( ).lower( )
+				text = text.replace( 'https://', '' ).replace( 'http://', '' )
+				text = text.strip( '/' )
+				
+				if not text:
+					raise ValueError( 'City ID is required.' )
+				
+				if '/' in text:
+					raise ValueError( 'City ID must be a domain only, not a URL path.' )
+				
+				if not re.fullmatch( r'[a-z0-9][a-z0-9.-]+\.[a-z]{2,}', text ):
+					raise ValueError( 'City ID must be a valid Socrata portal domain, such as '
+					                  'data.sfgov.org.' )
+				
+				return text
+			
+			def _validate_open_city_dataset_id( value: object ) -> str:
+				text = str( value or '' ).strip( ).replace( '.json', '' ).strip( '/' )
+				
+				if not text:
+					raise ValueError( 'Dataset ID is required.' )
+				
+				if not re.fullmatch( r'[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}', text ):
+					raise ValueError( 'Dataset ID must use the Socrata four-by-four format, '
+					                  'such as vw6y-z8j6.' )
+				
+				return text.lower( )
+			
+			if 'open_city_results' not in st.session_state:
+				st.session_state[ 'open_city_results' ] = { }
+			
+			if 'open_city_clear_request' not in st.session_state:
+				st.session_state[ 'open_city_clear_request' ] = False
+			
+			if 'open_city_id' not in st.session_state:
+				st.session_state[ 'open_city_id' ] = 'data.sfgov.org'
+			
+			if st.session_state.get( 'open_city_id', 'data.sfgov.org' ) in OPEN_CITY_DOMAINS:
+				default_open_city_choice = st.session_state.get( 'open_city_id', 'data.sfgov.org' )
+			else:
+				default_open_city_choice = 'Other'
+			
+			if 'open_city_choice' not in st.session_state:
+				st.session_state[ 'open_city_choice' ] = default_open_city_choice
+			
+			if st.session_state.get( 'open_city_choice',
+					'data.sfgov.org' ) not in OPEN_CITY_DOMAINS:
+				st.session_state[ 'open_city_choice' ] = default_open_city_choice
+			
+			if 'open_city_custom_id' not in st.session_state:
+				st.session_state[ 'open_city_custom_id' ] = (
+						'' if default_open_city_choice != 'Other' else st.session_state.get(
+							'open_city_id', '' ))
+			
+			if 'open_city_dataset_id' not in st.session_state:
+				st.session_state[ 'open_city_dataset_id' ] = ''
+			
+			if 'open_city_limit' not in st.session_state:
+				st.session_state[ 'open_city_limit' ] = 100
+			
+			if st.session_state.get( 'open_city_clear_request', False ):
+				st.session_state[ 'open_city_results' ] = { }
+				st.session_state[ 'open_city_id' ] = 'data.sfgov.org'
+				st.session_state[ 'open_city_choice' ] = 'data.sfgov.org'
+				st.session_state[ 'open_city_custom_id' ] = ''
+				st.session_state[ 'open_city_dataset_id' ] = ''
+				st.session_state[ 'open_city_limit' ] = 100
+				st.session_state[ 'open_city_clear_request' ] = False
+			
+			open_city_choice = st.selectbox( 'City ID', options=OPEN_CITY_DOMAINS,
+				index=OPEN_CITY_DOMAINS.index(
+					st.session_state.get( 'open_city_choice', 'data.sfgov.org' ) ),
+				key='open_city_choice', help='Common Socrata open-data '
+				                             'city domains. Use Other '
+				                             'for a custom portal.' )
+			
+			open_city_custom_id = st.text_input( 'Custom City ID',
+				value=st.session_state.get( 'open_city_custom_id', '' ), key='open_city_custom_id',
+				disabled=(open_city_choice != 'Other'), placeholder='data.example.gov' )
+			
+			dataset_id = st.text_input( 'Dataset ID',
+				value=st.session_state.get( 'open_city_dataset_id', '' ),
+				key='open_city_dataset_id', placeholder='vw6y-z8j6' )
+			
+			limit = st.number_input( 'Limit', min_value=1, max_value=5000,
+				value=int( st.session_state.get( 'open_city_limit', 100 ) ), step=10,
+				key='open_city_limit' )
+			
+			st.caption( 'Open City Data uses LangChain OpenCityDataLoader backed by Socrata. '
+			            'Use the API tab on the city dataset page to find the dataset ID.' )
+			
+			b1, b2, b3 = st.columns( 3 )
+			with b1:
+				open_city_submit = st.button( 'Submit', key='open_city_submit', width='stretch' )
+			
+			with b2:
+				open_city_clear = st.button( 'Clear', key='open_city_clear',
+					on_click=_clear_open_city_state, width='stretch' )
+			
+			with b3:
+				can_save = (
+						st.session_state.get( 'active_loader' ) == 'OpenCityLoader' and isinstance(
+					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
+					'raw_text' ).strip( ))
+				
+				if can_save:
+					st.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
+						file_name='open_city_loader_output.txt', mime='text/plain',
+						key='open_city_save', width='stretch' )
+				else:
+					st.button( 'Save', key='open_city_save_disabled', disabled=True,
+						width='stretch' )
+			
+			if open_city_submit:
+				st.session_state[ 'demographic_active_source' ] = 'open_city_data'
+			
+			render_source_processing_controls( 'open_city_data', 'api_open_city_data' )
+	
+	with right:
+		st.markdown( '##### Results' )
+		active_source = st.session_state.get( 'demographic_active_source', '' )
+		display_names: Dict[ str, str ] = { 'u_s_census_bureau': 'U.S. Census Bureau',
+		                                    'cdc_socrata': 'CDC Socrata',
+		                                    'u_s_health': 'U.S. Health', 'who_global': 'WHO Global',
+		                                    'united_nations': 'United Nations',
+		                                    'world_population': 'World Population',
+		                                    'cdc_wonder': 'CDC Wonder',
+		                                    'pub_med_search': 'Pub Med Search',
+		                                    'open_city_data': 'Open City Data', }
+		if not active_source:
+			st.info( 'Select a source, configure the request, and submit it to display results.' )
+		else:
+			st.caption( f"Active Source: {display_names.get( active_source, active_source )}" )
+		
+		# -------- U.S. Census Bureau
+		if active_source == 'u_s_census_bureau':
+			st.markdown( '##### U.S. Census Bureau' )
+			result = st.session_state.get( 'census_results', { } )
+			if census_submit:
+				try:
+					clean_year = _validate_census_year( census_year )
+					clean_dataset = _validate_census_dataset( census_dataset )
+					if census_mode == 'data':
+						clean_fields = _validate_census_fields( census_fields )
+						clean_for = _validate_census_geography_clause( name='For', value=census_for,
+							required=True )
+						clean_in = _validate_census_geography_clause( name='In', value=census_in,
+							required=False )
+					else:
+						clean_fields = str( census_fields or '' ).strip( )
+						clean_for = str( census_for or '' ).strip( )
+						clean_in = str( census_in or '' ).strip( )
+					
+					f = CensusData( )
+					result = f.fetch( mode=str( census_mode ), year=clean_year,
+						dataset=clean_dataset, fields=clean_fields, geography_for=clean_for,
+						geography_in=clean_in, predicates=str( census_predicates or '' ).strip( ),
+						time=int( census_timeout ) )
+					
+					st.session_state[ 'census_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'Census request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'variables':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					variables = payload.get( 'variables', { } ) if isinstance( payload,
+						dict ) else { }
+					
+					rows: List[ Dict[ str, Any ] ] = [ ]
+					if isinstance( variables, dict ):
+						for name, meta in variables.items( ):
+							if isinstance( meta, dict ):
+								rows.append( { 'Name': name, 'Label': meta.get( 'label', '' ),
+								               'Concept': meta.get( 'concept', '' ),
+								               'PredicateType': meta.get( 'predicateType', '' ),
+								               'Group': meta.get( 'group', '' ),
+								               'Limit': meta.get( 'limit', '' ), } )
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Year': census_year, 'Dataset': census_dataset,
+						  'VariableCount': len( rows ), } )
+					_render_rows_table( '#### Variables', rows )
+				
+				elif result.get( 'mode', '' ) == 'data':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					rows = payload.get( 'rows', [ ] ) if isinstance( payload, dict ) else [ ]
+					_render_summary_kv( '#### Summary',
+						{ 'Year': census_year, 'Dataset': census_dataset, 'Fields': census_fields,
+						  'For': census_for, 'In': census_in,
+						  'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+					_render_rows_table( '#### Data Rows',
+						rows if isinstance( rows, list ) else [ ] )
+				
+				_render_fallback_raw( result )
+		
+		# -------- CDC SOCRATA
+		elif active_source == 'cdc_socrata':
+			st.markdown( '##### CDC Socrata' )
+			result = st.session_state.get( 'socrata_results', { } )
+			if socrata_submit:
+				try:
+					clean_dataset_id = _validate_socrata_dataset_id( socrata_dataset_id )
+					f = Socrata( )
+					result = f.fetch( mode=str( socrata_mode ), domain=str( socrata_domain ),
+						dataset_id=clean_dataset_id, select=str( socrata_select ),
+						where=str( socrata_where ), order=str( socrata_order ),
+						group=str( socrata_group ), limit=int( socrata_limit ),
+						offset=int( socrata_offset ), time=int( socrata_timeout ) )
+					st.session_state[ 'socrata_results' ] = result or { }
+					st.rerun( )
+				except Exception as exc:
+					st.error( 'CDC Socrata request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				if result.get( 'mode', '' ) == 'metadata':
+					payload = result.get( 'data', { } )
+					_render_summary_kv( '#### Summary', { 'Name': payload.get( 'name', '' ),
+							'Description': payload.get( 'description', '' ),
+							'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ),
+							'ViewType': payload.get( 'viewType', '' ),
+							'Columns': len( payload.get( 'columns', [ ] ) ) } )
+					rows: List[ Dict[ str, Any ] ] = [ ]
+					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
+						dict ) else [ ]
+					for item in columns_payload:
+						if isinstance( item, dict ):
+							rows.append( { 'Name': item.get( 'name', '' ),
+							               'FieldName': item.get( 'fieldName', '' ),
+							               'DataType': item.get( 'dataTypeName', '' ),
+							               'Description': item.get( 'description', '' ), } )
+					
+					_render_rows_table( '#### Columns', rows )
+				
+				elif result.get( 'mode', '' ) == 'rows':
+					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Domain': socrata_domain, 'DatasetId': socrata_dataset_id,
+						  'Limit': int( socrata_limit ), 'Offset': int( socrata_offset ),
+						  'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+				
+				_render_fallback_raw( result )
+		
+		# -------- US Health Data
+		elif active_source == 'u_s_health':
+			st.markdown( '##### U.S. Health' )
+			result = st.session_state.get( 'healthdata_results', { } )
+			
+			if healthdata_submit:
+				try:
+					clean_dataset_id = _validate_healthdata_dataset_id( healthdata_dataset_id )
+					
+					f = HealthData( )
+					result = f.fetch( mode=str( healthdata_mode ), domain=str( healthdata_domain ),
+						dataset_id=clean_dataset_id, select=str( healthdata_select ),
+						where=str( healthdata_where ), order=str( healthdata_order ),
+						group=str( healthdata_group ), limit=int( healthdata_limit ),
+						offset=int( healthdata_offset ), time=int( healthdata_timeout ) )
+					
+					st.session_state[ 'healthdata_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'HealthData request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'metadata':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Name': payload.get( 'name', '' ) if isinstance( payload, dict ) else '',
+								'Description': payload.get( 'description', '' ) if isinstance(
+									payload, dict ) else '',
+								'RowsUpdatedAt': payload.get( 'rowsUpdatedAt', '' ) if isinstance(
+									payload, dict ) else '',
+								'ViewType': payload.get( 'viewType', '' ) if isinstance( payload,
+									dict ) else '',
+								'Columns': len( payload.get( 'columns', [ ] ) ) if isinstance(
+									payload, dict ) else 0, } )
+					
+					rows: List[ Dict[ str, Any ] ] = [ ]
+					columns_payload = payload.get( 'columns', [ ] ) if isinstance( payload,
+						dict ) else [ ]
+					for item in columns_payload:
+						if isinstance( item, dict ):
+							rows.append( { 'Name': item.get( 'name', '' ),
+							               'FieldName': item.get( 'fieldName', '' ),
+							               'DataType': item.get( 'dataTypeName', '' ),
+							               'Description': item.get( 'description', '' ), } )
+					
+					_render_rows_table( '#### Columns', rows )
+				
+				elif result.get( 'mode', '' ) == 'rows':
+					rows = result.get( 'data', [ ] ) if isinstance( result, dict ) else [ ]
+					
+					_render_summary_kv( '#### Summary',
+						{ 'Domain': healthdata_domain, 'DatasetId': healthdata_dataset_id,
+						  'Limit': int( healthdata_limit ), 'Offset': int( healthdata_offset ),
+						  'RowCount': len( rows ) if isinstance( rows, list ) else 0, } )
+					_render_rows_table( '#### Rows', rows if isinstance( rows, list ) else [ ] )
+				
+				_render_fallback_raw( result )
+		
+		# -------- WHO Global Health
+		elif active_source == 'who_global':
+			st.markdown( '##### WHO Global' )
+			result = st.session_state.get( 'who_results', { } )
+			
+			if who_submit:
+				try:
+					if who_mode == 'athena':
+						selected_query_path = (
+								who_custom_query_path if who_query_choice == 'Custom...' else who_query_choice)
+						clean_query_path = _validate_who_query_path( selected_query_path )
+					else:
+						clean_query_path = ''
+					
+					f = GlobalHealthData( )
+					result = f.fetch( mode=str( who_mode ), query_path=clean_query_path,
+						fmt=str( who_format ), time=int( who_timeout ) )
+					
+					st.session_state[ 'who_query_path' ] = clean_query_path
+					st.session_state[ 'who_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'WHO Global Health request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'indicator_registry':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					                                      'HasHtml': (isinstance( payload,
+						                                      dict ) and bool(
+						                                      payload.get( 'html', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Indicator Registry Preview',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'athena':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ) and isinstance( payload.get( 'value', [ ] ),
+							list ):
+						rows = payload.get( 'value', [ ] )
+						_render_summary_kv( '#### Summary',
+							{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
+									'Format': who_format, 'ResultCount': len( rows ), } )
+						_render_rows_table( '#### Athena Results', rows )
+					elif isinstance( payload, dict ) and payload.get( 'text', '' ):
+						_render_summary_kv( '#### Summary',
+							{ 'QueryPath': st.session_state.get( 'who_query_path', '' ),
+									'Format': who_format, 'HasText': True, } )
+						st.markdown( '#### Response' )
+						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+					else:
+						st.json( payload )
+				
+				_render_fallback_raw( result )
+		
+		# -------- United Nations Data
+		elif active_source == 'united_nations':
+			st.markdown( '##### United Nations' )
+			result = st.session_state.get( 'un_results', { } )
+			
+			if un_submit:
+				try:
+					if un_mode == 'sdmx_query':
+						selected_query_path = (
+								un_custom_query_path if un_query_choice == 'Custom...' else un_query_choice)
+						clean_query_path = _validate_un_query_path( selected_query_path )
+					else:
+						clean_query_path = ''
+					
+					f = UnitedNations( )
+					result = f.fetch( mode=str( un_mode ), query_path=clean_query_path,
+						time=int( un_timeout ) )
+					
+					st.session_state[ 'un_query_path' ] = clean_query_path
+					st.session_state[ 'un_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'United Nations request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'datasets':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					                                      'HasHtml': (isinstance( payload,
+						                                      dict ) and bool(
+						                                      payload.get( 'html', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Dataset Catalog Preview',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'sdmx_query':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					                                      'QueryPath': st.session_state.get(
+						                                      'un_query_path', '' ),
+					                                      'TextPayload': (isinstance( payload,
+						                                      dict ) and bool(
+						                                      payload.get( 'text', '' ) )),
+					                                      'JsonPayload': isinstance( payload,
+						                                      (dict, list) ), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'text', '' ):
+						st.markdown( '#### Query Response' )
+						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+					elif isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Query Response',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				_render_fallback_raw( result )
+		
+		# -------- World Population
+		elif active_source == 'world_population':
+			st.markdown( '##### World Population' )
+			result = st.session_state.get( 'worldpop_results', { } )
+			
+			if worldpop_submit:
+				try:
+					if worldpop_mode == 'search':
+						clean_query = _validate_worldpop_query( worldpop_query )
+						clean_asset_path = ''
+					elif worldpop_mode == 'raster_metadata':
+						selected_asset_path = (
+								worldpop_custom_asset_path if worldpop_asset_choice == 'Custom...' else worldpop_asset_choice)
+						clean_asset_path = _validate_worldpop_asset_path( selected_asset_path )
+						clean_query = ''
+					else:
+						clean_query = ''
+						clean_asset_path = ''
+					
+					f = WorldPopulation( )
+					result = f.fetch( mode=str( worldpop_mode ), query=clean_query,
+						asset_path=clean_asset_path, page=int( worldpop_page ),
+						page_size=int( worldpop_page_size ), time=int( worldpop_timeout ) )
+					
+					st.session_state[ 'worldpop_query' ] = clean_query
+					st.session_state[ 'worldpop_asset_path' ] = clean_asset_path
+					st.session_state[ 'worldpop_results' ] = result or { }
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'World Population request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'catalog':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary', { 'Mode': result.get( 'mode', '' ),
+					                                      'HasHtml': (isinstance( payload,
+						                                      dict ) and bool(
+						                                      payload.get( 'html', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'html', '' ):
+						_render_html_preview( '#### Catalog Preview',
+							str( payload.get( 'html', '' ) ) )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'search':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ) and isinstance( payload.get( 'results', [ ] ),
+							list ):
+						rows = payload.get( 'results', [ ] )
+						_render_summary_kv( '#### Summary',
+							{ 'Query': st.session_state.get( 'worldpop_query', '' ),
+									'Page': worldpop_page, 'PageSize': worldpop_page_size,
+									'ResultCount': len( rows ), } )
+						_render_rows_table( '#### Search Results', rows )
+					else:
+						st.json( payload )
+				
+				elif result.get( 'mode', '' ) == 'raster_metadata':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					_render_summary_kv( '#### Summary',
+						{ 'AssetPath': st.session_state.get( 'worldpop_asset_path', '' ),
+								'HasText': (isinstance( payload, dict ) and bool(
+									payload.get( 'text', '' ) )), } )
+					
+					if isinstance( payload, dict ) and payload.get( 'text', '' ):
+						st.markdown( '#### Metadata Response' )
+						st.code( str( payload.get( 'text', '' ) )[ :8000 ] )
+					else:
+						st.json( payload )
+				
+				_render_fallback_raw( result )
+		
+		# -------- CDC WONDER
+		elif active_source == 'cdc_wonder':
+			st.markdown( '##### CDC Wonder' )
+			result = st.session_state.get( 'wonder_results', { } )
+			
+			if wonder_submit:
+				try:
+					selected_dataset_id = (
+							wonder_custom_dataset_id if wonder_dataset_choice == 'Other' else wonder_dataset_choice)
+					clean_dataset_id = _validate_wonder_dataset_id( selected_dataset_id )
+					
+					if wonder_mode == 'query_xml':
+						clean_request_xml = _validate_wonder_xml( wonder_request_xml )
+					else:
+						clean_request_xml = str( wonder_request_xml or '' ).strip( )
+					
+					f = Wonder( )
+					result = f.fetch( mode=str( wonder_mode ), dataset_id=clean_dataset_id,
+						request_xml=clean_request_xml, time=int( wonder_timeout ) )
+					
+					st.session_state[ 'wonder_dataset_id' ] = clean_dataset_id
+					st.session_state[ 'wonder_results' ] = result or { }
+					
+					if (wonder_mode == 'metadata_template' and isinstance( result,
+						dict ) and isinstance( result.get( 'data', { } ), dict )):
+						template_xml = result.get( 'data', { } ).get( 'request_xml', '' )
+						st.session_state[ 'wonder_request_xml' ] = template_xml
+					
+					st.rerun( )
+				
+				except Exception as exc:
+					st.error( 'CDC WONDER request failed.' )
+					st.exception( exc )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_result_metadata( result )
+				
+				if result.get( 'mode', '' ) == 'metadata_template':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ):
+						_render_summary_kv( '#### Template Summary',
+							{ 'DatasetId': payload.get( 'dataset_id', '' ),
+									'Notes': payload.get( 'notes', '' ), } )
+						
+						template_xml = str( payload.get( 'request_xml', '' ) )
+						if template_xml:
+							_render_xml_preview( '#### Starter XML', template_xml )
+						else:
+							st.info( 'No starter XML returned.' )
+				
+				elif result.get( 'mode', '' ) == 'query_xml':
+					payload = result.get( 'data', { } ) if isinstance( result, dict ) else { }
+					
+					if isinstance( payload, dict ):
+						xml_text = str( payload.get( 'xml', '' ) )
+						
+						_render_summary_kv( '#### Response Summary',
+							{ 'DatasetId': st.session_state.get( 'wonder_dataset_id', '' ),
+									'Characters': len( xml_text ),
+									'HasXml': bool( xml_text.strip( ) ), } )
+						
+						_render_xml_preview( '#### XML Response', xml_text )
+					else:
+						st.info( 'No XML response returned.' )
+				
+				_render_fallback_raw( result )
+		
+		# -------- Pub Med
+		elif active_source == 'pub_med_search':
+			st.markdown( '##### Pub Med Search' )
+			if pubmed_clear:
+				remaining = _clear_loader_documents( 'PubMedSearchLoader' )
+				st.info( f'PubMed Loader state cleared. Remaining documents: {remaining}.' )
+			
+			if pubmed_submit:
+				if not pubmed_query or not pubmed_query.strip( ):
+					st.info( 'Enter a PubMed query.' )
+				else:
+					try:
+						loader = PubMedSearchLoader( )
+						documents = loader.load( query=pubmed_query.strip( ),
+							max_docs=int( pubmed_max_docs ) ) or [ ]
+						
+						count = _promote_loader_documents( documents, 'PubMedSearchLoader' )
+						
+						items: list[ dict[ str, Any ] ] = [ ]
+						
+						for i, doc in enumerate( documents, start=1 ):
+							metadata = (doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+								dict ) else { })
+							content = str( getattr( doc, 'page_content', '' ) or '' )
+							
+							items.append( { 'Index': i, 'Title': (
+									metadata.get( 'Title' ) or metadata.get( 'title' ) or ''),
+							                'Published': (
+									                metadata.get( 'Published' ) or metadata.get(
+								                'published' ) or ''), 'Copyright': (
+											metadata.get( 'Copyright Information' ) or metadata.get(
+										'copyright' ) or ''), 'Summary': content,
+							                'Metadata': metadata, } )
+						
+						st.session_state[ 'pubmed_results' ] = { 'mode': 'pubmed',
+						                                         'query': pubmed_query.strip( ),
+						                                         'max_docs': int( pubmed_max_docs ),
+						                                         'count': count, 'items': items, }
+						
+						st.success( f'Loaded {count} PubMed document(s).' )
+					
+					except Exception as exc:
+						st.error( 'PubMed request failed.' )
+						st.exception( exc )
+			
+			result = st.session_state.get( 'pubmed_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv( '#### Summary',
+					{ 'Mode': result.get( 'mode', '' ), 'Query': result.get( 'query', '' ),
+					  'MaxDocs': result.get( 'max_docs', 0 ),
+					  'Returned': result.get( 'count', 0 ), } )
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{ 'Index': item.get( 'Index', '' ), 'Title': item.get( 'Title', '' ),
+							  'Published': item.get( 'Published', '' ), } for item in items ]
+					df_pubmed = pd.DataFrame( table_rows )
+					st.markdown( '#### Results' )
+					st.data_editor( df_pubmed, use_container_width=True, hide_index=True )
+					first = items[ 0 ]
+					_render_summary_kv( '#### First Result', { 'Title': first.get( 'Title', '' ),
+					                                           'Published': first.get( 'Published',
+						                                           '' ),
+					                                           'Copyright': first.get( 'Copyright',
+						                                           '' ), } )
+					
+					st.markdown( '#### Abstract Preview' )
+					st.code( str( first.get( 'Summary', '' ) )[ :8000 ] )
+					
+					with st.expander( 'Records', expanded=False ):
+						for item in items:
+							record_label = str( item.get( 'Title', '' ) or f"Record "
+							                                               f"{item.get( 'Index', '' )}" )
+							with st.expander( f"Record {item.get( 'Index', '' )}: {record_label}",
+									expanded=False ):
+								st.markdown( f"**Published:** {item.get( 'Published', '' )}" )
+								st.markdown( f"**Copyright:** {item.get( 'Copyright', '' )}" )
+								st.markdown( '##### Summary' )
+								st.code( str( item.get( 'Summary', '' ) )[ :8000 ] )
+								
+								metadata = item.get( 'Metadata', { } )
+								if metadata:
+									with st.expander( 'Metadata', expanded=False ):
+										st.json( metadata )
+				else:
+					st.info( 'No PubMed records returned.' )
+				
+				_render_fallback_raw( result )
+		
+		# -------- Open City
+		elif active_source == 'open_city_data':
+			st.markdown( '##### Open City Data' )
+			if open_city_clear:
+				remaining = _clear_loader_documents( 'OpenCityLoader' )
+				st.info( f'Open City Data Loader state cleared. Remaining documents: '
+				         f'{remaining}.' )
+			
+			if open_city_submit:
+				try:
+					selected_city_id = (
+							open_city_custom_id if open_city_choice == 'Other' else open_city_choice)
+					clean_city_id = _validate_open_city_domain( selected_city_id )
+					clean_dataset_id = _validate_open_city_dataset_id( dataset_id )
+					
+					loader = OpenCityLoader( )
+					documents = loader.load( city_id=clean_city_id, dataset_id=clean_dataset_id,
+						limit=int( limit ) ) or [ ]
+					
+					count = _promote_loader_documents( documents, 'OpenCityLoader' )
+					
+					items: list[ dict[ str, Any ] ] = [ ]
+					for i, doc in enumerate( documents, start=1 ):
+						metadata = (doc.metadata if isinstance( getattr( doc, 'metadata', { } ),
+							dict ) else { })
+						content = str( getattr( doc, 'page_content', '' ) or '' )
+						items.append(
+							{ 'Index': i, 'Source': metadata.get( 'source', '' ), 'Row': content,
+							  'Metadata': metadata, } )
+					
+					st.session_state[ 'open_city_id' ] = clean_city_id
+					st.session_state[ 'open_city_results' ] = { 'mode': 'open_city',
+					                                            'city_id': clean_city_id,
+					                                            'dataset_id': clean_dataset_id,
+					                                            'limit': int( limit ),
+					                                            'count': count, 'items': items, }
+					
+					st.success( f'Loaded {count} Open City document(s).' )
+				
+				except Exception as exc:
+					st.error( 'Open City request failed.' )
+					st.exception( exc )
+			
+			result = st.session_state.get( 'open_city_results', { } )
+			
+			if not result:
+				st.text( 'No results.' )
+			else:
+				_render_summary_kv( '#### Summary',
+					{ 'Mode': result.get( 'mode', '' ), 'CityId': result.get( 'city_id', '' ),
+					  'DatasetId': result.get( 'dataset_id', '' ),
+					  'Limit': result.get( 'limit', 0 ), 'Returned': result.get( 'count', 0 ), } )
+				
+				items = result.get( 'items', [ ] ) if isinstance( result, dict ) else [ ]
+				
+				if items:
+					table_rows = [
+							{ 'Index': item.get( 'Index', '' ), 'Source': item.get( 'Source', '' ),
+							  'Preview': str( item.get( 'Row', '' ) )[ :200 ], } for item in items ]
+					
+					df_open_city = pd.DataFrame( table_rows )
+					
+					st.markdown( '#### Results' )
+					st.data_editor( df_open_city, use_container_width=True, hide_index=True )
+					
+					first = items[ 0 ]
+					st.markdown( '#### First Row Preview' )
+					st.code( str( first.get( 'Row', '' ) )[ :8000 ] )
+					
+					with st.expander( 'Records', expanded=False ):
+						for item in items:
+							with st.expander( f"Record {item.get( 'Index', '' )}", expanded=False ):
+								st.markdown( f"**Source:** {item.get( 'Source', '' )}" )
+								st.markdown( '##### Row' )
+								st.code( str( item.get( 'Row', '' ) )[ :8000 ] )
+								
+								metadata = item.get( 'Metadata', { } )
+								if metadata:
+									with st.expander( 'Metadata', expanded=False ):
+										st.json( metadata )
+				else:
+					st.info( 'No city records returned.' )
+				
+				_render_fallback_raw( result )
+		
+		demographic_result_keys: Dict[ str, str ] = { 'u_s_census_bureau': 'census_results',
+				'cdc_socrata': 'socrata_results', 'u_s_health': 'healthdata_results',
+				'who_global': 'who_results', 'united_nations': 'un_results',
+				'world_population': 'worldpop_results', 'cdc_wonder': 'wonder_results',
+				'pub_med_search': 'pubmed_results', 'open_city_data': 'open_city_results', }
+		if active_source in demographic_result_keys:
+			promote_source_result( mode_name='Demographic', source_name=active_source,
+				result=st.session_state.get( demographic_result_keys[ active_source ] ) )
+		render_document_processing_tabs( key_prefix='demographic' )
 		
 # ==============================================================================
 # TEXT GENERATION MODE

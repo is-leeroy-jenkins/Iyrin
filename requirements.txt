@@ -38,6 +38,7 @@ langchain-pinecone
 langchain-google-community
 sentence-transformers
 docx2txt
+python-docx
 chromadb
 pinecone
 llama-cpp-python
