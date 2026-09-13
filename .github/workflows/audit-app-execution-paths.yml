@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/audit-app-execution-paths.yml
       - .github/scripts/fix_app_execution_paths.py
+      - .github/scripts/fix_remaining_execution_paths.py
 
 jobs:
   audit:
@@ -24,7 +25,9 @@ jobs:
           python-version: '3.11'
 
       - name: Apply execution-path repairs
-        run: python .github/scripts/fix_app_execution_paths.py
+        run: |
+          python .github/scripts/fix_app_execution_paths.py
+          python .github/scripts/fix_remaining_execution_paths.py
 
       - name: Repair generated processor header
         run: |
@@ -36,7 +39,7 @@ jobs:
           PY
 
       - name: Compile production Python
-        run: python -m py_compile app.py processing.py processors.py generators.py loaders.py
+        run: python -m compileall -q .
 
       - name: Install static analyzer
         run: python -m pip install --disable-pip-version-check pyflakes
@@ -63,6 +66,7 @@ jobs:
           app_text = Path( 'app.py' ).read_text( encoding='utf-8' )
           processing_text = Path( 'processing.py' ).read_text( encoding='utf-8' )
           config_text = Path( 'config.py' ).read_text( encoding='utf-8' )
+          loaders_text = Path( 'loaders.py' ).read_text( encoding='utf-8' )
           app_tree = ast.parse( app_text )
           processing_tree = ast.parse( processing_text )
           config_tree = ast.parse( config_text )
@@ -119,6 +123,9 @@ jobs:
               if token in app_text:
                   raise RuntimeError( f'Forbidden runtime defect remains: {token}' )
 
+          if 'from langchain_community.chat_models import ChatOpenAI' in loaders_text:
+              raise RuntimeError( 'Stale ChatOpenAI import remains in loaders.py.' )
+
           required_symbols = [
               'render_document_processing_inputs', 'render_document_processing_actions',
               'reset_document_processing_controls', 'clear_if_active',
@@ -154,7 +161,7 @@ jobs:
         run: |
           git config user.name 'Terry Eppler'
           git config user.email 'terry.eppler@gmail.com'
-          git add app.py processing.py processors.py requirements.txt
+          git add app.py processing.py processors.py loaders.py requirements.txt
           if git diff --cached --quiet; then
             echo 'No production repairs detected.'
             exit 1
