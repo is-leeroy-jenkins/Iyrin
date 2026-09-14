@@ -1426,7 +1426,6 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 			df_overlay_map = df_overlay_source.loc[ overlay_mask ].copy( )
 		
 		df_user_map = pd.DataFrame( )
-		
 		if use_user_location and df_base_map.empty and df_overlay_map.empty:
 			user_latitude = st.session_state.get( 'latitude', None )
 			user_longitude = st.session_state.get( 'longitude', None )
