@@ -75,7 +75,7 @@ from fetchers import (GoogleWeather, OpenWeather, HistoricalWeather, ClimateData
                       AirNow, UvIndex, OpenAQ, PurpleAir, EnviroFacts, Firms, EoNet,
                       USGSEarthquakes, USGSWaterData, USGSTheNationalMap, GlobalImagery,
                       NavalObservatory, SatelliteCenter, SpaceWeather, AstroCatalog, AstroQuery,
-                      StarMap, StarChart, WebFetcher, CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder)
+                      StarMap, StarChart, WebFetcher, EarthObservatory, NearbyObjects, OpenScience, USGSScienceBase, CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder)
 
 # ---------------------------------------------------------------------
 # SESSION STATE INITIALIZATION
@@ -101,6 +101,9 @@ if 'df_raw' not in st.session_state:
 
 if 'df_dataset' not in st.session_state:
 	st.session_state[ 'df_dataset' ] = pd.DataFrame( )
+
+if 'active_dataset_name' not in st.session_state:
+	st.session_state[ 'active_dataset_name' ] = cfg.DEFAULT_DATA
 
 if 'df_reports_geocode_preview' not in st.session_state:
 	st.session_state[ 'df_reports_geocode_preview' ] = pd.DataFrame( )
@@ -1347,23 +1350,21 @@ def bootstrap_browser_geolocation( geocoder: Geocoder ) -> None:
 # ------------- VISUALIZATION UTILITIES
 
 def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=None,
-		use_user_location: bool=True, key_prefix: str='reports_map' ) -> None:
+		use_user_location: bool=True, key_prefix: str='reports_map', source_name: str='' ) -> None:
 	"""
 	
 		Purpose:
 		--------
-		Render an interactive PyDeck map for records containing Latitude and Longitude
-		fields. The function supports base report records, optional overlay records, a
-		user-location fallback, and a dynamic map-style selector.
+		Render an interactive PyDeck map for records containing Latitude and Longitude fields.
+		The map title, filters, tooltip fields, and mapped-record table adapt to known source schemas.
 
 		Parameters:
 		-----------
-		df (pd.DataFrame): Source DataFrame containing geospatial report records.
-		df_overlay (Optional[pd.DataFrame]): Optional DataFrame containing temporary
-			geocoded results to overlay on top of the base report layer.
-		use_user_location (bool): Use the global/user location as a fallback map point
-			when no valid base or overlay coordinates are available.
+		df (pd.DataFrame): Source DataFrame containing geospatial records.
+		df_overlay (Optional[pd.DataFrame]): Optional geocoded records rendered above the base layer.
+		use_user_location (bool): Use the global/user location as a fallback map point.
 		key_prefix (str): Unique Streamlit widget key prefix for this map instance.
+		source_name (str): Active database table or custom dataset name displayed as the map header.
 
 		Returns:
 		--------
@@ -1371,7 +1372,35 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 		
 	"""
 	try:
-		st.subheader( 'Locations' )
+		active_source = str( source_name or st.session_state.get( 'active_dataset_name', '' )
+			or cfg.DEFAULT_DATA ).strip( )
+		st.subheader( active_source )
+		
+		profiles: Dict[ str, Dict[ str, List[ str ] ] ] = {
+			'UAP Sightings': {
+				'filters': [ 'Year', 'Country', 'State', 'Shape' ],
+				'tooltip': [ 'CalendarDate', 'City', 'State', 'Country', 'Latitude', 'Longitude',
+				             'Shape', 'Summary' ],
+				'display': [ 'Year', 'Month', 'Day', 'CalendarDate', 'City', 'State', 'Country',
+				             'Latitude', 'Longitude', 'Shape', 'Summary' ],
+			},
+			'Nuclear Sites': {
+				'filters': [ 'Name', 'Capacity', 'City', 'State' ],
+				'tooltip': [ 'Name', 'Capacity', 'City', 'State', 'Latitude', 'Longitude' ],
+				'display': [ 'Name', 'Capacity', 'City', 'State', 'Latitude', 'Longitude' ],
+			},
+			'Airports': {
+				'filters': [ 'Name', 'Identifier', 'Elevation', 'City', 'State' ],
+				'tooltip': [ 'Name', 'Identifier', 'Elevation', 'City', 'State', 'Latitude', 'Longitude' ],
+				'display': [ 'Name', 'Identifier', 'Elevation', 'City', 'State', 'Latitude', 'Longitude' ],
+			},
+			'EPA Sites': {
+				'filters': [ 'Name', 'City', 'State' ],
+				'tooltip': [ 'Name', 'City', 'State', 'Latitude', 'Longitude' ],
+				'display': [ 'Name', 'City', 'State', 'Latitude', 'Longitude' ],
+			},
+		}
+		profile = profiles.get( active_source, { } )
 		df_source = pd.DataFrame( ) if df is None else df.copy( )
 		df_overlay_source = pd.DataFrame( ) if df_overlay is None else df_overlay.copy( )
 		required_cols = [ 'Latitude', 'Longitude' ]
@@ -1383,72 +1412,60 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 				return
 		
 		if not df_overlay_source.empty:
-			overlay_missing_cols = [
-					col for col in required_cols if col not in df_overlay_source.columns ]
-			
+			overlay_missing_cols = [ col for col in required_cols
+				if col not in df_overlay_source.columns ]
 			if overlay_missing_cols:
 				df_overlay_source = pd.DataFrame( )
 		
 		total_count = len( df_source )
 		df_base_map = pd.DataFrame( )
-		
 		if not df_source.empty:
 			df_source[ 'Latitude' ] = pd.to_numeric( df_source[ 'Latitude' ], errors='coerce' )
 			df_source[ 'Longitude' ] = pd.to_numeric( df_source[ 'Longitude' ], errors='coerce' )
-			
 			base_mask = (df_source[ 'Latitude' ].notna( )
 			             & df_source[ 'Longitude' ].notna( )
 			             & df_source[ 'Latitude' ].between( -90.0, 90.0 )
 			             & df_source[ 'Longitude' ].between( -180.0, 180.0 )
 			             & ~((df_source[ 'Latitude' ] == 0.0)
 			                 & (df_source[ 'Longitude' ] == 0.0)))
-			
 			df_base_map = df_source.loc[ base_mask ].copy( )
 		
 		mapped_count = len( df_base_map )
 		missing_count = total_count - mapped_count
 		df_overlay_map = pd.DataFrame( )
-		
 		if not df_overlay_source.empty:
-			df_overlay_source[ 'Latitude' ] = pd.to_numeric( df_overlay_source[ 'Latitude' ],
-				errors='coerce' )
-			
-			df_overlay_source[ 'Longitude' ] = pd.to_numeric( df_overlay_source[ 'Longitude' ],
-				errors='coerce' )
-			
+			df_overlay_source[ 'Latitude' ] = pd.to_numeric(
+				df_overlay_source[ 'Latitude' ], errors='coerce' )
+			df_overlay_source[ 'Longitude' ] = pd.to_numeric(
+				df_overlay_source[ 'Longitude' ], errors='coerce' )
 			overlay_mask = (df_overlay_source[ 'Latitude' ].notna( )
 			                & df_overlay_source[ 'Longitude' ].notna( )
 			                & df_overlay_source[ 'Latitude' ].between( -90.0, 90.0 )
 			                & df_overlay_source[ 'Longitude' ].between( -180.0, 180.0 )
 			                & ~((df_overlay_source[ 'Latitude' ] == 0.0)
 			                    & (df_overlay_source[ 'Longitude' ] == 0.0)))
-			
 			df_overlay_map = df_overlay_source.loc[ overlay_mask ].copy( )
 		
 		df_user_map = pd.DataFrame( )
 		if use_user_location and df_base_map.empty and df_overlay_map.empty:
 			user_latitude = st.session_state.get( 'latitude', None )
 			user_longitude = st.session_state.get( 'longitude', None )
-			
 			if has_valid_coordinates( user_latitude, user_longitude ):
 				user_location = compose_location_from_state( )
 				user_description = st.session_state.get( 'description', '' )
-				
 				if not user_location:
 					user_location = (f'{float( user_latitude ):.4f},'
 					                 f'{float( user_longitude ):.4f}')
-				
 				df_user_map = pd.DataFrame( [ {
-						'ID': 'USER-LOCATION',
-						'CalendarDate': dt.datetime.now( ).strftime( '%Y-%m-%d %H:%M:%S' ),
-						'City': user_location,
-						'State': '',
-						'Country': '',
-						'Latitude': float( user_latitude ),
-						'Longitude': float( user_longitude ),
-						'Shape': 'User Location',
-						'Summary': (user_description
-						            or 'Current user location fallback.'), } ] )
+					'CalendarDate': dt.datetime.now( ).strftime( '%Y-%m-%d %H:%M:%S' ),
+					'City': user_location,
+					'State': '',
+					'Country': '',
+					'Latitude': float( user_latitude ),
+					'Longitude': float( user_longitude ),
+					'Shape': 'User Location',
+					'Summary': user_description or 'Current user location fallback.',
+				} ] )
 		
 		metric_c1, metric_c2, metric_c3, metric_c4 = st.columns( 4, border=True )
 		metric_c1.metric( 'Total Records', f'{total_count:,}' )
@@ -1461,117 +1478,69 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 			st.info( 'No usable base, overlay, or user-location coordinates are available.' )
 			return
 		
-		if not df_base_map.empty:
-			filter_c1, filter_c2, filter_c3, filter_c4 = st.columns(
-				[ 0.25, 0.25, 0.25, 0.25 ], border=True )
-			
-			with filter_c1:
-				if 'Year' in df_base_map.columns:
-					year_options = sorted(
-						[ str( value ) for value in df_base_map[ 'Year' ].dropna( ).unique( ) ] )
-					selected_years = st.multiselect( 'Year', year_options,
-						key=f'{key_prefix}_years' )
-					
-					if selected_years:
-						df_base_map = df_base_map[
-							df_base_map[ 'Year' ].astype( str ).isin( selected_years ) ]
-			
-			with filter_c2:
-				if 'Country' in df_base_map.columns:
-					country_options = sorted(
-						[ str( value ) for value in df_base_map[ 'Country' ].dropna( ).unique( ) ] )
-					selected_countries = st.multiselect( 'Country', country_options,
-						key=f'{key_prefix}_countries' )
-					
-					if selected_countries:
-						df_base_map = df_base_map[
-							df_base_map[ 'Country' ].astype( str ).isin( selected_countries ) ]
-			
-			with filter_c3:
-				if 'State' in df_base_map.columns:
-					state_options = sorted(
-						[ str( value ) for value in df_base_map[ 'State' ].dropna( ).unique( ) ] )
-					selected_states = st.multiselect( 'State', state_options,
-						key=f'{key_prefix}_states' )
-					
-					if selected_states:
-						df_base_map = df_base_map[
-							df_base_map[ 'State' ].astype( str ).isin( selected_states ) ]
-			
-			with filter_c4:
-				if 'Shape' in df_base_map.columns:
-					shape_options = sorted(
-						[ str( value ) for value in df_base_map[ 'Shape' ].dropna( ).unique( ) ] )
-					selected_shapes = st.multiselect( 'Shape', shape_options,
-						key=f'{key_prefix}_shapes' )
-					
-					if selected_shapes:
-						df_base_map = df_base_map[
-							df_base_map[ 'Shape' ].astype( str ).isin( selected_shapes ) ]
+		filter_fields = [ col for col in profile.get( 'filters',
+			[ 'Year', 'Country', 'State', 'Shape' ] ) if col in df_base_map.columns ]
+		if not df_base_map.empty and filter_fields:
+			for row_start in range( 0, len( filter_fields ), 2 ):
+				filter_columns = st.columns( 2, border=True )
+				for offset, field in enumerate( filter_fields[ row_start: row_start + 2 ] ):
+					with filter_columns[ offset ]:
+						options = sorted( [ str( value ) for value in
+							df_base_map[ field ].dropna( ).unique( ) ] )
+						field_key = re.sub( r'[^0-9a-zA-Z_]+', '_', field.lower( ) )
+						selected_values = st.multiselect( field, options,
+							key=f'{key_prefix}_{field_key}' )
+						if selected_values:
+							df_base_map = df_base_map[
+								df_base_map[ field ].astype( str ).isin( selected_values ) ]
 		
 		if df_base_map.empty and df_overlay_map.empty and df_user_map.empty:
 			st.info( 'No mapped records match the selected filters.' )
 			return
 		
 		map_style_options = {
-				'Carto Positron': 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-				'Carto Dark Matter': 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-				'Carto Voyager': 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-				'Dark': 'dark',
-				'Light': 'light',
-				'Road': 'road',
-				'Satellite': 'satellite',
-				'Dark - No Labels': 'dark_no_labels',
-				'Light - No Labels': 'light_no_labels',
-				'Streamlit Theme': None,
+			'Carto Positron': 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+			'Carto Dark Matter': 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+			'Carto Voyager': 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+			'Dark': 'dark', 'Light': 'light', 'Road': 'road', 'Satellite': 'satellite',
+			'Dark - No Labels': 'dark_no_labels', 'Light - No Labels': 'light_no_labels',
+			'Streamlit Theme': None,
 		}
-		
 		control_c1, control_c2, control_c3, control_c4 = st.columns(
 			[ 0.20, 0.20, 0.30, 0.30 ], border=True )
-		
 		with control_c1:
 			zoom_level = st.slider( 'Initial Zoom', min_value=0, max_value=50, step=1,
 				value=5, key=f'{key_prefix}_zoom' )
-		
 		with control_c2:
 			point_radius = st.slider( 'Point Radius', min_value=1, max_value=50, value=1,
 				step=5, key=f'{key_prefix}_radius' )
-		
 		with control_c3:
-			selected_map_style = st.selectbox(
-				'Map Style',
-				list( map_style_options.keys( ) ),
-				index=1,
-				key=f'{key_prefix}_style' )
-			
+			selected_map_style = st.selectbox( 'Map Style', list( map_style_options.keys( ) ),
+				index=1, key=f'{key_prefix}_style' )
 			map_style = map_style_options[ selected_map_style ]
-		
 		with control_c4:
 			if len( df_base_map ) > 100:
 				max_records = st.slider( 'Maximum Records', min_value=100,
 					max_value=len( df_base_map ), value=min( 2500, len( df_base_map ) ),
 					step=500, key=f'{key_prefix}_limit' )
-				
 				df_base_map = df_base_map.head( max_records )
 			elif not df_base_map.empty:
-				st.caption( f'DisplIyring all {len( df_base_map ):,} mapped base records.' )
+				st.caption( f'Displaying all {len( df_base_map ):,} mapped base records.' )
 			elif not df_overlay_map.empty:
-				st.caption( f'DisplIyring {len( df_overlay_map ):,} overlay record(s).' )
+				st.caption( f'Displaying {len( df_overlay_map ):,} overlay record(s).' )
 			else:
-				st.caption( 'DisplIyring current user/global location fallback.' )
+				st.caption( 'Displaying current user/global location fallback.' )
 		
+		tooltip_fields = profile.get( 'tooltip', [ 'City', 'State', 'Country',
+			'Latitude', 'Longitude', 'Shape', 'Summary' ] )
 		for df_target in [ df_base_map, df_overlay_map, df_user_map ]:
 			if df_target.empty:
 				continue
-			
-			for col in [ 'ID', 'CalendarDate', 'City', 'State', 'Country', 'Shape', 'Summary' ]:
+			for col in tooltip_fields:
 				if col not in df_target.columns:
 					df_target[ col ] = ''
-			
-			df_target[ 'MapSummary' ] = df_target[ 'Summary' ].astype( str ).str.slice( 0 )
 			df_target[ 'Position' ] = df_target.apply(
-				lambda row: [ float( row[ 'Longitude' ] ), float( row[ 'Latitude' ] ) ],
-				axis=1 )
+				lambda row: [ float( row[ 'Longitude' ] ), float( row[ 'Latitude' ] ) ], axis=1 )
 		
 		if not df_base_map.empty:
 			df_view = df_base_map
@@ -1582,58 +1551,47 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 		
 		view_state = pdk.ViewState( latitude=float( df_view[ 'Latitude' ].median( ) ),
 			longitude=float( df_view[ 'Longitude' ].median( ) ), zoom=zoom_level, pitch=0 )
-		
 		layers = [ ]
-		
 		if not df_base_map.empty:
 			layers.append( pdk.Layer( 'ScatterplotLayer', data=df_base_map,
 				get_position='Position', get_radius=point_radius,
-				get_fill_color=[ 0, 120, 252, 160 ],
-				get_line_color=[ 255, 255, 255, 180 ], line_width_min_pixels=1,
-				radius_min_pixels=4, radius_max_pixels=24, filled=True,
-				stroked=True, pickable=True ) )
-		
+				get_fill_color=[ 0, 120, 252, 160 ], get_line_color=[ 255, 255, 255, 180 ],
+				line_width_min_pixels=1, radius_min_pixels=4, radius_max_pixels=24,
+				filled=True, stroked=True, pickable=True ) )
 		if not df_overlay_map.empty:
 			layers.append( pdk.Layer( 'ScatterplotLayer', data=df_overlay_map,
 				get_position='Position', get_radius=max( point_radius * 2, 20000 ),
 				get_fill_color=[ 255, 80, 0, 220 ], get_line_color=[ 255, 255, 255, 255 ],
-				line_width_min_pixels=2, radius_min_pixels=8, radius_max_pixels=40, filled=True,
-				stroked=True, pickable=True ) )
-		
+				line_width_min_pixels=2, radius_min_pixels=8, radius_max_pixels=40,
+				filled=True, stroked=True, pickable=True ) )
 		if not df_user_map.empty:
 			layers.append( pdk.Layer( 'ScatterplotLayer', data=df_user_map,
 				get_position='Position', get_radius=max( point_radius * 2, 20000 ),
-				get_fill_color=[ 0, 180, 80, 230 ],
-				get_line_color=[ 255, 255, 255, 255 ], line_width_min_pixels=2,
-				radius_min_pixels=10, radius_max_pixels=42, filled=True, stroked=True,
-				pickable=True ) )
+				get_fill_color=[ 0, 180, 80, 230 ], get_line_color=[ 255, 255, 255, 255 ],
+				line_width_min_pixels=2, radius_min_pixels=10, radius_max_pixels=42,
+				filled=True, stroked=True, pickable=True ) )
 		
+		labels = { 'CalendarDate': 'Date' }
+		tooltip_lines = [ ]
+		for field in tooltip_fields:
+			label = labels.get( field, field )
+			if field == 'Summary':
+				tooltip_lines.append(
+					'<b>Summary:</b><div style="max-width:320px;white-space:normal;overflow-wrap:anywhere;">{Summary}</div>' )
+			else:
+				tooltip_lines.append( f'<b>{label}:</b> {{{field}}}<br/>' )
 		tooltip = {
-				'html': (
-						'<b>ID:</b> {ID}<br/>'
-						'<b>Date:</b> {CalendarDate}<br/>'
-						'<b>Location:</b> {City}, {State}, {Country}<br/>'
-						'<b>Coordinates:</b> {Latitude}, {Longitude}<br/>'
-						'<b>Shape:</b> {Shape}<br/>'
-						'<b>Summary:</b> {MapSummary}'
-				),
-				'style': {
-						'backgroundColor': 'rgba(0, 0, 0, 0.85)',
-						'color': 'white',
-						'fontSize': '12px',
-				},
+			'html': ''.join( tooltip_lines ),
+			'style': { 'backgroundColor': 'rgba(0, 0, 0, 0.85)', 'color': 'white',
+				'fontSize': '12px' },
 		}
-		
 		set_blue_divider( )
-		
 		deck = pdk.Deck( layers=layers, initial_view_state=view_state,
 			map_style=map_style, tooltip=tooltip )
-		
 		st.pydeck_chart( deck, use_container_width=True )
 		
 		show_table = st.checkbox( 'Show mapped records table', value=False,
 			key=f'{key_prefix}_show_table' )
-		
 		if show_table:
 			if df_base_map.empty:
 				if not df_user_map.empty:
@@ -1642,12 +1600,9 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 						use_container_width=True, disabled=True )
 				else:
 					st.info( 'No base mapped records are available to display.' )
-			
 			else:
-				display_cols = [ 'ID', 'Year', 'Month', 'Day', 'CalendarDate', 'City', 'State',
-				                 'Country', 'Latitude', 'Longitude', 'Shape', 'Summary' ]
-				display_cols = [ col for col in display_cols if col in df_base_map.columns ]
-				
+				display_cols = [ col for col in profile.get( 'display', list( df_base_map.columns ) )
+					if col in df_base_map.columns and col != 'Position' ]
 				st.data_editor( df_base_map[ display_cols ], key=f'{key_prefix}_table',
 					use_container_width=True, disabled=True )
 	
@@ -3443,6 +3398,7 @@ with st.sidebar:
 				df_default = pd.read_sql_query( f'SELECT * FROM "{cfg.DEFAULT_DATA}"', connection )
 				
 				df_original = df_default.copy( )
+				st.session_state[ 'active_dataset_name' ] = cfg.DEFAULT_DATA
 				log_step( f'Loaded Database Table: {cfg.DEFAULT_DATA}' )
 		
 		elif source == 'Database Data':
@@ -3468,6 +3424,7 @@ with st.sidebar:
 								connection )
 							
 							df_original = df_default.copy( )
+							st.session_state[ 'active_dataset_name' ] = selected_table
 							st.session_state[ 'map_mode_table' ] = selected_table
 							log_step( f'Loaded Database Table: {selected_table}' )
 					else:
@@ -3483,6 +3440,7 @@ with st.sidebar:
 					df_default = pd.read_csv( uploaded )
 				
 				df_original = df_default.copy( )
+				st.session_state[ 'active_dataset_name' ] = uploaded.name
 				log_step( f'Loaded uploaded file: {uploaded.name}' )
 			else:
 				st.info( 'Upload a spreadsheet to load data.' )
@@ -3725,20 +3683,21 @@ if mode == 'Geocoding':
 		# REPORTS MAP
 		# ------------------------------------------------------------------------------
 		try:
-			tables = list_tables( )
-			if cfg.DEFAULT_DATA not in tables:
-				st.warning( f'Default table "{cfg.DEFAULT_DATA}" was not found in {cfg.DB_PATH}.' )
+			df_reports = get_loaded_dataset( )
+			if df_reports is None:
+				st.warning( 'No dataset is currently loaded for mapping.' )
 			else:
-				df_reports = read_table( cfg.DEFAULT_DATA )
 				df_overlay = st.session_state.get( 'df_geocoding_map_results', pd.DataFrame( ) )
-				create_reports_map( df_reports, df_overlay=df_overlay )
+				dataset_name = st.session_state.get( 'active_dataset_name', cfg.DEFAULT_DATA )
+				create_reports_map( df_reports, df_overlay=df_overlay,
+					source_name=dataset_name )
 				if df_overlay is not None and not df_overlay.empty:
 					with st.expander( 'Geocoded Map Results', expanded=False ):
 						st.data_editor( df_overlay, key='geocoding_map_results_table',
 							use_container_width=True, disabled=True )
 		
 		except Exception as e:
-			st.error( f'Reports map failed: {e}' )
+			st.error( f'Geocoding map failed: {e}' )
 
 # ==============================================================================
 # MAP MODE
@@ -3781,7 +3740,7 @@ elif mode == 'Interactive Map':
 				df_overlay = st.session_state.get( 'df_geocoding_map_results',
 					pd.DataFrame( ) )
 			
-			create_reports_map( df_map_source, df_overlay=df_overlay )
+			create_reports_map( df_map_source, df_overlay=df_overlay, source_name=table )
 			if include_overlay and df_overlay is not None and not df_overlay.empty:
 				with st.expander( 'Geocoded Overlay Records', expanded=False ):
 					st.data_editor( df_overlay, key='map_mode_overlay_records',
@@ -7807,6 +7766,69 @@ elif mode == 'Environmental':
 				st.divider( )
 				render_source_processing_controls( 'env', 'env_last_result', 'env_last_source', 'EONET', 'env_eonet' )
 		
+
+			# --------- NASA EARTH OBSERVATORY
+			with st.expander( '🌍 NASA Earth Observatory', expanded=False ):
+				earth_mode = st.selectbox( 'Mode',
+					options=[ 'events', 'categories', 'sources', 'layers' ],
+					key='env_earth_observatory_mode' )
+				earth_timeout = st.slider( 'Timeout', min_value=1, max_value=60, value=20,
+					key='env_earth_observatory_timeout' )
+				earth_status = 'open'
+				earth_category = ''
+				earth_source = ''
+				earth_limit = 20
+				earth_days = 30
+				earth_start_date = ''
+				earth_end_date = ''
+				if earth_mode == 'events':
+					earth_c1, earth_c2 = st.columns( 2 )
+					with earth_c1:
+						earth_status = st.selectbox( 'Status', [ 'open', 'closed', 'all' ],
+							key='env_earth_observatory_status' )
+						earth_category = st.text_input( 'Category',
+							key='env_earth_observatory_category' )
+						earth_limit = st.slider( 'Maximum Events', min_value=1, max_value=500,
+							value=20, key='env_earth_observatory_limit' )
+					with earth_c2:
+						earth_source = st.text_input( 'Source',
+							key='env_earth_observatory_source' )
+						earth_days = st.slider( 'Prior Days', min_value=1, max_value=3650,
+							value=30, key='env_earth_observatory_days' )
+						earth_start_date = st.text_input( 'Start Date', placeholder='YYYY-MM-DD',
+							key='env_earth_observatory_start_date' )
+						earth_end_date = st.text_input( 'End Date', placeholder='YYYY-MM-DD',
+							key='env_earth_observatory_end_date' )
+				elif earth_mode == 'layers':
+					earth_category = st.text_input( 'Category',
+						key='env_earth_observatory_layer_category' )
+				earth_btn_c1, earth_btn_c2 = st.columns( 2 )
+				with earth_btn_c1:
+					if st.button( label='Run', icon='🏃', key='env_earth_observatory_run',
+							use_container_width=True ):
+						try:
+							service = EarthObservatory( )
+							result = service.fetch( mode=earth_mode, status=earth_status,
+								category=earth_category, source=earth_source, limit=int( earth_limit ),
+								days=int( earth_days ), start_date=earth_start_date,
+								end_date=earth_end_date, time=int( earth_timeout ) )
+							st.session_state[ 'env_last_source' ] = 'NASA Earth Observatory'
+							st.session_state[ 'env_last_result' ] = result or { }
+							st.session_state[ 'env_last_latitude' ] = None
+							st.session_state[ 'env_last_longitude' ] = None
+							st.success( 'NASA Earth Observatory request completed.' )
+						except Exception as ex:
+							st.error( f'NASA Earth Observatory request failed: {ex}' )
+				with earth_btn_c2:
+					if st.button( label='Clear', icon='🧹', key='env_earth_observatory_clear',
+							use_container_width=True ):
+						st.session_state[ 'env_last_source' ] = ''
+						st.session_state[ 'env_last_result' ] = { }
+						st.session_state[ 'env_last_latitude' ] = None
+						st.session_state[ 'env_last_longitude' ] = None
+				st.divider( )
+				render_source_processing_controls( 'env', 'env_last_result', 'env_last_source',
+					'NASA Earth Observatory', 'env_earth_observatory' )
 		with enviro_c2:
 			render_mode_document_tabs( 'env', '📄 Loaded' )
 			
@@ -8554,6 +8576,173 @@ elif mode == 'Astronomical':
 				render_source_processing_controls( 'astro', 'astro_last_result',
 					'astro_last_source', 'Star Map', 'astro_star_map' )
 				
+
+			# --------- JPL NEARBY OBJECTS
+			with st.expander( '☄️ JPL Nearby Objects', expanded=False ):
+				nearby_mode = st.selectbox( 'Mode',
+					options=[ 'close_approaches', 'object_lookup', 'nhats_summary', 'nhats_object',
+					          'fireballs' ], key='astro_nearby_mode' )
+				nearby_timeout = st.slider( 'Timeout', min_value=1, max_value=60, value=20,
+					key='astro_nearby_timeout' )
+				nearby_start_date = ''
+				nearby_end_date = ''
+				nearby_query = ''
+				nearby_query_type = 'sstr'
+				nearby_dist_max = '10LD'
+				nearby_body = 'Earth'
+				nearby_sort = 'date'
+				nearby_limit = 20
+				nearby_dv = 6.0
+				nearby_dur = 360
+				nearby_stay = 8
+				nearby_launch = '2020-2045'
+				nearby_h = 26.0
+				nearby_occ = 7
+				nearby_include_physical = True
+				nearby_include_close = True
+				nearby_include_discovery = True
+				nearby_ca_body = 'Earth'
+				if nearby_mode == 'close_approaches':
+					nearby_c1, nearby_c2 = st.columns( 2 )
+					with nearby_c1:
+						nearby_start_date = st.text_input( 'Start Date', placeholder='YYYY-MM-DD',
+							key='astro_nearby_start_date' )
+						nearby_dist_max = st.text_input( 'Maximum Distance', value='10LD',
+							key='astro_nearby_dist_max' )
+						nearby_sort = st.selectbox( 'Sort', [ 'date', 'dist' ],
+							key='astro_nearby_sort' )
+					with nearby_c2:
+						nearby_end_date = st.text_input( 'End Date', placeholder='YYYY-MM-DD',
+							key='astro_nearby_end_date' )
+						nearby_body = st.selectbox( 'Body', [ 'Earth', 'Moon', 'Mars', 'Juptr' ],
+							key='astro_nearby_body' )
+						nearby_limit = st.slider( 'Maximum Records', min_value=1, max_value=500,
+							value=20, key='astro_nearby_limit' )
+				elif nearby_mode == 'object_lookup':
+					nearby_query = st.text_input( 'Object', value='Apophis',
+						key='astro_nearby_query' )
+					nearby_query_type = st.selectbox( 'Query Type', [ 'sstr', 'spk', 'des' ],
+						key='astro_nearby_query_type' )
+					nearby_opt_c1, nearby_opt_c2 = st.columns( 2 )
+					with nearby_opt_c1:
+						nearby_include_physical = st.checkbox( 'Physical Parameters', value=True,
+							key='astro_nearby_physical' )
+						nearby_include_close = st.checkbox( 'Close Approaches', value=True,
+							key='astro_nearby_close' )
+					with nearby_opt_c2:
+						nearby_include_discovery = st.checkbox( 'Discovery Data', value=True,
+							key='astro_nearby_discovery' )
+						nearby_ca_body = st.selectbox( 'Approach Body', [ 'Earth', 'Moon', 'Mars' ],
+							key='astro_nearby_ca_body' )
+				elif nearby_mode in [ 'nhats_summary', 'nhats_object' ]:
+					if nearby_mode == 'nhats_object':
+						nearby_query = st.text_input( 'Designation', key='astro_nearby_designation' )
+					nhats_c1, nhats_c2 = st.columns( 2 )
+					with nhats_c1:
+						nearby_dv = st.number_input( 'Maximum ΔV', min_value=0.0, value=6.0,
+							step=0.1, key='astro_nearby_dv' )
+						nearby_stay = st.number_input( 'Minimum Stay', min_value=0, value=8,
+							step=1, key='astro_nearby_stay' )
+						nearby_h = st.number_input( 'Maximum H', min_value=0.0, value=26.0,
+							step=0.1, key='astro_nearby_h' )
+					with nhats_c2:
+						nearby_dur = st.number_input( 'Maximum Duration', min_value=1, value=360,
+							step=1, key='astro_nearby_dur' )
+						nearby_launch = st.text_input( 'Launch Window', value='2020-2045',
+							key='astro_nearby_launch' )
+						nearby_occ = st.number_input( 'Minimum Opportunities', min_value=1, value=7,
+							step=1, key='astro_nearby_occ' )
+				else:
+					nearby_start_date = st.text_input( 'Minimum Date', placeholder='YYYY-MM-DD',
+						key='astro_nearby_fireball_date' )
+					nearby_limit = st.slider( 'Maximum Records', min_value=1, max_value=500,
+						value=20, key='astro_nearby_fireball_limit' )
+				nearby_btn_c1, nearby_btn_c2 = st.columns( 2 )
+				with nearby_btn_c1:
+					if st.button( label='Run', icon='🏃', key='astro_nearby_run',
+							use_container_width=True ):
+						try:
+							service = NearbyObjects( )
+							result = service.fetch( mode=nearby_mode, start_date=nearby_start_date,
+								end_date=nearby_end_date, query=nearby_query,
+								query_type=nearby_query_type, dist_max=nearby_dist_max,
+								body=nearby_body, sort=nearby_sort, limit=int( nearby_limit ),
+								dv=float( nearby_dv ), dur=int( nearby_dur ), stay=int( nearby_stay ),
+								launch=nearby_launch, h=float( nearby_h ), occ=int( nearby_occ ),
+								include_physical=bool( nearby_include_physical ),
+								include_close_approaches=bool( nearby_include_close ),
+								ca_body=nearby_ca_body, include_discovery=bool( nearby_include_discovery ),
+								time=int( nearby_timeout ) )
+							st.session_state[ 'astro_last_source' ] = 'JPL Nearby Objects'
+							st.session_state[ 'astro_last_result' ] = normalize( result ) or { }
+							st.session_state[ 'astro_last_latitude' ] = None
+							st.session_state[ 'astro_last_longitude' ] = None
+							st.session_state[ 'astro_last_url' ] = ''
+							st.success( 'JPL Nearby Objects request completed.' )
+						except Exception as ex:
+							st.error( f'JPL Nearby Objects request failed: {ex}' )
+				with nearby_btn_c2:
+					if st.button( label='Clear', icon='🧹', key='astro_nearby_clear',
+							use_container_width=True ):
+						st.session_state[ 'astro_last_source' ] = ''
+						st.session_state[ 'astro_last_result' ] = { }
+						st.session_state[ 'astro_last_latitude' ] = None
+						st.session_state[ 'astro_last_longitude' ] = None
+						st.session_state[ 'astro_last_url' ] = ''
+				st.divider( )
+				render_source_processing_controls( 'astro', 'astro_last_result',
+					'astro_last_source', 'JPL Nearby Objects', 'astro_nearby_objects' )
+
+			# --------- NASA OPEN SCIENCE DATA REPOSITORY
+			with st.expander( '🧬 NASA Open Science Data', expanded=False ):
+				open_science_mode = st.selectbox( 'Mode',
+					options=[ 'dataset', 'metadata', 'assays', 'data' ],
+					key='astro_open_science_mode' )
+				open_science_timeout = st.slider( 'Timeout', min_value=1, max_value=60, value=20,
+					key='astro_open_science_timeout' )
+				open_science_query = ''
+				open_science_accession = ''
+				open_science_format = 'json'
+				if open_science_mode == 'dataset':
+					open_science_accession = st.text_input( 'OSDR Accession', value='OSD-48',
+						key='astro_open_science_accession' )
+				else:
+					open_science_c1, open_science_c2 = st.columns( 2 )
+					with open_science_c1:
+						open_science_query = st.text_input( 'Query',
+							key='astro_open_science_query' )
+					with open_science_c2:
+						open_science_format = st.selectbox( 'Format',
+							options=[ 'json', 'csv', 'tsv', 'browser' ],
+							key='astro_open_science_format' )
+				open_science_btn_c1, open_science_btn_c2 = st.columns( 2 )
+				with open_science_btn_c1:
+					if st.button( label='Run', icon='🏃', key='astro_open_science_run',
+							use_container_width=True ):
+						try:
+							service = OpenScience( )
+							result = service.fetch( mode=open_science_mode, query=open_science_query,
+								accession=open_science_accession, format_value=open_science_format,
+								time=int( open_science_timeout ) )
+							st.session_state[ 'astro_last_source' ] = 'NASA Open Science Data'
+							st.session_state[ 'astro_last_result' ] = normalize( result ) or { }
+							st.session_state[ 'astro_last_latitude' ] = None
+							st.session_state[ 'astro_last_longitude' ] = None
+							st.session_state[ 'astro_last_url' ] = ''
+							st.success( 'NASA Open Science Data request completed.' )
+						except Exception as ex:
+							st.error( f'NASA Open Science Data request failed: {ex}' )
+				with open_science_btn_c2:
+					if st.button( label='Clear', icon='🧹', key='astro_open_science_clear',
+							use_container_width=True ):
+						st.session_state[ 'astro_last_source' ] = ''
+						st.session_state[ 'astro_last_result' ] = { }
+						st.session_state[ 'astro_last_latitude' ] = None
+						st.session_state[ 'astro_last_longitude' ] = None
+						st.session_state[ 'astro_last_url' ] = ''
+				st.divider( )
+				render_source_processing_controls( 'astro', 'astro_last_result',
+					'astro_last_source', 'NASA Open Science Data', 'astro_open_science' )
 		with astro_c2:
 			render_mode_document_tabs( 'astro', '📄 Loaded' )
 			
@@ -9059,6 +9248,60 @@ elif mode == 'Geological':
 				render_source_processing_controls( 'geo', 'geo_last_result', 'geo_last_source',
 					'USGS The National Map', 'geo_usgs_the_national_map' )
 		
+
+			# --------- USGS SCIENCEBASE
+			with st.expander( '🧭 USGS ScienceBase', expanded=False ):
+				sciencebase_mode = st.selectbox( 'Mode', options=[ 'items', 'item' ],
+					key='geo_sciencebase_mode' )
+				sciencebase_timeout = st.slider( 'Timeout', min_value=1, max_value=60, value=20,
+					key='geo_sciencebase_timeout' )
+				sciencebase_query = ''
+				sciencebase_item_id = ''
+				sciencebase_max_items = 25
+				sciencebase_offset = 0
+				sciencebase_fields = ''
+				if sciencebase_mode == 'items':
+					sciencebase_c1, sciencebase_c2 = st.columns( 2 )
+					with sciencebase_c1:
+						sciencebase_query = st.text_input( 'Query', key='geo_sciencebase_query' )
+						sciencebase_max_items = st.slider( 'Maximum Items', min_value=1,
+							max_value=500, value=25, key='geo_sciencebase_max_items' )
+					with sciencebase_c2:
+						sciencebase_fields = st.text_input( 'Fields',
+							placeholder='Optional comma-separated fields', key='geo_sciencebase_fields' )
+						sciencebase_offset = st.number_input( 'Offset', min_value=0, value=0, step=1,
+							key='geo_sciencebase_offset' )
+				else:
+					sciencebase_item_id = st.text_input( 'Item ID', key='geo_sciencebase_item_id' )
+				sciencebase_btn_c1, sciencebase_btn_c2 = st.columns( 2 )
+				with sciencebase_btn_c1:
+					if st.button( label='Run', icon='🏃', key='geo_sciencebase_run',
+							use_container_width=True ):
+						try:
+							service = USGSScienceBase( )
+							result = service.fetch( mode=sciencebase_mode, q=sciencebase_query,
+								item_id=sciencebase_item_id, max_items=int( sciencebase_max_items ),
+								offset=int( sciencebase_offset ), fields=sciencebase_fields,
+								time=int( sciencebase_timeout ) )
+							st.session_state[ 'geo_last_source' ] = 'USGS ScienceBase'
+							st.session_state[ 'geo_last_result' ] = result or { }
+							st.session_state[ 'geo_last_latitude' ] = None
+							st.session_state[ 'geo_last_longitude' ] = None
+							st.session_state[ 'geo_last_image_path' ] = ''
+							st.success( 'USGS ScienceBase request completed.' )
+						except Exception as ex:
+							st.error( f'USGS ScienceBase request failed: {ex}' )
+				with sciencebase_btn_c2:
+					if st.button( label='Clear', icon='🧹', key='geo_sciencebase_clear',
+							use_container_width=True ):
+						st.session_state[ 'geo_last_source' ] = ''
+						st.session_state[ 'geo_last_result' ] = { }
+						st.session_state[ 'geo_last_latitude' ] = None
+						st.session_state[ 'geo_last_longitude' ] = None
+						st.session_state[ 'geo_last_image_path' ] = ''
+				st.divider( )
+				render_source_processing_controls( 'geo', 'geo_last_result', 'geo_last_source',
+					'USGS ScienceBase', 'geo_usgs_sciencebase' )
 		with geo_c2:
 			render_mode_document_tabs( 'geo', '📄 Loaded' )
 
@@ -10217,7 +10460,6 @@ elif mode == 'Demographic':
 			render_source_processing_controls( 'demographic', 'open_city_results', 'demographic_active_source', 'open_city_data', 'api_open_city_data' )
 	
 	with right:
-		st.markdown( '##### Results' )
 		active_source = st.session_state.get( 'demographic_active_source', '' )
 		display_names: Dict[ str, str ] = { 'u_s_census_bureau': 'U.S. Census Bureau',
 		                                    'cdc_socrata': 'CDC Socrata',
@@ -10227,9 +10469,7 @@ elif mode == 'Demographic':
 		                                    'cdc_wonder': 'CDC Wonder',
 		                                    'pub_med_search': 'Pub Med Search',
 		                                    'open_city_data': 'Open City Data', }
-		if not active_source:
-			st.info( 'Select a source, configure the request, and submit it to display results.' )
-		else:
+		if active_source:
 			st.caption( f"Active Source: {display_names.get( active_source, active_source )}" )
 		
 		# -------- U.S. Census Bureau
