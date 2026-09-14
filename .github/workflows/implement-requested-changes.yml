@@ -5,7 +5,7 @@ on:
     branches:
       - fix/geocoding-fetcher-ui-audit
     paths:
-      - .github/scripts/implement_requested_changes.py
+      - .github/scripts/add_open_science_ui.py
       - .github/workflows/implement-requested-changes.yml
   workflow_dispatch:
 
@@ -22,56 +22,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Apply requested changes
-        run: python .github/scripts/implement_requested_changes.py
-      - name: Validate syntax and contracts
+      - name: Add Open Science UI integration
+        run: python .github/scripts/add_open_science_ui.py
+      - name: Validate syntax and integration
         run: |
           python -m compileall -q app.py
           python - <<'PY'
-          import ast
           from pathlib import Path
-
           source = Path('app.py').read_text(encoding='utf-8')
-          tree = ast.parse(source)
-
           required = [
-              'EarthObservatory', 'NearbyObjects', 'USGSScienceBase',
-              "source_name: str=''", "get_loaded_dataset( )",
-              "'NASA Earth Observatory'", "'JPL Nearby Objects'", "'USGS ScienceBase'",
+              'OpenScience',
+              "with st.expander( '🧬 NASA Open Science Data'",
+              "service = OpenScience( )",
+              "'NASA Open Science Data', 'astro_open_science'",
           ]
           missing = [value for value in required if value not in source]
           if missing:
-              raise SystemExit(f'Missing requested contracts: {missing}')
-
-          geocoding_start = source.index("if mode == 'Geocoding':")
-          interactive_start = source.index("elif mode == 'Interactive Map':", geocoding_start)
-          geocoding = source[geocoding_start:interactive_start]
-          if 'read_table( cfg.DEFAULT_DATA )' in geocoding:
-              raise SystemExit('Geocoding still hard-codes DEFAULT_DATA.')
-
-          map_start = source.index('def create_reports_map(')
-          map_end = source.index('# ------------ GIS MAPPING UTILITIES', map_start)
-          map_source = source[map_start:map_end]
-          if '<b>ID:</b>' in map_source:
-              raise SystemExit('UAP tooltip still renders ID.')
-          for field in ['Capacity', 'Identifier', 'Elevation']:
-              if field not in map_source:
-                  raise SystemExit(f'Map profile field missing: {field}')
-
-          redundant = 'Select a source, configure the request, and submit it to display results.'
-          if redundant in source:
-              raise SystemExit('Redundant Demographic results information remains.')
-
-          keys = {}
-          for node in ast.walk(tree):
-              if not isinstance(node, ast.Call):
-                  continue
-              for keyword in node.keywords:
-                  if keyword.arg == 'key' and isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
-                      keys.setdefault(keyword.value.value, []).append(node.lineno)
-          duplicates = {key: lines for key, lines in keys.items() if len(lines) > 1}
-          if duplicates:
-              print('Existing/static duplicate widget keys:', duplicates)
+              raise SystemExit(f'Missing Open Science contracts: {missing}')
           PY
       - name: Commit application changes
         run: |
@@ -82,5 +49,5 @@ jobs:
           git config user.name 'Terry Eppler'
           git config user.email 'terry.eppler@gmail.com'
           git add app.py
-          git commit -m 'Correct geocoding maps and complete scientific API modes'
+          git commit -m 'Expose NASA Open Science Data in Astronomical mode'
           git push origin fix/geocoding-fetcher-ui-audit
