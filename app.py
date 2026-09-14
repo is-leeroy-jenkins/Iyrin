@@ -75,7 +75,7 @@ from fetchers import (GoogleWeather, OpenWeather, HistoricalWeather, ClimateData
                       AirNow, UvIndex, OpenAQ, PurpleAir, EnviroFacts, Firms, EoNet,
                       USGSEarthquakes, USGSWaterData, USGSTheNationalMap, GlobalImagery,
                       NavalObservatory, SatelliteCenter, SpaceWeather, AstroCatalog, AstroQuery,
-                      StarMap, StarChart, WebFetcher, EarthObservatory, NearbyObjects, USGSScienceBase, CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder)
+                      StarMap, StarChart, WebFetcher, EarthObservatory, NearbyObjects, OpenScience, USGSScienceBase, CensusData, Socrata, HealthData, GlobalHealthData, UnitedNations, WorldPopulation, Wonder)
 
 # ---------------------------------------------------------------------
 # SESSION STATE INITIALIZATION
@@ -8692,6 +8692,57 @@ elif mode == 'Astronomical':
 				st.divider( )
 				render_source_processing_controls( 'astro', 'astro_last_result',
 					'astro_last_source', 'JPL Nearby Objects', 'astro_nearby_objects' )
+
+			# --------- NASA OPEN SCIENCE DATA REPOSITORY
+			with st.expander( '🧬 NASA Open Science Data', expanded=False ):
+				open_science_mode = st.selectbox( 'Mode',
+					options=[ 'dataset', 'metadata', 'assays', 'data' ],
+					key='astro_open_science_mode' )
+				open_science_timeout = st.slider( 'Timeout', min_value=1, max_value=60, value=20,
+					key='astro_open_science_timeout' )
+				open_science_query = ''
+				open_science_accession = ''
+				open_science_format = 'json'
+				if open_science_mode == 'dataset':
+					open_science_accession = st.text_input( 'OSDR Accession', value='OSD-48',
+						key='astro_open_science_accession' )
+				else:
+					open_science_c1, open_science_c2 = st.columns( 2 )
+					with open_science_c1:
+						open_science_query = st.text_input( 'Query',
+							key='astro_open_science_query' )
+					with open_science_c2:
+						open_science_format = st.selectbox( 'Format',
+							options=[ 'json', 'csv', 'tsv', 'browser' ],
+							key='astro_open_science_format' )
+				open_science_btn_c1, open_science_btn_c2 = st.columns( 2 )
+				with open_science_btn_c1:
+					if st.button( label='Run', icon='🏃', key='astro_open_science_run',
+							use_container_width=True ):
+						try:
+							service = OpenScience( )
+							result = service.fetch( mode=open_science_mode, query=open_science_query,
+								accession=open_science_accession, format_value=open_science_format,
+								time=int( open_science_timeout ) )
+							st.session_state[ 'astro_last_source' ] = 'NASA Open Science Data'
+							st.session_state[ 'astro_last_result' ] = normalize( result ) or { }
+							st.session_state[ 'astro_last_latitude' ] = None
+							st.session_state[ 'astro_last_longitude' ] = None
+							st.session_state[ 'astro_last_url' ] = ''
+							st.success( 'NASA Open Science Data request completed.' )
+						except Exception as ex:
+							st.error( f'NASA Open Science Data request failed: {ex}' )
+				with open_science_btn_c2:
+					if st.button( label='Clear', icon='🧹', key='astro_open_science_clear',
+							use_container_width=True ):
+						st.session_state[ 'astro_last_source' ] = ''
+						st.session_state[ 'astro_last_result' ] = { }
+						st.session_state[ 'astro_last_latitude' ] = None
+						st.session_state[ 'astro_last_longitude' ] = None
+						st.session_state[ 'astro_last_url' ] = ''
+				st.divider( )
+				render_source_processing_controls( 'astro', 'astro_last_result',
+					'astro_last_source', 'NASA Open Science Data', 'astro_open_science' )
 		with astro_c2:
 			render_mode_document_tabs( 'astro', '📄 Loaded' )
 			
