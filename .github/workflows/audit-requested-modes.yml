@@ -1,0 +1,20 @@
+name: Audit Requested Modes
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/geocoding-fetcher-ui-audit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run requested-mode audit
+        run: python .github/scripts/audit_requested_modes.py
