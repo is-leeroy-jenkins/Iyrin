@@ -48,17 +48,17 @@ import streamlit.components.v1 as components
 
 # ------------ CONSTANT
 BLUE_DIVIDER = "<div style='height:1.5px;align:left;background:#0078FC;margin:20px 0px 30px 0px;'></div>"
-APP_TITLE = 'iyr'
+APP_TITLE = 'Iyrin'
 APP_SUBTITLE = 'Geospatial Toolkit'
 DB_PATH = 'stores/sqlite/data.db'
-DEFAULT_DATA = r'Reports'
+DEFAULT_DATA = r'UAP Sightings'
 BASE_DIR = Path( __file__ ).resolve( ).parent
 FAVICON = r'resources/images/favicon.ico'
 LOGO = r'resources/images/iyrin-logo.png'
 MAP_ID = r'16b56ad08af295ded24d8eb2'
 MAP_NAME = r'uap-static'
 DATASET_ID = r'5adda1cd-f412-4ed5-874d-e97664f229b4'
-DATASET_NAME = r'UAP'
+DATASET_NAME = r'data'
 STYLE_ID = r'86d00019936c16f936cc936c'
 STYLE_NAME = r'uap-dark'
 

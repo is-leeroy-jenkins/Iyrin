@@ -1568,7 +1568,7 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 				if col not in df_target.columns:
 					df_target[ col ] = ''
 			
-			df_target[ 'MapSummary' ] = df_target[ 'Summary' ].astype( str ).str.slice( 0, 300 )
+			df_target[ 'MapSummary' ] = df_target[ 'Summary' ].astype( str ).str.slice( 0 )
 			df_target[ 'Position' ] = df_target.apply(
 				lambda row: [ float( row[ 'Longitude' ] ), float( row[ 'Latitude' ] ) ],
 				axis=1 )
