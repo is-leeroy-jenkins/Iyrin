@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message != 'Correct geocoding widget state and CI coverage'
+    if: github.event.head_commit.message != 'Correct geocoding widget state'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Apply focused corrections
+      - name: Apply focused correction
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -40,17 +40,8 @@ jobs:
               raise SystemExit('Clear Location anchor not found.')
           app = app.replace(old_clear, new_clear, 1)
           app_path.write_text(app, encoding='utf-8')
-
-          workflow_path = Path('.github/workflows/audit-app-execution-paths.yml')
-          workflow = workflow_path.read_text(encoding='utf-8')
-          old_trigger = "on:\n  push:\n    branches:\n      - audit/app-execution-paths-demographic\n"
-          new_trigger = "on:\n  push:\n    branches:\n      - main\n  pull_request:\n    branches:\n      - main\n  workflow_dispatch:\n"
-          if old_trigger not in workflow:
-              raise SystemExit('Audit workflow trigger anchor not found.')
-          workflow = workflow.replace(old_trigger, new_trigger, 1)
-          workflow_path.write_text(workflow, encoding='utf-8')
           PY
-      - name: Validate focused corrections
+      - name: Validate focused correction
         run: |
           python -m pip install pyflakes
           python -m compileall -q app.py fetchers.py pipelines.py processors.py loaders.py generators.py
@@ -74,11 +65,10 @@ jobs:
               raise SystemExit('Stale geocoding widget key remains.')
           print('Geocoding widget state contract validated.')
           PY
-      - name: Commit production changes
+      - name: Commit production change
         run: |
-          rm .github/workflows/apply-geocoding-state-fix.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.py .github/workflows/audit-app-execution-paths.yml .github/workflows/apply-geocoding-state-fix.yml
-          git commit -m "Correct geocoding widget state and CI coverage"
+          git add app.py
+          git commit -m "Correct geocoding widget state"
           git push origin HEAD:fix/geocoding-widget-state-ci
