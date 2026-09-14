@@ -3648,7 +3648,13 @@ if mode == 'Geocoding':
 					st.rerun( )
 		
 		with geo_c1:
-			query = st.text_input( 'Enter Address or Location', key='location' )
+			if st.session_state.pop( 'clear_geocoding_location_input', False ):
+				st.session_state[ 'geocoding_location_input' ] = ''
+			
+			if 'geocoding_location_input' not in st.session_state:
+				st.session_state[ 'geocoding_location_input' ] = get_global_location_default( )
+			
+			query = st.text_input( 'Enter Address or Location', key='geocoding_location_input' )
 			btn_c1, btn_c2 = st.columns( 2 )
 			with btn_c1:
 				if st.button( 'Resolve Location', width='stretch', icon='📍' ):
@@ -3675,7 +3681,8 @@ if mode == 'Geocoding':
 			
 			with btn_c2:
 				if st.button( label='Clear Location', width='stretch', icon='🧹' ):
-					st.info( 'Use Ctrl+A / Backspace to clear the location field.' )
+					st.session_state[ 'clear_geocoding_location_input' ] = True
+					st.rerun( )
 		
 		st.divider( )
 		

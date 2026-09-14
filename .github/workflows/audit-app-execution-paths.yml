@@ -3,7 +3,11 @@ name: Audit Application Execution Paths
 on:
   push:
     branches:
-      - audit/app-execution-paths-demographic
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
