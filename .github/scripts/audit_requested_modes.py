@@ -82,7 +82,20 @@ for class_name in [ 'EarthObservatory', 'NearbyObjects', 'OpenScience', 'USGSSci
                         rendered.append( f'{arg}=...' )
             print( f'  {child.name}( {", ".join( rendered )} )' )
 
-print( '\nDEMOGRAPHIC REDUNDANT RESULT TEXT OCCURRENCES' )
-for phrase in [ 'Results', 'Select a source, configure the request, and submit it to display results.' ]:
-    index = app_source.find( phrase )
-    print( f'{phrase!r}: {index}' )
+print( '\nAPP ANCHOR LINE NUMBERS' )
+anchors = [
+    "def create_reports_map(",
+    "if mode == 'Geocoding':",
+    "elif mode == 'Interactive Map':",
+    "elif mode == 'Weather':",
+    "elif mode == 'Environmental':",
+    "elif mode == 'Geological':",
+    "elif mode == 'Astronomical':",
+    "elif mode == 'Demographic':",
+    "Select a source, configure the request, and submit it to display results.",
+    "Select Database Table",
+]
+app_lines = app_source.splitlines( )
+for anchor in anchors:
+    matches = [ index + 1 for index, line in enumerate( app_lines ) if anchor in line ]
+    print( f'{anchor!r}: {matches}' )
