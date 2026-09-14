@@ -12,11 +12,13 @@ fetcher_tree = ast.parse( fetcher_source )
 app_tree = ast.parse( app_source )
 
 classes = [ ]
+class_nodes = { }
 for node in fetcher_tree.body:
     if isinstance( node, ast.ClassDef ):
         doc = ast.get_docstring( node ) or ''
         summary = ' '.join( doc.strip( ).split( ) )[ :220 ]
         classes.append( (node.name, node.lineno, summary) )
+        class_nodes[ node.name ] = node
 
 imports = set( )
 for node in ast.walk( app_tree ):
@@ -47,8 +49,8 @@ print( '\nRELEVANT KEYWORD CANDIDATES' )
 keywords = {
     'Weather': [ 'weather', 'climate', 'tide', 'forecast', 'meteorolog' ],
     'Environmental': [ 'air', 'environment', 'pollution', 'fire', 'event', 'uv', 'water quality' ],
-    'Geological': [ 'earthquake', 'geolog', 'water', 'terrain', 'imagery', 'map' ],
-    'Astronomical': [ 'astro', 'space', 'satellite', 'star', 'naval observatory', 'celestial' ],
+    'Geological': [ 'earthquake', 'geolog', 'water', 'terrain', 'imagery', 'map', 'sciencebase' ],
+    'Astronomical': [ 'astro', 'space', 'satellite', 'star', 'naval observatory', 'celestial', 'near-earth', 'jpl', 'cneos' ],
     'Demographic': [ 'census', 'demograph', 'population', 'health', 'united nations', 'who', 'wonder', 'socrata' ],
 }
 for mode, terms in keywords.items( ):
@@ -58,3 +60,29 @@ for mode, terms in keywords.items( ):
         if any( term in haystack for term in terms ):
             candidates.append( name )
     print( f'{mode}: {candidates}' )
+
+print( '\nMISSING DOMAIN CANDIDATE METHOD SIGNATURES' )
+for class_name in [ 'EarthObservatory', 'NearbyObjects', 'OpenScience', 'USGSScienceBase' ]:
+    node = class_nodes.get( class_name )
+    if node is None:
+        continue
+    print( f'[{class_name}]' )
+    for child in node.body:
+        if isinstance( child, (ast.FunctionDef, ast.AsyncFunctionDef) ):
+            args = [ arg.arg for arg in child.args.args ]
+            defaults = [ None ] * (len( args ) - len( child.args.defaults )) + child.args.defaults
+            rendered = [ ]
+            for arg, default in zip( args, defaults ):
+                if default is None:
+                    rendered.append( arg )
+                else:
+                    try:
+                        rendered.append( f'{arg}={ast.unparse( default )}' )
+                    except Exception:
+                        rendered.append( f'{arg}=...' )
+            print( f'  {child.name}( {", ".join( rendered )} )' )
+
+print( '\nDEMOGRAPHIC REDUNDANT RESULT TEXT OCCURRENCES' )
+for phrase in [ 'Results', 'Select a source, configure the request, and submit it to display results.' ]:
+    index = app_source.find( phrase )
+    print( f'{phrase!r}: {index}' )
