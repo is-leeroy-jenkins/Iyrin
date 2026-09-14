@@ -1495,8 +1495,8 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 						key=f'{key_prefix}_states' )
 					
 					if selected_states:
-						df_base_map = df_base_map[
-							df_base_map[ 'State' ].astype( str ).isin( selected_states ) ]
+						df_base_map = \
+							df_base_map[ df_base_map[ 'State' ].astype( str ).isin(selected_states)]
 			
 			with filter_c4:
 				if 'Shape' in df_base_map.columns:
@@ -1517,17 +1517,12 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 				'Carto Positron': 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 				'Carto Dark Matter': 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
 				'Carto Voyager': 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
-				'Dark': 'dark',
-				'Light': 'light',
-				'Road': 'road',
-				'Satellite': 'satellite',
-				'Dark - No Labels': 'dark_no_labels',
-				'Light - No Labels': 'light_no_labels',
-				'Streamlit Theme': None,
-		}
+				'Dark': 'dark', 'Light': 'light', 'Road': 'road', 'Satellite': 'satellite',
+				'Dark - No Labels': 'dark_no_labels', 'Light - No Labels': 'light_no_labels',
+				'Streamlit Theme': None, }
 		
-		control_c1, control_c2, control_c3, control_c4 = st.columns(
-			[ 0.20, 0.20, 0.30, 0.30 ], border=True )
+		control_c1, control_c2, control_c3, control_c4 = st.columns( [ 0.20, 0.20, 0.30, 0.30 ],
+			border=True )
 		
 		with control_c1:
 			zoom_level = st.slider( 'Initial Zoom', min_value=0, max_value=50, step=1,
@@ -1538,11 +1533,8 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 				step=5, key=f'{key_prefix}_radius' )
 		
 		with control_c3:
-			selected_map_style = st.selectbox(
-				'Map Style',
-				list( map_style_options.keys( ) ),
-				index=1,
-				key=f'{key_prefix}_style' )
+			selected_map_style = st.selectbox( 'Map Style', list( map_style_options.keys( ) ),
+				index=1, key=f'{key_prefix}_style' )
 			
 			map_style = map_style_options[ selected_map_style ]
 		
