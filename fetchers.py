@@ -185,13 +185,7 @@ class Fetcher:
 			list[str]: Ordered attribute/method names.
 
 		'''
-		return [ 'timeout',
-		         'headers',
-		         'response',
-		         'url',
-		         'result',
-		         'query',
-		         'fetch' ]
+		return [ 'timeout', 'headers', 'response', 'url', 'result', 'query', 'fetch' ]
 	
 	def fetch( self, query: str, url:str, time: int=10 ) -> Result | None:
 		'''
