@@ -287,24 +287,10 @@ class WebFetcher( Fetcher ):
 			list[str]: Ordered attribute/method names.
 			
 		'''
-		return [ 'agents',
-		         'url',
-		         'html',
-		         'timeout',
-		         'headers',
-		         'fetch',
-		         'html_to_text',
-		         'scrape_images',
-		         'scrape_hyperlinks',
-		         'scrape_images',
-		         'scrape_hyperlinks',
-		         'scrape_blockquotes',
-		         'scrape_sections',
-		         'scrape_divisions',
-		         'sracpe_headings',
-		         'scrape_tables',
-		         'scrape_lists',
-		         'scrape_paragraphse', ]
+		return [ 'agents', 'url', 'html', 'timeout', 'headers', 'fetch', 'html_to_text',
+		         'scrape_images', 'scrape_hyperlinks', 'scrape_images', 'scrape_hyperlinks',
+		         'scrape_blockquotes', 'scrape_sections', 'scrape_divisions', 'sracpe_headings',
+		         'scrape_tables', 'scrape_lists', 'scrape_paragraphse', ]
 	
 	def fetch( self, url: str, time: int=10 ) -> List[ Document ]:
 		"""Load a web resource into LangChain documents.

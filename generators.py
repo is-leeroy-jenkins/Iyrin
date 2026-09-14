@@ -56,14 +56,13 @@ from boogr import Error, Logger
 from core import Result
 import config as cfg
 from google import genai
-from google import genai
 from google.genai import types
 from openai import OpenAI
 from pathlib import Path
 from typing import Any, Dict, Optional, Pattern, List, Tuple
 from requests import Response
 from xai_sdk import Client as Xai
-from mistralai import Mistral as MistralAI
+from mistralai.client import Mistral as MistralAI
 import re
 import urllib
 
