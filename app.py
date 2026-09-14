@@ -1473,8 +1473,8 @@ def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=N
 						key=f'{key_prefix}_years' )
 					
 					if selected_years:
-						df_base_map = df_base_map[
-							df_base_map[ 'Year' ].astype( str ).isin( selected_years ) ]
+						df_base_map = \
+							df_base_map[ df_base_map[ 'Year' ].astype( str ).isin(selected_years)]
 			
 			with filter_c2:
 				if 'Country' in df_base_map.columns:
