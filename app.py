@@ -409,7 +409,6 @@ def render_result_metadata( result: Dict[ str, Any ] ) -> None:
 	if metadata:
 		st.caption( ' | '.join( f'{key.title( )}: {value}' for key, value in metadata.items( ) ) )
 
-
 def render_summary_kv( title: str, values: Dict[ str, Any ] ) -> None:
 	"""
 		Purpose:
@@ -430,7 +429,6 @@ def render_summary_kv( title: str, values: Dict[ str, Any ] ) -> None:
 	st.markdown( title )
 	rows = [ { 'Field': key, 'Value': value } for key, value in values.items( ) ]
 	st.data_editor( pd.DataFrame( rows ), use_container_width=True, hide_index=True, disabled=True )
-
 
 def render_rows_table( title: str, rows: List[ Dict[ str, Any ] ] ) -> None:
 	"""
@@ -455,7 +453,6 @@ def render_rows_table( title: str, rows: List[ Dict[ str, Any ] ] ) -> None:
 	else:
 		st.info( 'No rows returned.' )
 
-
 def render_fallback_raw( result: Dict[ str, Any ] ) -> None:
 	"""
 		Purpose:
@@ -473,7 +470,6 @@ def render_fallback_raw( result: Dict[ str, Any ] ) -> None:
 	throw_if( 'result', result )
 	with st.expander( 'Raw Response', expanded=False ):
 		st.json( result )
-
 
 def render_html_preview( title: str, html_text: str ) -> None:
 	"""
@@ -494,7 +490,6 @@ def render_html_preview( title: str, html_text: str ) -> None:
 	throw_if( 'html_text', html_text )
 	st.markdown( title )
 	components.html( html_text, height=500, scrolling=True )
-
 
 def render_xml_preview( title: str, xml_text: str ) -> None:
 	"""
@@ -13069,7 +13064,7 @@ elif mode == 'Data Management':
 						st.error( f'Execution failed: {e}' )
 
 # ==============================================================================
-# LIVE WORLD DATA
+# LIVE DATA
 # ==============================================================================
 render_live_world_map( latitude=get_global_latitude_default( ),
 	longitude=get_global_longitude_default( ) )
