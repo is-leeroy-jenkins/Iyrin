@@ -3302,7 +3302,7 @@ with st.sidebar:
 	# ------- Map Mode
 	set_blue_divider( )
 	st.markdown( '#### 🛰️ GIS Data' )
-	with st.expander( 'Mode', expanded=True ):
+	with st.expander( 'Pipelines', expanded=True ):
 		mode = st.radio( label='Mode', options=cfg.MODES, label_visibility='collapsed' )
 		if mode:
 			st.session_state[ 'mode' ] = mode
@@ -3315,6 +3315,7 @@ with st.sidebar:
 			st.rerun( )
 			
 	# ------- Live World Data
+	st.markdown( '#### 📡 Live Data' )
 	render_live_world_sidebar( )
 	
 	# -------- Settings
@@ -3367,7 +3368,7 @@ with st.sidebar:
 	
 	# ------- Data
 	set_blue_divider( )
-	st.markdown( '#### 🏛️ Data' )
+	st.markdown( '#### 🏛️ Static Data' )
 	with st.expander( label='Source', expanded=False ):
 		st.caption( 'Sources' )
 		source = st.selectbox( label='Select Table',
