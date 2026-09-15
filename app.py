@@ -225,6 +225,9 @@ if 'geocoded_longitude' not in st.session_state:
 
 if 'active_location_source' not in st.session_state:
 	st.session_state[ 'active_location_source' ] = ''
+
+if 'browser_location_signature' not in st.session_state:
+	st.session_state[ 'browser_location_signature' ] = ''
 	
 # ------- API Key State
 
@@ -1023,7 +1026,7 @@ def resolve_table_name( requested: str, tables: List[ str ] ) -> Optional[ str ]
 	
 	return None
 
-def get_global_location_default( fallback: str = 'Washington, DC' ) -> str:
+def get_global_location_default( fallback: str = '' ) -> str:
 	"""
 	
 		Purpose:
@@ -1068,7 +1071,7 @@ def get_global_zipcode_default( fallback: str = '20001' ) -> str:
 	
 	return fallback
 
-def get_global_latitude_default( fallback: float = 38.907200 ) -> float:
+def get_global_latitude_default( fallback: float = 0.0 ) -> float:
 	"""
 	
 		Purpose:
@@ -1089,7 +1092,7 @@ def get_global_latitude_default( fallback: float = 38.907200 ) -> float:
 	
 	return float( fallback )
 
-def get_global_longitude_default( fallback: float = -77.036900 ) -> float:
+def get_global_longitude_default( fallback: float = 0.0 ) -> float:
 	"""
 	
 		Purpose:
@@ -1299,13 +1302,12 @@ def bootstrap_browser_geolocation( geocoder: Geocoder ) -> None:
 	
 		Purpose:
 		--------
-		Request browser geolocation once per session and update global Location State
-		before mode controls consume geospatial defaults.
+		Request browser geolocation and keep the canonical global Location State synchronized
+		with the browser coordinates before location-dependent modes render.
 
 		Parameters:
 		-----------
-		geocoder (Geocoder): Existing geocoder instance used only to optionally label
-			the resolved coordinates.
+		geocoder (Geocoder): Existing geocoder instance used to reverse geocode browser coordinates.
 
 		Returns:
 		--------
@@ -1316,71 +1318,89 @@ def bootstrap_browser_geolocation( geocoder: Geocoder ) -> None:
 		if not st.session_state.get( 'browser_geolocation_enabled', True ):
 			return
 		
-		if st.session_state.get( 'browser_geolocation_loaded', False ):
-			return
-		
 		if st.session_state.get( 'browser_geolocation_permission_denied', False ):
 			return
 		
-		geo_payload = get_geolocation( )
+		browser_loaded = bool( st.session_state.get( 'browser_geolocation_loaded', False ) )
+		geo_payload = st.session_state.get( 'browser_geolocation', None ) if browser_loaded else get_geolocation( )
 		
 		if not geo_payload:
 			return
 		
-		updated = update_location_state_from_browser_geolocation( geo_payload )
+		state_changed = False
+		if not browser_loaded:
+			if not update_location_state_from_browser_geolocation( geo_payload ):
+				return
+			state_changed = True
 		
-		if not updated:
+		coords = geo_payload.get( 'coords', { } ) if isinstance( geo_payload, dict ) else { }
+		latitude = coords.get( 'latitude', None )
+		longitude = coords.get( 'longitude', None )
+		if not has_valid_coordinates( latitude, longitude ):
 			return
 		
-		if not st.session_state.get( 'browser_geolocation_reverse_geocoded', False ):
-			latitude = st.session_state.get( 'latitude', None )
-			longitude = st.session_state.get( 'longitude', None )
-			
-			if geocoder is not None and has_valid_coordinates( latitude, longitude ):
-				try:
-					result = geocoder.reverse( float( latitude ), float( longitude ) ) or { }
-					locality = str( result.get( 'locality', '' ) or '' ).strip( )
-					region = str( result.get( 'admin_level_1', '' ) or '' ).strip( )
-					location_parts = [ part for part in [ locality, region ] if part ]
-					location_text = ', '.join( location_parts )
-					if not location_text:
-						location_text = str( result.get( 'formatted_address', '' ) or '' ).strip( )
-					if not location_text:
-						location_text = f'{float( latitude ):.6f}, {float( longitude ):.6f}'
-					set_location_state(
-						location=location_text,
-						city=locality,
-						state=region,
-						country=str( result.get( 'country_code', '' ) or '' ).strip( ),
-						zipcode=str( result.get( 'postal_code', '' ) or '' ).strip( ),
-						description='Browser geolocation resolved by reverse geocoding.',
-						latitude=float( latitude ),
-						longitude=float( longitude ) )
-					st.session_state[ 'active_location_source' ] = 'browser'
-					st.session_state[ 'browser_geolocation_reverse_geocoded' ] = True
-				
-				except Exception:
-					set_location_state(
-						location=f'{float( latitude ):.6f}, {float( longitude ):.6f}',
-						city='', state='', country='', zipcode='',
-						description='Browser geolocation coordinates.',
-						latitude=float( latitude ),
-						longitude=float( longitude ) )
-					st.session_state[ 'active_location_source' ] = 'browser'
-					st.session_state[ 'browser_geolocation_reverse_geocoded' ] = True
+		latitude = float( latitude )
+		longitude = float( longitude )
+		signature = f'{latitude:.6f},{longitude:.6f}'
+		resolved_signature = str( st.session_state.get( 'browser_location_signature', '' ) or '' )
+		location_text = str( st.session_state.get( 'location', '' ) or '' ).strip( )
+		active_source = str( st.session_state.get( 'active_location_source', '' ) or '' ).strip( )
+		needs_resolution = (resolved_signature != signature or not location_text or active_source != 'browser')
 		
-		st.rerun( )
+		if needs_resolution:
+			try:
+				result = geocoder.reverse( latitude, longitude ) if geocoder is not None else { }
+				result = result or { }
+				locality = str( result.get( 'locality', '' ) or '' ).strip( )
+				region = str( result.get( 'admin_level_1', '' ) or '' ).strip( )
+				location_parts = [ part for part in [ locality, region ] if part ]
+				location_text = ', '.join( location_parts )
+				if not location_text:
+					location_text = str( result.get( 'formatted_address', '' ) or '' ).strip( )
+				if not location_text:
+					location_text = f'{latitude:.6f}, {longitude:.6f}'
+				set_location_state(
+					location=location_text,
+					city=locality,
+					state=region,
+					country=str( result.get( 'country_code', '' ) or '' ).strip( ),
+					zipcode=str( result.get( 'postal_code', '' ) or '' ).strip( ),
+					description='Browser geolocation resolved by reverse geocoding.',
+					latitude=latitude,
+					longitude=longitude )
+			except Exception:
+				set_location_state(
+					location=f'{latitude:.6f}, {longitude:.6f}',
+					city='', state='', country='', zipcode='',
+					description='Browser geolocation coordinates.',
+					latitude=latitude,
+					longitude=longitude )
+			
+			st.session_state[ 'browser_location_signature' ] = signature
+			st.session_state[ 'browser_geolocation_reverse_geocoded' ] = True
+			state_changed = True
+		else:
+			set_coordinates( latitude, longitude )
+		
+		st.session_state[ 'browser_geolocation' ] = geo_payload
+		st.session_state[ 'browser_geolocation_loaded' ] = True
+		st.session_state[ 'browser_geolocation_permission_denied' ] = False
+		st.session_state[ 'browser_geolocation_error' ] = ''
+		st.session_state[ 'active_location_source' ] = 'browser'
+		
+		if state_changed:
+			st.rerun( )
 	
 	except Exception as ex:
 		st.session_state[ 'browser_geolocation_error' ] = str( ex )
-		
+
 def ensure_active_location_state( ) -> None:
 	"""
 	
 		Purpose:
 		--------
-		Apply the application location priority: enabled browser location first, the most
-		recent Geocoding result second, and Washington, DC as the final fallback.
+		Apply the active-location priority: browser location first and the most recent
+		Geocoding result second. Leave location state empty when neither source is available.
 	
 		Returns:
 		--------
@@ -1389,9 +1409,25 @@ def ensure_active_location_state( ) -> None:
 	"""
 	browser_enabled = bool( st.session_state.get( 'browser_geolocation_enabled', True ) )
 	browser_loaded = bool( st.session_state.get( 'browser_geolocation_loaded', False ) )
-	if browser_enabled and browser_loaded and has_valid_global_coordinates( ):
-		st.session_state[ 'active_location_source' ] = 'browser'
-		return
+	browser_geo = st.session_state.get( 'browser_geolocation', None )
+	if browser_enabled and browser_loaded and isinstance( browser_geo, dict ):
+		coords = browser_geo.get( 'coords', { } ) or { }
+		browser_latitude = coords.get( 'latitude', None )
+		browser_longitude = coords.get( 'longitude', None )
+		if has_valid_coordinates( browser_latitude, browser_longitude ):
+			browser_latitude = float( browser_latitude )
+			browser_longitude = float( browser_longitude )
+			location_text = str( st.session_state.get( 'location', '' ) or '' ).strip( )
+			if not location_text or st.session_state.get( 'active_location_source', '' ) != 'browser':
+				location_text = f'{browser_latitude:.6f}, {browser_longitude:.6f}'
+				set_location_state(
+					location=location_text, city='', state='', country='', zipcode='',
+					description='Browser geolocation coordinates.',
+					latitude=browser_latitude, longitude=browser_longitude )
+			else:
+				set_coordinates( browser_latitude, browser_longitude )
+			st.session_state[ 'active_location_source' ] = 'browser'
+			return
 	
 	geocoded_latitude = st.session_state.get( 'geocoded_latitude', 0.0 )
 	geocoded_longitude = st.session_state.get( 'geocoded_longitude', 0.0 )
@@ -1408,10 +1444,12 @@ def ensure_active_location_state( ) -> None:
 		return
 	
 	set_location_state(
-		location='Washington, DC', city='Washington', state='DC', country='US', zipcode='20001',
-		description='Default application location.', latitude=38.907200, longitude=-77.036900 )
-	st.session_state[ 'active_location_source' ] = 'fallback'
-	
+		location='', city='', state='', country='', zipcode='', description='' )
+	st.session_state[ 'coordinates' ] = ( )
+	st.session_state[ 'latitude' ] = 0.0
+	st.session_state[ 'longitude' ] = 0.0
+	st.session_state[ 'active_location_source' ] = ''
+
 # ------------- VISUALIZATION UTILITIES
 
 def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=None,
