@@ -29,18 +29,36 @@ jobs:
           classes = defaultdict(list)
           for node in module.body:
               if isinstance(node, ast.ClassDef):
-                  methods = [item.name for item in node.body if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))]
-                  classes[node.name].append((node.lineno, getattr(node, 'end_lineno', node.lineno), methods))
+                  methods = []
+                  for item in node.body:
+                      if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                          methods.append((item.name, ast.unparse(item.args)))
+                  classes[node.name].append((node, methods))
 
           print('=== DUPLICATE CLASSES ===')
           duplicates = {name: defs for name, defs in classes.items() if len(defs) > 1}
           for name in sorted(duplicates):
               print(name)
-              for lineno, end_lineno, methods in duplicates[name]:
-                  print(f'  lines {lineno}-{end_lineno}: {methods}')
+              for node, methods in duplicates[name]:
+                  print(f'  lines {node.lineno}-{node.end_lineno}')
+                  for method_name, args in methods:
+                      print(f'    {method_name}({args})')
+                  fetch_method = next((item for item in node.body if isinstance(item, ast.FunctionDef) and item.name == 'fetch'), None)
+                  if fetch_method is not None:
+                      source = '\n'.join(fetchers_text.splitlines()[fetch_method.lineno - 1:fetch_method.end_lineno])
+                      print('    FETCH_SOURCE_BEGIN')
+                      print(source)
+                      print('    FETCH_SOURCE_END')
           print(f'DUPLICATE_CLASS_COUNT={len(duplicates)}')
 
           app_text = Path('app.py').read_text(encoding='utf-8')
+          print('\n=== DUPLICATE CLASS APP USAGE ===')
+          for name in sorted(duplicates):
+              print(f'--- {name} ---')
+              for idx, line in enumerate(app_text.splitlines(), 1):
+                  if f'{name}(' in line or f'{name}( )' in line:
+                      print(f'{idx}: {line}')
+
           print('\n=== MODE BRANCHES ===')
           for mode in ('Weather', 'Environmental', 'Geological'):
               match = re.search(
@@ -61,6 +79,6 @@ jobs:
               end = start + block.count('\n')
               print(f'lines {start}-{end}')
               for idx, line in enumerate(block.splitlines(), start):
-                  if 'st.expander' in line or 'st.header' in line or 'st.subheader' in line or 'render_mode_document_tabs' in line or 'render_source_processing_controls' in line:
+                  if 'st.expander' in line or 'st.header' in line or 'st.subheader' in line or 'render_mode_document_tabs' in line or 'render_source_processing_controls' in line or 'st.columns' in line:
                       print(f'{idx}: {line}')
           PY
