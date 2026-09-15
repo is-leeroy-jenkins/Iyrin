@@ -1,0 +1,41 @@
+name: Run Location State Fix
+
+on:
+  push:
+    branches:
+      - fix/location-state-authority
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-apply:
+    if: github.event.head_commit.message != 'Correct active location state authority'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/location-state-authority
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply correction
+        run: python tools/apply_location_state_fix.py
+      - name: Compile
+        run: python -m compileall -q app.py geocode.py
+      - name: Audit undefined names
+        run: |
+          python -m pip install pyflakes
+          pyflakes app.py geocode.py 2>&1 | tee pyflakes.log || true
+          if grep -E "undefined name|referenced before assignment" pyflakes.log; then exit 1; fi
+      - name: Test location state contract
+        run: python tools/test_location_state_contract.py
+      - name: Commit correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Correct active location state authority"
+          git pull --rebase origin fix/location-state-authority
+          git push origin HEAD:fix/location-state-authority
