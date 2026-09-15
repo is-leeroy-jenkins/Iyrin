@@ -134,7 +134,7 @@ MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
 # -------------- SETTINGS
 
 MODES = [ 'Geocoding', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
-          'Web Loading', 'Weather', 'Environmental', 'Geological', 'Astronomical', 'Celestial Map',
+          'Web Loading', 'Geoscience Data', 'Astronomical', 'Celestial Map',
           'Population & Health', 'Generative AI', 'Data Upload', 'Data Management' ]
 
 
