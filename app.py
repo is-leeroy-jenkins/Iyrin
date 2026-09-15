@@ -6169,6 +6169,7 @@ if mode == 'Web Loading':
 			# ---- Expander AWS File Loader
 			# ----------------------------
 			with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
+				st.caption( 'API', cfg.AWS_S3FILE_LOADER )
 				aws_file_bucket = st.text_input( 'Bucket', value='', key='aws_file_bucket',
 					placeholder='e.g. my-s3-bucket', )
 				
