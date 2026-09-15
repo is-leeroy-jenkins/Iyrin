@@ -272,6 +272,15 @@ GOOGLE_CLOUD_BUCKET_LOADER = r'''
 GOOGLE_CLOUD_FILE_LOADER = r'''
 '''
 
+AWS_FILE_LOADER = r'''
+'''
+
+AWS_S3FILE_LOADER = r'''An S3FileLoader is a software component used in data frameworks and AI libraries
+to read files directly from an Amazon AWS S3 bucket. It is commonly used in tools like LangChain
+Community S3FileLoader and PyTorch DataPipe S3FileLoader to parse text, PDFs, or binary data for applications
+
+	https://reference.langchain.com/python/langchain-community/document_loaders/s3_file/S3FileLoader
+'''
 
 # --------------- API
 AIR_NOW = r'''AirNow is the official U.S. government website and app providing real-time,
