@@ -7888,7 +7888,6 @@ elif mode == 'Environmental':
 				st.divider( )
 				render_source_processing_controls( 'env', 'env_last_result', 'env_last_source', 'EONET', 'env_eonet' )
 		
-
 			# --------- NASA EARTH OBSERVATORY
 			with st.expander( '🌍 NASA Earth Observatory', expanded=False ):
 				earth_mode = st.selectbox( 'Mode',
