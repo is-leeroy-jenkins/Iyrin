@@ -381,29 +381,32 @@ initialize_loading_state( )
 # UTILITIES
 # ---------------------------------------------------------------------
 
+
 def throw_if( name: str, value: object ) -> None:
-	"""
-	
-		Purpose:
-		--------
-		Validate that a required value is not empty.
-		
-		Parameters:
-		-----------
-		name (str): Name of the argument being validated.
-		value (object): Value to validate.
-		
-		Returns:
-		--------
-		None
-		
+	"""Throw if.
+
+	Purpose:
+	    Validates that a required argument contains a usable value so failures occur before provider, filesystem, or parsing work begins.
+
+	Args:
+	    name (str): Argument name included in validation error messages.
+	    value (object): Candidate value to validate or normalize.
+
+	Returns:
+	    None: This method updates instance state or validates input and does not return a value.
+
+	Raises:
+	    ValueError: Raised when the method cannot satisfy its documented value requirement.
 	"""
 	if value is None:
-		raise ValueError( f'Argument "{name}" cannot be None.' )
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 	
-	if isinstance( value, str ) and not value.strip( ):
-		raise ValueError( f'Argument "{name}" cannot be empty.' )
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 	
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+
 def render_result_metadata( result: Dict[ str, Any ] ) -> None:
 	"""
 		Purpose:
@@ -3420,7 +3423,7 @@ with st.sidebar:
 	# ------- Map Mode
 	set_blue_divider( )
 	st.markdown( '#### 🛰️ GIS Data' )
-	with st.expander( 'Pipelines', expanded=True ):
+	with st.expander( label='Pipelines', expanded=True ):
 		mode = st.radio( label='Mode', options=cfg.MODES, label_visibility='collapsed' )
 		if mode:
 			st.session_state[ 'mode' ] = mode
@@ -3431,7 +3434,82 @@ with st.sidebar:
 		if previous_mode != mode:
 			st.session_state[ 'previous_mode' ] = mode
 			st.rerun( )
-			
+		
+	# ------- Data
+	set_blue_divider( )
+	st.markdown( '#### 🏛️ Static Data' )
+	with st.expander( label='Source', expanded=False ):
+		st.caption( 'Sources' )
+		source = st.selectbox( label='Select',
+			options=[ 'Default', 'Database', 'External' ], key='source_selectbox' )
+		
+		uploaded = st.file_uploader( label='Upload Spreadsheet', type=[ 'xlsx', 'xls', 'csv' ],
+			key='source_uploader' )
+		df_default = pd.DataFrame( )
+		df_original: pd.DataFrame | None = None
+		
+		if source == 'Default':
+			with sqlite3.connect( cfg.DB_PATH ) as connection:
+				df_tables = pd.read_sql_query( """
+                                               SELECT name
+                                               FROM sqlite_master
+                                               WHERE type = 'table'
+                                                 AND name NOT LIKE 'sqlite_%'
+                                               ORDER BY name;
+					""", connection )
+				
+				df_default = pd.read_sql_query( f'SELECT * FROM "{cfg.DEFAULT_DATA}"',
+					connection )
+				
+				df_original = df_default.copy( )
+				st.session_state[ 'active_dataset_name' ] = cfg.DEFAULT_DATA
+				log_step( f'Loaded Database Table: {cfg.DEFAULT_DATA}' )
+		
+		elif source == 'Database':
+			try:
+				with sqlite3.connect( cfg.DB_PATH ) as connection:
+					df_tables = pd.read_sql_query( """
+                                                   SELECT name
+                                                   FROM sqlite_master
+                                                   WHERE type = 'table'
+                                                     AND name NOT LIKE 'sqlite_%'
+                                                   ORDER BY name;
+						""", connection )
+					
+					table_options = df_tables[ 'name' ].tolist( )
+					if table_options:
+						selected_table = st.selectbox( label='Select Database Table',
+							options=table_options, key='database_table_selectbox' )
+						
+						if selected_table:
+							df_default = pd.read_sql_query( f'SELECT * FROM "{selected_table}"',
+								connection )
+							
+							df_original = df_default.copy( )
+							st.session_state[ 'active_dataset_name' ] = selected_table
+							st.session_state[ 'map_mode_table' ] = selected_table
+							log_step( f'Loaded Database Table: {selected_table}' )
+					else:
+						st.warning( 'No tables were found in the database.' )
+			except Exception as ex:
+				st.error( f'Error loading database data: {ex}' )
+		
+		elif source == 'Custom':
+			if uploaded is not None:
+				if uploaded.name.lower( ).endswith( ('.xlsx', '.xls') ):
+					df_default = pd.read_excel( uploaded )
+				else:
+					df_default = pd.read_csv( uploaded )
+				
+				df_original = df_default.copy( )
+				st.session_state[ 'active_dataset_name' ] = uploaded.name
+				log_step( f'Loaded uploaded file: {uploaded.name}' )
+			else:
+				st.info( 'Upload a spreadsheet to load data.' )
+		
+		if has_loaded_dataset( df_default ):
+			store_loaded_dataset( df_default, df_original )
+
 	# ------- Live World Data
 	st.markdown( '#### 📡 Live Data' )
 	render_live_world_sidebar( )
@@ -3483,84 +3561,6 @@ with st.sidebar:
 		elif cache_backend == 'sqlite':
 			cache_path = st.text_input( 'SQLite Cache Path', value='mappy_cache.db', )
 			cache = SQLiteCache( cache_path )
-	
-	# ------- Data
-	set_blue_divider( )
-	st.markdown( '#### 🏛️ Static Data' )
-	with st.expander( label='Source', expanded=False ):
-		st.caption( 'Sources' )
-		source = st.selectbox( label='Select Table',
-			options=[ 'Default Data', 'Database Data', 'Custom Data' ], key='source_selectbox' )
-		
-		uploaded = st.file_uploader( label='Upload Spreadsheet', type=[ 'xlsx', 'xls', 'csv' ],
-			key='source_uploader' )
-		df_default = pd.DataFrame( )
-		df_original: pd.DataFrame | None = None
-		
-		if source == 'Default Data':
-			with sqlite3.connect( cfg.DB_PATH ) as connection:
-				df_tables = pd.read_sql_query(
-					"""
-                    SELECT name
-                    FROM sqlite_master
-                    WHERE type = 'table'
-                      AND name NOT LIKE 'sqlite_%'
-                    ORDER BY name;
-					""",
-					connection )
-				
-				df_default = pd.read_sql_query( f'SELECT * FROM "{cfg.DEFAULT_DATA}"', connection )
-				
-				df_original = df_default.copy( )
-				st.session_state[ 'active_dataset_name' ] = cfg.DEFAULT_DATA
-				log_step( f'Loaded Database Table: {cfg.DEFAULT_DATA}' )
-		
-		elif source == 'Database Data':
-			try:
-				with sqlite3.connect( cfg.DB_PATH ) as connection:
-					df_tables = pd.read_sql_query(
-						"""
-                        SELECT name
-                        FROM sqlite_master
-                        WHERE type = 'table'
-                          AND name NOT LIKE 'sqlite_%'
-                        ORDER BY name;
-						""",
-						connection )
-					
-					table_options = df_tables[ 'name' ].tolist( )
-					if table_options:
-						selected_table = st.selectbox( label='Select Database Table',
-							options=table_options, key='database_table_selectbox' )
-						
-						if selected_table:
-							df_default = pd.read_sql_query( f'SELECT * FROM "{selected_table}"',
-								connection )
-							
-							df_original = df_default.copy( )
-							st.session_state[ 'active_dataset_name' ] = selected_table
-							st.session_state[ 'map_mode_table' ] = selected_table
-							log_step( f'Loaded Database Table: {selected_table}' )
-					else:
-						st.warning( 'No tables were found in the database.' )
-			except Exception as ex:
-				st.error( f'Error loading database data: {ex}' )
-		
-		elif source == 'Custom Data':
-			if uploaded is not None:
-				if uploaded.name.lower( ).endswith( ('.xlsx', '.xls') ):
-					df_default = pd.read_excel( uploaded )
-				else:
-					df_default = pd.read_csv( uploaded )
-				
-				df_original = df_default.copy( )
-				st.session_state[ 'active_dataset_name' ] = uploaded.name
-				log_step( f'Loaded uploaded file: {uploaded.name}' )
-			else:
-				st.info( 'Upload a spreadsheet to load data.' )
-		
-		if has_loaded_dataset( df_default ):
-			store_loaded_dataset( df_default, df_original )
 	
 	# ------- Security
 	set_blue_divider( )
@@ -3876,11 +3876,9 @@ elif mode == 'Distances':
 	with center:
 		st.subheader( 'Distance Matrix' )
 		st.divider( )
-		
 		global_location = get_global_location_default( )
 		location_state = get_location_state( )
 		current_location = compose_location_from_state( )
-		
 		status_c1, status_c2, status_c3 = st.columns( 3, border=True )
 		status_c1.metric( 'Location', current_location if current_location else global_location )
 		status_c2.metric( 'Latitude', f'{float( location_state[ "latitude" ] ):.4f}' )
@@ -4163,7 +4161,7 @@ elif mode == 'Site Crawler':
 # =============================================================================
 # DOCUMENT LOADING MODE
 # =============================================================================
-if mode == 'Loading':
+if mode == 'Web Loading':
 	tokens = st.session_state[ 'tokens' ]
 	documents = st.session_state[ 'documents' ]
 	raw_text = st.session_state[ 'raw_text' ]
@@ -7032,7 +7030,7 @@ elif mode == 'Environmental':
 			
 			# --------- AIRNOW AIR QUALITY
 			with st.expander( '🌫️ AirNow Air Quality', expanded=True ):
-				st.badge( label='About API', color='blue', help=cfg.AIR_NOW )
+				st.caption( 'API', help=cfg.AIR_NOW )
 				airnow_mode = st.selectbox( 'Mode',
 					options=[ 'Current by ZIP', 'Current by Coordinates', 'Forecast by ZIP',
 							'Forecast by Coordinates' ], key='env_airnow_mode' )
@@ -7888,68 +7886,6 @@ elif mode == 'Environmental':
 				st.divider( )
 				render_source_processing_controls( 'env', 'env_last_result', 'env_last_source', 'EONET', 'env_eonet' )
 		
-			# --------- NASA EARTH OBSERVATORY
-			with st.expander( '🌍 NASA Earth Observatory', expanded=False ):
-				earth_mode = st.selectbox( 'Mode',
-					options=[ 'events', 'categories', 'sources', 'layers' ],
-					key='env_earth_observatory_mode' )
-				earth_timeout = st.slider( 'Timeout', min_value=1, max_value=60, value=20,
-					key='env_earth_observatory_timeout' )
-				earth_status = 'open'
-				earth_category = ''
-				earth_source = ''
-				earth_limit = 20
-				earth_days = 30
-				earth_start_date = ''
-				earth_end_date = ''
-				if earth_mode == 'events':
-					earth_c1, earth_c2 = st.columns( 2 )
-					with earth_c1:
-						earth_status = st.selectbox( 'Status', [ 'open', 'closed', 'all' ],
-							key='env_earth_observatory_status' )
-						earth_category = st.text_input( 'Category',
-							key='env_earth_observatory_category' )
-						earth_limit = st.slider( 'Maximum Events', min_value=1, max_value=500,
-							value=20, key='env_earth_observatory_limit' )
-					with earth_c2:
-						earth_source = st.text_input( 'Source',
-							key='env_earth_observatory_source' )
-						earth_days = st.slider( 'Prior Days', min_value=1, max_value=3650,
-							value=30, key='env_earth_observatory_days' )
-						earth_start_date = st.text_input( 'Start Date', placeholder='YYYY-MM-DD',
-							key='env_earth_observatory_start_date' )
-						earth_end_date = st.text_input( 'End Date', placeholder='YYYY-MM-DD',
-							key='env_earth_observatory_end_date' )
-				elif earth_mode == 'layers':
-					earth_category = st.text_input( 'Category',
-						key='env_earth_observatory_layer_category' )
-				earth_btn_c1, earth_btn_c2 = st.columns( 2 )
-				with earth_btn_c1:
-					if st.button( label='Run', icon='🏃', key='env_earth_observatory_run',
-							use_container_width=True ):
-						try:
-							service = EarthObservatory( )
-							result = service.fetch( mode=earth_mode, status=earth_status,
-								category=earth_category, source=earth_source, limit=int( earth_limit ),
-								days=int( earth_days ), start_date=earth_start_date,
-								end_date=earth_end_date, time=int( earth_timeout ) )
-							st.session_state[ 'env_last_source' ] = 'NASA Earth Observatory'
-							st.session_state[ 'env_last_result' ] = result or { }
-							st.session_state[ 'env_last_latitude' ] = None
-							st.session_state[ 'env_last_longitude' ] = None
-							st.success( 'NASA Earth Observatory request completed.' )
-						except Exception as ex:
-							st.error( f'NASA Earth Observatory request failed: {ex}' )
-				with earth_btn_c2:
-					if st.button( label='Clear', icon='🧹', key='env_earth_observatory_clear',
-							use_container_width=True ):
-						st.session_state[ 'env_last_source' ] = ''
-						st.session_state[ 'env_last_result' ] = { }
-						st.session_state[ 'env_last_latitude' ] = None
-						st.session_state[ 'env_last_longitude' ] = None
-				st.divider( )
-				render_source_processing_controls( 'env', 'env_last_result', 'env_last_source',
-					'NASA Earth Observatory', 'env_earth_observatory' )
 		with enviro_c2:
 			render_mode_document_tabs( 'env', '📄 Loaded' )
 			
@@ -9429,8 +9365,8 @@ elif mode == 'Geological':
 # ==============================================================================
 # DEMOGRAPHIC MODE
 # ==============================================================================
-elif mode == 'Demographic':
-	st.subheader( f'🩺 Demographics & Public Health' )
+elif mode == 'Population & Health':
+	st.subheader( f'🩺 Population & Public Health' )
 	st.divider( )
 	demographic_location = get_global_location_default( )
 	demographic_state = get_location_state( )
@@ -9448,8 +9384,9 @@ elif mode == 'Demographic':
 		# ---------------------
 		# ---- Expander U.S. Census Bureau
 		# ---------------------
-		with st.expander( label='U.S. Census Bureau', icon='📊', expanded=False ):
+		with st.expander( label='U.S. Census Bureau (ACS)', icon='📊', expanded=False ):
 			CENSUS_MODES = [ 'variables', 'data' ]
+			st.caption( '', help=cfg.CENSUS_DATA )
 			
 			def _clear_census_state( ) -> None:
 				st.session_state[ 'census_clear_request' ] = True
@@ -9601,11 +9538,11 @@ elif mode == 'Demographic':
 			render_source_processing_controls( 'demographic', 'census_results', 'demographic_active_source', 'u_s_census_bureau', 'api_u_s_census_bureau' )
 		
 		# ---------------------
-		# ---- Expander CDC SOCRATA
+		# ---- Expander CDC Open Data Portal
 		# ---------------------
-		with st.expander( label='CDC Socrata', icon='🩺', expanded=False ):
+		with st.expander( label='CDC Open Data', icon='🩺', expanded=False ):
+			st.caption( '', help=cfg.CDC_SOCRATA )
 			SOCRATA_MODES = [ 'rows', 'metadata' ]
-			
 			SOCRATA_CDC_DOMAINS = [ 'data.cdc.gov', 'chronicdata.cdc.gov' ]
 			
 			def _clear_socrata_state( ) -> None:
@@ -9740,12 +9677,14 @@ elif mode == 'Demographic':
 			if socrata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_socrata'
 			
-			render_source_processing_controls( 'demographic', 'socrata_results', 'demographic_active_source', 'cdc_socrata', 'api_cdc_socrata' )
+			render_source_processing_controls( 'demographic', 'socrata_results',
+				'demographic_active_source', 'cdc_socrata', 'api_cdc_socrata' )
 		
 		# ---------------------
 		# ---- Expander US Health Data
 		# ---------------------
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
+			st.caption( '', help=cfg.US_HEALTH_DATA )
 			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
 			HEALTHDATA_DOMAINS = [ 'healthdata.gov' ]
 			
@@ -9837,8 +9776,7 @@ elif mode == 'Demographic':
 			
 			healthdata_where = st.text_area( 'Where',
 				value=st.session_state.get( 'healthdata_where', '' ), height=100,
-				key='healthdata_where', placeholder="year = "
-				                                    "'2024'", disabled=(healthdata_mode != 'rows') )
+				key='healthdata_where', placeholder="year = '2024'", disabled=(healthdata_mode != 'rows') )
 			
 			c1, c2 = st.columns( 2 )
 			with c1:
@@ -9852,13 +9790,11 @@ elif mode == 'Demographic':
 					placeholder='column1', disabled=(healthdata_mode != 'rows') )
 			
 			c3, c4, c5 = st.columns( 3 )
-			
 			with c3:
 				healthdata_limit = st.number_input( 'Limit', min_value=1, max_value=50000,
 					value=int( st.session_state.get( 'healthdata_limit', 25 ) ), step=1,
 					key='healthdata_limit', disabled=(healthdata_mode != 'rows'),
-					help='Socrata SODA 2.0 endpoints allow $limit '
-					     'values up to 50,000.' )
+					help='Socrata SODA 2.0 endpoints allow $limit values up to 50,000.' )
 			
 			with c4:
 				healthdata_offset = st.number_input( 'Offset', min_value=0, max_value=1000000,
@@ -9878,18 +9814,20 @@ elif mode == 'Demographic':
 				healthdata_submit = st.button( 'Submit', key='healthdata_submit', width='stretch' )
 			
 			with b2:
-				st.button( 'Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
+				st.button( label='Clear', key='healthdata_clear', on_click=_clear_healthdata_state,
 					width='stretch' )
 			
 			if healthdata_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_health'
 			
-			render_source_processing_controls( 'demographic', 'healthdata_results', 'demographic_active_source', 'u_s_health', 'api_u_s_health' )
+			render_source_processing_controls( 'demographic', 'healthdata_results',
+				'demographic_active_source', 'u_s_health', 'api_u_s_health' )
 		
 		# ---------------------
 		# ---- Expander WHO Global Health
 		# ---------------------
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
+			st.caption( '', help=cfg.WHO_DATA )
 			WHO_MODES = [ 'indicator_registry', 'athena' ]
 			WHO_QUERY_PRESETS = [ 'Indicator', 'Dimension', 'DIMENSION/COUNTRY/DimensionValues',
 			                      'DIMENSION/REGION', 'WHOSIS_000001', 'Custom...' ]
@@ -10004,12 +9942,14 @@ elif mode == 'Demographic':
 			if who_submit:
 				st.session_state[ 'demographic_active_source' ] = 'who_global'
 			
-			render_source_processing_controls( 'demographic', 'who_results', 'demographic_active_source', 'who_global', 'api_who_global' )
+			render_source_processing_controls( 'demographic', 'who_results',
+				'demographic_active_source', 'who_global', 'api_who_global' )
 		
 		# ---------------------
 		# ---- Expander United Nations Data
 		# ---------------------
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
+			st.caption( '', help=cfg.UN_DATA )
 			UN_MODES = [ 'datasets', 'sdmx_query' ]
 			UN_QUERY_PRESETS = [ 'dataflow', 'datastructure', 'codelist', 'conceptscheme',
 			                     'dataflow/all/all/latest', 'datastructure/all/all/latest',
@@ -10119,6 +10059,7 @@ elif mode == 'Demographic':
 		# ---- Expander World Population
 		# ---------------------
 		with st.expander( label='World Population', icon='👥', expanded=False ):
+			st.caption( '', help=cfg.WORLD_POP_DATA )
 			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
 			WORLDPOP_ASSET_PRESETS = [ 'data/pop', 'data/pop/wpgp', 'data/pop/wpgp?iso3=GHA',
 			                           'data/pop/wpgp?iso3=AUS', 'data/pop/wpgp?iso3=USA',
@@ -10264,14 +10205,15 @@ elif mode == 'Demographic':
 			if worldpop_submit:
 				st.session_state[ 'demographic_active_source' ] = 'world_population'
 			
-			render_source_processing_controls( 'demographic', 'worldpop_results', 'demographic_active_source', 'world_population', 'api_world_population' )
+			render_source_processing_controls( 'demographic', 'worldpop_results',
+				'demographic_active_source', 'world_population', 'api_world_population' )
 		
 		# ---------------------
 		# ---- Expander CDC WONDER
 		# ---------------------
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
+			st.caption( '', help=cfg.CDC_WONDER )
 			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
-			
 			WONDER_DATASETS = [ 'D76', 'D140', 'D176', 'D158', 'D159', 'D160', 'D161', 'D162',
 			                    'D163', 'D164', 'D165', 'D166', 'D167', 'D168', 'D169', 'D170',
 			                    'D171', 'D172', 'D173', 'D174', 'D175', 'Other' ]
@@ -10390,12 +10332,14 @@ elif mode == 'Demographic':
 			if wonder_submit:
 				st.session_state[ 'demographic_active_source' ] = 'cdc_wonder'
 			
-			render_source_processing_controls( 'demographic', 'wonder_results', 'demographic_active_source', 'cdc_wonder', 'api_cdc_wonder' )
+			render_source_processing_controls( 'demographic', 'wonder_results',
+				'demographic_active_source', 'cdc_wonder', 'api_cdc_wonder' )
 		
 		# ---------------------
 		# ---- Expander Pub Med
 		# ---------------------
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
+			st.caption( '', help=cfg.PUB_MED_SEARCH_LOADER )
 			def _clear_pubmed_state( ) -> None:
 				st.session_state[ 'pubmed_clear_request' ] = True
 			
@@ -10453,12 +10397,14 @@ elif mode == 'Demographic':
 			if pubmed_submit:
 				st.session_state[ 'demographic_active_source' ] = 'pub_med_search'
 			
-			render_source_processing_controls( 'demographic', 'pubmed_results', 'demographic_active_source', 'pub_med_search', 'api_pub_med_search' )
+			render_source_processing_controls( 'demographic', 'pubmed_results',
+				'demographic_active_source', 'pub_med_search', 'api_pub_med_search' )
 		
 		# ---------------------
 		# ---- Expander Open City
 		# ---------------------
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
+			st.caption( '', help=cfg.OPEN_CITY_DATA_LOADER )
 			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
 			                      'data.cityofchicago.org', 'data.lacity.org', 'data.seattle.gov',
 			                      'data.austintexas.gov', 'data.cincinnati-oh.gov',
@@ -10585,7 +10531,8 @@ elif mode == 'Demographic':
 			if open_city_submit:
 				st.session_state[ 'demographic_active_source' ] = 'open_city_data'
 			
-			render_source_processing_controls( 'demographic', 'open_city_results', 'demographic_active_source', 'open_city_data', 'api_open_city_data' )
+			render_source_processing_controls( 'demographic', 'open_city_results',
+				'demographic_active_source', 'open_city_data', 'api_open_city_data' )
 	
 	with right:
 		active_source = st.session_state.get( 'demographic_active_source', '' )
@@ -11252,7 +11199,7 @@ elif mode == 'Demographic':
 				
 				render_fallback_raw( result )
 		
-		demographic_result_keys: Dict[ str, str ] = { 'u_s_census_bureau': 'census_results',
+		demographic_result_keys = { 'u_s_census_bureau': 'census_results',
 				'cdc_socrata': 'socrata_results', 'u_s_health': 'healthdata_results',
 				'who_global': 'who_results', 'united_nations': 'un_results',
 				'world_population': 'worldpop_results', 'cdc_wonder': 'wonder_results',

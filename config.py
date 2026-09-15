@@ -134,8 +134,8 @@ MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
 # -------------- SETTINGS
 
 MODES = [ 'Geocoding', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
-          'Loading', 'Weather', 'Environmental', 'Geological', 'Astronomical', 'Celestial Map',
-          'Demographic', 'Generative AI', 'Data Upload', 'Data Management' ]
+          'Web Loading', 'Weather', 'Environmental', 'Geological', 'Astronomical', 'Celestial Map',
+          'Population & Health', 'Generative AI', 'Data Upload', 'Data Management' ]
 
 
 AGENTS = ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -415,9 +415,11 @@ NASA_GLOBAL_IMAGERY = r'''NASA's Global Imagery Browse Services (GIBS) system pr
 '''
 
 CDC_WONDER = r'''Wide-ranging ONline Data for Epidemiologic Research -- an easy-to-use, menu-driven
-		system that makes the information resources of the Centers for Disease Control and
-		Prevention (CDC) available to public health professionals and the public at large. It provides
-		access to a wide array of public health information.
+system that makes the information resources of the Centers for Disease Control and
+Prevention (CDC) available to public health professionals and the public at large. It provides
+access to a wide array of public health information.
+
+https://wonder.cdc.gov/wonder/help/wonder-api.html
 '''
 
 SPACE_WEATHER = r'''The Space Weather Database Of Notifications, Knowledge, Information (DONKI) is
@@ -431,12 +433,80 @@ SPACE_WEATHER = r'''The Space Weather Database Of Notifications, Knowledge, Info
 '''
 
 STAR_CHART = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
-		XML API, Site Linker, and Image Generator interfaces. https://sky-map.org/?locale=EN
+XML API, Site Linker, and Image Generator interfaces.
+
+https://sky-map.org/?locale=EN
 '''
 
 SATELLITE_CENTER = r'''The Satellite Situation Center Web (SSCWeb) Service is operated by NASA's
-		Space Physics Data Facility (SPDF). It was developed jointly by SPDF and the National Space
-		Science Data Center (NSSDC) to support a range of NASA science programs and to fulfill key
-		international NASA responsibilities including those of NSSDC and the World Data Center-A
-		for Rockets and Satellites. https://sscweb.gsfc.nasa.gov/
+Space Physics Data Facility (SPDF). It was developed jointly by SPDF and the National Space
+Science Data Center (NSSDC) to support a range of NASA science programs and to fulfill key
+international NASA responsibilities including those of NSSDC and the World Data Center-A
+for Rockets and Satellites.
+
+https://sscweb.gsfc.nasa.gov/
+'''
+
+PUB_MED_SEARCH_LOADER = r''' Queries the PubMed biomedical library to fetch publication summaries and
+abstracts as LangChain Document objects.
+
+	https://reference.langchain.com/python/langchain-community/document_loaders/pubmed/PubMedLoader
+'''
+
+OPEN_CITY_DATA_LOADER = r'''Designed to load open data records directly from Open City datasets
+into LangChain Document objects.
+
+	https://reference.langchain.com/python/langchain-community/document_loaders/open_city_data/OpenCityDataLoader
+'''
+
+UN_DATA = r'''Provides dynamic, programmatic access to data within the UNdata platform. Developers
+can use the API to dynamically query UNdata to obtain the latest data and display the result on a
+Web page, download to local storage for further processing, etc. UNdata API is powered by Eurostat’s
+SDMX Reference Infrastructure (SDMX-RI). The API is implemented as a SOAP Web Service that can be
+used to query the datamarts using the SDMX standard. The API is governed by UNdata Terms of Use.
+
+	http://data.un.org/Host.aspx?Content=API
+'''
+
+CENSUS_DATA = r'''The American Community Survey (ACS) is the premier source of detailed information
+about the nation's people and housing. As an ongoing survey conducted by the U.S. Census Bureau since
+2005, the ACS collects detailed social, economic, housing, and demographic information from a sample
+of households across the 50 states, the District of Columbia, and Puerto Rico
+
+	https://data.census.gov/
+'''
+
+CDC_SOCRATA = r'''It provides information uniformly on this large scale for local areas at four
+geographic levels. Estimates were provided by the Centers for Disease Control and Prevention (CDC),
+Division of Population Health, Epidemiology and Surveillance Branch. PLACES was funded by the
+Robert Wood Johnson Foundation in conjunction with the CDC Foundation. This dataset includes
+estimates for 40 measures: 12 for health outcomes, 7 for preventive services use, 4 for chronic
+disease-related health risk behaviors, 7 for disabilities, 3 for health status, and 7 for
+health-related social needs. These estimates can be used to identify emerging health problems and
+to help develop and carry out effective, targeted public health prevention activities
+(ex https://cdc.gov{resource-id}.json)
+
+	https://dev.socrata.com/foundry/data.cdc.gov/swc5-untb
+'''
+
+US_HEALTH_DATA = r'''Health & Human Services Open Data to inform decisions by the public and
+policymakers, drive innovation and economic activity, accelerate scientific research, and
+strengthen the foundation of an open and transparent government.
+
+https://healthdata.gov/login
+'''
+
+WHO_DATA = r'''The GHO portal provides a simple query interface to the World Health Organization's
+data and statistics content, using OData (Open Data Protocol)
+
+https://www.who.int/data/gho/info/gho-odata-api
+'''
+
+WORLD_POP_DATA = r'''WorldPop is an interdisciplinary research group based at the University of
+Southampton, bringing together around 40 researchers, data scientists, and specialists. Their work
+focuses on improving population data at local levels and helping ensure it is used effectively for
+health, development, and humanitarian action, including tracking progress towards the
+Sustainable Development Goals (SDGs).
+
+https://www.worldpop.org/sdi/introapi/
 '''

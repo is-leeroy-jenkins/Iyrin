@@ -83,25 +83,30 @@ try:
 except ImportError:
 	crawl4ai = None
 
-def throw_if( name: str, value: Any ) -> None:
-	'''
-		
-		Purpose:
-		-----------
-		Simple guard which raises ValueError when `value` is falsy (None, empty).
-			
-		Parameters:
-		-----------
-		name (str): Variable name used in the raised message.
-		value (Any): Value to validate.
-			
-		Returns:
-		-----------
-		None: Raises ValueError when `value` is falsy.
-			
-	'''
+def throw_if( name: str, value: object ) -> None:
+	"""Throw if.
+
+	Purpose:
+	    Validates that a required argument contains a usable value so failures occur before provider, filesystem, or parsing work begins.
+
+	Args:
+	    name (str): Argument name included in validation error messages.
+	    value (object): Candidate value to validate or normalize.
+
+	Returns:
+	    None: This method updates instance state or validates input and does not return a value.
+
+	Raises:
+	    ValueError: Raised when the method cannot satisfy its documented value requirement.
+	"""
 	if value is None:
-		raise ValueError( f"Argument '{name}' cannot be empty!" )
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
+	if isinstance( value, str ) and (not value.strip( )):
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
+	
+	if isinstance( value, (list, tuple, dict, set) ) and len( value ) == 0:
+		raise ValueError( f'Argument "{name}" cannot be empty!' )
 
 def encode_image( path: str ) -> str:
 	'''
@@ -23302,14 +23307,13 @@ class OpenSky( Fetcher ):
 			)
 			raise exception
 
-def build_fetch_result( source: str, mode: str, url: str, status: int,
-	data: Any ) -> Dict[ str, Any ]:
-	"""Build the common structured result returned by demographic API fetchers."""
-	throw_if( 'source', source )
-	throw_if( 'mode', mode )
-	throw_if( 'url', url )
-	return { 'source': source, 'mode': mode, 'url': url, 'status': status, 'data': data }
-
+	def build_fetch_result( source: str, mode: str, url: str, status: int,
+		data: Any ) -> Dict[ str, Any ]:
+		"""Build the common structured result returned by demographic API fetchers."""
+		throw_if( 'source', source )
+		throw_if( 'mode', mode )
+		throw_if( 'url', url )
+		return { 'source': source, 'mode': mode, 'url': url, 'status': status, 'data': data }
 
 class CensusData( ):
 	"""U.S. Census Bureau API fetcher."""
@@ -23356,7 +23360,6 @@ class CensusData( ):
 		return build_fetch_result( 'U.S. Census Bureau', self.mode, response.url,
 			response.status_code, payload )
 
-
 class Socrata( ):
 	"""Socrata Open Data API fetcher."""
 	def fetch( self, mode: str, domain: str, dataset_id: str, select: str='',
@@ -23393,7 +23396,6 @@ class Socrata( ):
 		response.raise_for_status( )
 		return build_fetch_result( 'CDC Socrata', self.mode, response.url,
 			response.status_code, response.json( ) )
-
 
 class HealthData( Socrata ):
 	"""U.S. HealthData.gov Socrata fetcher."""
@@ -23432,7 +23434,6 @@ class HealthData( Socrata ):
 		return build_fetch_result( 'U.S. Health', self.mode, response.url,
 			response.status_code, response.json( ) )
 
-
 class GlobalHealthData( ):
 	"""WHO Global Health Observatory fetcher."""
 	def fetch( self, mode: str, query_path: str='', fmt: str='json',
@@ -23462,7 +23463,6 @@ class GlobalHealthData( ):
 		return build_fetch_result( 'WHO Global', self.mode, response.url,
 			response.status_code, data )
 
-
 class UnitedNations( ):
 	"""United Nations UNdata REST/SDMX fetcher."""
 	def fetch( self, mode: str, query_path: str='', time: int=20 ) -> Dict[ str, Any ]:
@@ -23491,7 +23491,6 @@ class UnitedNations( ):
 			raise ValueError( f'Unsupported United Nations mode: {self.mode}' )
 		return build_fetch_result( 'United Nations', self.mode, response.url,
 			response.status_code, data )
-
 
 class WorldPopulation( ):
 	"""WorldPop REST data catalog fetcher."""
@@ -23534,7 +23533,6 @@ class WorldPopulation( ):
 			raise ValueError( f'Unsupported WorldPop mode: {self.mode}' )
 		return build_fetch_result( 'World Population', self.mode, response.url,
 			response.status_code, data )
-
 
 class Wonder( ):
 	"""CDC WONDER XML API fetcher."""
