@@ -213,6 +213,18 @@ if 'browser_geolocation_error' not in st.session_state:
 
 if 'browser_geolocation_permission_denied' not in st.session_state:
 	st.session_state[ 'browser_geolocation_permission_denied' ] = False
+
+if 'geocoded_location' not in st.session_state:
+	st.session_state[ 'geocoded_location' ] = ''
+
+if 'geocoded_latitude' not in st.session_state:
+	st.session_state[ 'geocoded_latitude' ] = 0.0
+
+if 'geocoded_longitude' not in st.session_state:
+	st.session_state[ 'geocoded_longitude' ] = 0.0
+
+if 'active_location_source' not in st.session_state:
+	st.session_state[ 'active_location_source' ] = ''
 	
 # ------- API Key State
 
@@ -1269,6 +1281,7 @@ def update_location_state_from_browser_geolocation( geo: Dict[ str, object ] ) -
 			description=f'Browser geolocation. Accuracy: {accuracy} meters.',
 			latitude=float( latitude ),
 			longitude=float( longitude ) )
+		st.session_state[ 'active_location_source' ] = 'browser'
 		
 		st.session_state[ 'browser_geolocation' ] = geo
 		st.session_state[ 'browser_geolocation_loaded' ] = True
@@ -1325,23 +1338,80 @@ def bootstrap_browser_geolocation( geocoder: Geocoder ) -> None:
 			
 			if geocoder is not None and has_valid_coordinates( latitude, longitude ):
 				try:
-					location_text = f'{float( latitude ):.6f},{float( longitude ):.6f}'
-					geocoder.freeform( location_text )
-					
-					if not st.session_state.get( 'location', '' ):
-						st.session_state[ 'location' ] = location_text
-					
+					result = geocoder.reverse( float( latitude ), float( longitude ) ) or { }
+					locality = str( result.get( 'locality', '' ) or '' ).strip( )
+					region = str( result.get( 'admin_level_1', '' ) or '' ).strip( )
+					location_parts = [ part for part in [ locality, region ] if part ]
+					location_text = ', '.join( location_parts )
+					if not location_text:
+						location_text = str( result.get( 'formatted_address', '' ) or '' ).strip( )
+					if not location_text:
+						location_text = f'{float( latitude ):.6f}, {float( longitude ):.6f}'
+					set_location_state(
+						location=location_text,
+						city=locality,
+						state=region,
+						country=str( result.get( 'country_code', '' ) or '' ).strip( ),
+						zipcode=str( result.get( 'postal_code', '' ) or '' ).strip( ),
+						description='Browser geolocation resolved by reverse geocoding.',
+						latitude=float( latitude ),
+						longitude=float( longitude ) )
+					st.session_state[ 'active_location_source' ] = 'browser'
 					st.session_state[ 'browser_geolocation_reverse_geocoded' ] = True
 				
 				except Exception:
-					st.session_state[ 'location' ] = (
-							f'{float( latitude ):.6f},{float( longitude ):.6f}')
+					set_location_state(
+						location=f'{float( latitude ):.6f}, {float( longitude ):.6f}',
+						city='', state='', country='', zipcode='',
+						description='Browser geolocation coordinates.',
+						latitude=float( latitude ),
+						longitude=float( longitude ) )
+					st.session_state[ 'active_location_source' ] = 'browser'
+					st.session_state[ 'browser_geolocation_reverse_geocoded' ] = True
 		
 		st.rerun( )
 	
 	except Exception as ex:
 		st.session_state[ 'browser_geolocation_error' ] = str( ex )
 		
+def ensure_active_location_state( ) -> None:
+	"""
+	
+		Purpose:
+		--------
+		Apply the application location priority: enabled browser location first, the most
+		recent Geocoding result second, and Washington, DC as the final fallback.
+	
+		Returns:
+		--------
+		None
+		
+	"""
+	browser_enabled = bool( st.session_state.get( 'browser_geolocation_enabled', True ) )
+	browser_loaded = bool( st.session_state.get( 'browser_geolocation_loaded', False ) )
+	if browser_enabled and browser_loaded and has_valid_global_coordinates( ):
+		st.session_state[ 'active_location_source' ] = 'browser'
+		return
+	
+	geocoded_latitude = st.session_state.get( 'geocoded_latitude', 0.0 )
+	geocoded_longitude = st.session_state.get( 'geocoded_longitude', 0.0 )
+	if has_valid_coordinates( geocoded_latitude, geocoded_longitude ):
+		location_text = str( st.session_state.get( 'geocoded_location', '' ) or '' ).strip( )
+		if not location_text:
+			location_text = f'{float( geocoded_latitude ):.6f}, {float( geocoded_longitude ):.6f}'
+		set_location_state(
+			location=location_text, city='', state='', country='', zipcode='',
+			description='Geocoding mode location fallback.',
+			latitude=float( geocoded_latitude ),
+			longitude=float( geocoded_longitude ) )
+		st.session_state[ 'active_location_source' ] = 'geocoding'
+		return
+	
+	set_location_state(
+		location='Washington, DC', city='Washington', state='DC', country='US', zipcode='20001',
+		description='Default application location.', latitude=38.907200, longitude=-77.036900 )
+	st.session_state[ 'active_location_source' ] = 'fallback'
+	
 # ------------- VISUALIZATION UTILITIES
 
 def create_reports_map( df: pd.DataFrame, df_overlay: Optional[ pd.DataFrame ]=None,
@@ -2074,11 +2144,21 @@ def append_geocoding_map_result( query: str, source: str, result: object ) -> No
 			st.warning( 'The geocoding result did not contain usable coordinates for the map.' )
 			return
 		
-		set_location_state(
-			location=query,
-			description=f'{source} result for {query}',
-			latitude=latitude,
-			longitude=longitude )
+		resolved_location = query
+		if isinstance( result, dict ):
+			resolved_location = str( result.get( 'formatted_address', '' ) or query ).strip( )
+		st.session_state[ 'geocoded_location' ] = resolved_location
+		st.session_state[ 'geocoded_latitude' ] = float( latitude )
+		st.session_state[ 'geocoded_longitude' ] = float( longitude )
+		
+		if not (st.session_state.get( 'browser_geolocation_enabled', True )
+				and st.session_state.get( 'browser_geolocation_loaded', False )):
+			set_location_state(
+				location=resolved_location, city='', state='', country='', zipcode='',
+				description=f'{source} result for {query}',
+				latitude=latitude,
+				longitude=longitude )
+			st.session_state[ 'active_location_source' ] = 'geocoding'
 		
 		df_new = pd.DataFrame(
 			[
@@ -3619,6 +3699,7 @@ with st.sidebar:
 # BROWSER GEOLOCATION BOOTSTRAP
 # ------------------------------------------------------------------------------
 bootstrap_browser_geolocation( geocoder )
+ensure_active_location_state( )
 
 # ==============================================================================
 # GEOCODING MODE
@@ -9314,6 +9395,13 @@ elif mode == 'Geological':
 elif mode == 'Demographic':
 	st.subheader( f'🩺 Demographics & Public Health' )
 	st.divider( )
+	demographic_location = get_global_location_default( )
+	demographic_state = get_location_state( )
+	demo_c1, demo_c2, demo_c3 = st.columns( 3, border=True )
+	demo_c1.metric( 'Location', demographic_location )
+	demo_c2.metric( 'Latitude', f'{float( demographic_state[ "latitude" ] ):.4f}' )
+	demo_c3.metric( 'Longitude', f'{float( demographic_state[ "longitude" ] ):.4f}' )
+	set_blue_divider( )
 	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 	if 'demographic_active_source' not in st.session_state:
 		st.session_state[ 'demographic_active_source' ] = ''
