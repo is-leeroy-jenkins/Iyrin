@@ -1,0 +1,66 @@
+name: Run Geoscience Refactor
+
+on:
+  push:
+    branches:
+      - refactor/geoscience-fetchers
+
+permissions:
+  contents: write
+
+jobs:
+  refactor-and-test:
+    if: github.event.head_commit.message != 'Consolidate fetchers and geoscience modes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/geoscience-fetchers
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply refactor
+        run: python tools/apply_geoscience_refactor.py
+      - name: Compile changed modules
+        run: python -m compileall -q app.py fetchers.py config.py
+      - name: Audit undefined names
+        run: |
+          python -m pip install pyflakes
+          pyflakes app.py fetchers.py config.py 2>&1 | tee pyflakes.log || true
+          if grep -E "undefined name|referenced before assignment" pyflakes.log; then exit 1; fi
+      - name: Test refactor contracts
+        run: python tools/test_geoscience_refactor.py
+      - name: Validate configured mode dispatch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import ast
+          import re
+
+          config_text = Path('config.py').read_text(encoding='utf-8')
+          app_text = Path('app.py').read_text(encoding='utf-8')
+          module = ast.parse(config_text)
+          modes = []
+          for node in module.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == 'MODES':
+                          modes = ast.literal_eval(node.value)
+          missing = []
+          for mode in modes:
+              pattern = rf"(?:if|elif)\s+mode\s*==\s*['\"]{re.escape(mode)}['\"]"
+              if not re.search(pattern, app_text):
+                  missing.append(mode)
+          if missing:
+              raise SystemExit(f'Missing mode execution paths: {missing}')
+          print(f'Validated {len(modes)} configured mode execution paths.')
+          PY
+      - name: Commit production changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py fetchers.py config.py
+          git commit -m "Consolidate fetchers and geoscience modes"
+          git pull --rebase origin refactor/geoscience-fetchers
+          git push origin HEAD:refactor/geoscience-fetchers
