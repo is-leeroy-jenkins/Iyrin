@@ -4182,10 +4182,11 @@ if mode == 'Web Loading':
 			# ------- Expander NLTK Loader
 			# ----------------------------
 			with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
+				st.caption( 'API', help=cfg.NLTK_LOADER )
 				import nltk
 				from nltk.corpus import (brown, gutenberg, reuters, webtext, inaugural, state_union)
 				
-				st.markdown( '##### NLTK Corpora', help=cfg.NLTK_LOADER )
+				st.markdown( '###### NLTK Corpora' )
 				file_ids = [ ]
 				nltk_c1, nltk_c2, = st.columns( 2 )
 				with nltk_c1:
@@ -4315,8 +4316,9 @@ if mode == 'Web Loading':
 			# ------ Expander Text Loader
 			# ----------------------------
 			with st.expander( label='Text Loader', icon='📝', expanded=False ):
+				st.caption( 'API', help=cfg.TEXT_LOADER )
 				files = st.file_uploader( 'Upload Text File(s)', type=[ 'txt', 'text', 'log' ],
-					accept_multiple_files=True, key='txt_upload', help=cfg.TEXT_LOADER )
+					accept_multiple_files=True, key='txt_upload' )
 				
 				st.divider( )
 				render_document_processing_inputs( 'TextLoader', 'txt' )
@@ -4393,8 +4395,8 @@ if mode == 'Web Loading':
 			# ------ Expander CSV Loader
 			# ----------------------------
 			with st.expander( label='CSV Loader', icon='📑', expanded=False ):
-				csv_file = st.file_uploader( label='Upload CSV', type=[ 'csv' ], key='csv_upload',
-					help=cfg.CSV_LOADER )
+				st.caption( 'API', help=cfg.CSV_LOADER )
+				csv_file = st.file_uploader( label='Upload CSV', type=[ 'csv' ], key='csv_upload' )
 				
 				st.divider( )
 				
@@ -4468,12 +4470,13 @@ if mode == 'Web Loading':
 			# ------ Expander XML Loader
 			# ----------------------------
 			with st.expander( label='XML Loader', icon='🧬', expanded=False ):
+				st.caption( 'API', help=cfg.XML_LOADER )
 				if 'xml_loader' not in st.session_state or st.session_state.xml_loader is None:
 					st.session_state.xml_loader = XmlLoader( )
 				
 				loader = st.session_state.xml_loader
 				xml_file = st.file_uploader( label='Select XML file', type=[ 'xml' ],
-					accept_multiple_files=False, key='xml_file_uploader', help=cfg.XML_LOADER )
+					accept_multiple_files=False, key='xml_file_uploader' )
 				st.text( 'Semantic XML Loading (Unstructured)' )
 				
 				st.divider( )
@@ -4622,8 +4625,9 @@ if mode == 'Web Loading':
 			# ------- Expander Word Loader
 			# ----------------------------
 			with st.expander( label='Word Document Loader', icon='📘', expanded=False ):
+				st.caption( 'API', help=cfg.WORD_LOADER )
 				word_file = st.file_uploader( 'Upload Word Document', type=[ 'docx' ],
-					key='word_upload', help=cfg.WORD_LOADER )
+					key='word_upload' )
 				
 				st.divider( )
 				
@@ -4697,8 +4701,8 @@ if mode == 'Web Loading':
 			# ------- Expander PDF Loader
 			# ----------------------------
 			with st.expander( label='PDF Loader', icon='📕', expanded=False ):
-				pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload',
-					help=cfg.PDF_LOADER )
+				st.caption( 'API', help=cfg.PDF_LOADER )
+				pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload', )
 				
 				st.divider( )
 				
@@ -4844,8 +4848,8 @@ if mode == 'Web Loading':
 			# ------- Expander PPT Loader
 			# ----------------------------
 			with st.expander( label='Power Point Loader', icon='📽', expanded=False ):
-				pptx = st.file_uploader( 'Upload PPTX', type=[ 'pptx' ], key='pptx_upload',
-					help=cfg.POWERPOINT_LOADER )
+				st.caption( 'API', help=cfg.POWERPOINT_LOADER )
+				pptx = st.file_uploader( 'Upload PPTX', type=[ 'pptx' ], key='pptx_upload' )
 				mode = st.selectbox( 'Mode', [ 'single', 'elements' ], key='pptx_mode', )
 				
 				render_document_processing_inputs( 'PowerPointLoader', 'pptx' )
@@ -4907,8 +4911,9 @@ if mode == 'Web Loading':
 			# ------- Expander Notebook Loader
 			# ----------------------------
 			with st.expander( label='Jupyter Notebook Loader', icon='📓', expanded=False ):
+				st.caption( 'API', help=cfg.NOTEBOOK_LOADER )
 				notebook_file = st.file_uploader( 'Upload Notebook', type=[ 'ipynb' ],
-					key='ipynb_upload', help=cfg.NOTEBOOK_LOADER )
+					key='ipynb_upload' )
 				
 				include_outputs = st.checkbox( 'Include Outputs', value=False,
 					key='ipynb_include_outputs', )
@@ -4999,8 +5004,9 @@ if mode == 'Web Loading':
 			# ------- Expander Excel Loader
 			# ----------------------------
 			with st.expander( label='Excel Loader', icon='📊', expanded=False ):
+				st.caption( 'API', help=cfg.EXCEL_LOADER )
 				excel_file = st.file_uploader( 'Upload Excel file', type=[ 'xlsx', 'xls' ],
-					key='excel_upload', help=cfg.EXCEL_LOADER )
+					key='excel_upload' )
 				
 				load_mode = st.selectbox( 'Load Mode',
 					[ 'Tabular + SQLite', 'Unstructured Document' ], index=0, key='excel_load_mode',
@@ -5147,8 +5153,9 @@ if mode == 'Web Loading':
 			# ------- Expander Markdown Loader
 			# ----------------------------
 			with st.expander( label='Markdown Loader', icon='🧾', expanded=False ):
+				st.caption( 'API', help=cfg.MARKDOWN_LOADER )
 				md = st.file_uploader( 'Upload Markdown', type=[ 'md', 'markdown' ],
-					key='md_upload', help=cfg.MARKDOWN_LOADER )
+					key='md_upload' )
 				
 				mode = st.selectbox( 'Mode', [ 'single', 'elements' ], index=0, key='md_mode',
 					help='Use "single" for one combined document or "elements" for multiple.' )
@@ -5162,10 +5169,9 @@ if mode == 'Web Loading':
 				load_md = col_load.button( 'Load', key='md_load', icon='📤', width='stretch' )
 				clear_md = col_clear.button( 'Clear', key='md_clear', icon='🧹', width='stretch' )
 				
-				can_save = (st.session_state.get(
-					'active_loader' ) == 'MarkdownLoader' and isinstance(
-					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-					'raw_text' ).strip( ))
+				can_save = (st.session_state.get( 'active_loader' ) == 'MarkdownLoader' \
+				            and isinstance( st.session_state.get( 'raw_text' ), str ) \
+				            and st.session_state.get( 'raw_text' ).strip( ))
 				
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
@@ -5198,10 +5204,10 @@ if mode == 'Web Loading':
 					st.session_state.documents = documents
 					st.session_state.raw_documents = list( documents )
 					st.session_state.raw_text = '\n\n'.join( d.page_content for d in documents if
-					                                         hasattr( d,
-						                                         'page_content' ) and isinstance(
-						                                         d.page_content,
-						                                         str ) and d.page_content.strip( ) )
+					                                         hasattr( d, 'page_content' ) \
+					                                         and isinstance( d.page_content, str ) \
+					                                         and d.page_content.strip( ) )
+					
 					st.session_state.active_loader = 'MarkdownLoader'
 					st.success( f'Loaded {len( documents )} Markdown document(s).' )
 				
@@ -5214,8 +5220,8 @@ if mode == 'Web Loading':
 			# ------- Expander HTML Loader
 			# ----------------------------
 			with st.expander( label='HTML Loader', icon='🌐', expanded=False ):
-				html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload',
-					help=cfg.HTML_LOADER )
+				st.caption( 'API', help=cfg.HTML_LOADER )
+				html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload' )
 				
 				render_document_processing_inputs( 'HtmlLoader', 'html' )
 				
@@ -5228,8 +5234,8 @@ if mode == 'Web Loading':
 					width='stretch' )
 				
 				can_save = (st.session_state.get( 'active_loader' ) == 'HtmlLoader' and isinstance(
-					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-					'raw_text' ).strip( ))
+					st.session_state.get( 'raw_text' ), str ) \
+				            and st.session_state.get( 'raw_text' ).strip( ) )
 				
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
@@ -5274,8 +5280,8 @@ if mode == 'Web Loading':
 			# ------- Expander JSON Loader
 			# ----------------------------
 			with st.expander( label='JSON Loader', icon='🧩', expanded=False ):
-				js = st.file_uploader( 'Upload JSON', type=[ 'json', 'jsonl' ], key='json_upload',
-					help=cfg.JSON_LOADER )
+				st.caption( 'API', help=cfg.JSON_LOADER )
+				js = st.file_uploader( 'Upload JSON', type=[ 'json', 'jsonl' ], key='json_upload', )
 				
 				jq_schema = st.text_input( 'jq Schema', value='.', key='json_jq_schema',
 					help='Examples: ., .[], .messages[], .content' )
@@ -5335,10 +5341,9 @@ if mode == 'Web Loading':
 					st.session_state.documents = documents
 					st.session_state.raw_documents = list( documents )
 					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents if
-					                                         hasattr( d,
-						                                         'page_content' ) and isinstance(
-						                                         d.page_content,
-						                                         str ) and d.page_content.strip( ) )
+					                                         hasattr( d, 'page_content' ) \
+					                                         and isinstance( d.page_content, str ) \
+					                                         and d.page_content.strip( ) )
 					st.session_state.active_loader = "JsonLoader"
 					st.success( f"Loaded {len( documents )} JSON document(s)." )
 				
@@ -5349,6 +5354,7 @@ if mode == 'Web Loading':
 			# ------- Expander ArXiv Loader
 			# ----------------------------
 			with st.expander( label='ArXiv Loader', icon='🧠', expanded=False ):
+				st.caption( 'API', cfg.ARXIV_LOADER )
 				arxiv_query = st.text_input( 'Query', placeholder='e.g., transformer OR llm',
 					key='arxiv_query', )
 				
