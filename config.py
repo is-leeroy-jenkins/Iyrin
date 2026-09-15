@@ -263,6 +263,16 @@ NOTEBOOK_LOADER = '''Loads .ipynb notebook files.
 		https://reference.langchain.com/python/langchain-community/document_loaders/notebook/NotebookLoader
 '''
 
+GOOGLE_CLOUD_FILE_LOADER = r'''
+'''
+
+GOOGLE_CLOUD_BUCKET_LOADER = r'''
+'''
+
+GOOGLE_CLOUD_FILE_LOADER = r'''
+'''
+
+
 # --------------- API
 AIR_NOW = r'''AirNow is the official U.S. government website and app providing real-time,
 		local air quality data and forecasts using the color-coded Air Quality Index (AQI).

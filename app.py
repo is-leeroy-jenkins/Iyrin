@@ -5842,6 +5842,7 @@ if mode == 'Web Loading':
 			# ---- Expander PubMed Loader
 			# ----------------------------
 			with st.expander( label='Pub Med Loader', icon='🧬', expanded=False ):
+				st.caption( 'API', cfg.PUBMED_LOADER )
 				pubmed_query = st.text_input( 'PubMed Query', value='', key='pubmed_query',
 					placeholder='e.g. transformer models biomedical NLP', )
 				
@@ -5915,6 +5916,7 @@ if mode == 'Web Loading':
 			# --- Expander Open City Loader
 			# ----------------------------
 			with st.expander( label='Open City Loader', icon='🏙️', expanded=False ):
+				st.caption( 'API', cfg.OPEN_CITY_DATA_LOADER )
 				open_city_id = st.text_input( 'City Domain', value='', key='open_city_id',
 					placeholder='e.g. data.sfgov.org',
 					help='City domain identifier for the Socrata-backed portal.', icon='💾',
@@ -5999,6 +6001,7 @@ if mode == 'Web Loading':
 			# ---- Expander OneDrive Loader
 			# ----------------------------
 			with st.expander( label='OneDrive Loader', icon='🟦', expanded=False ):
+				st.caption( 'API', cfg.ONEDRIVE_LOADER )
 				onedrive_drive_id = st.text_input( 'Drive ID', value='', key='onedrive_drive_id',
 					placeholder='OneDrive drive identifier', )
 				
@@ -6082,6 +6085,7 @@ if mode == 'Web Loading':
 			# ---- Expander Google Cloud File Loader
 			# ----------------------------
 			with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
+				st.caption( 'API', cfg.WEB_CRAWLER )
 				gcs_project_name = st.text_input( 'Project Name', value='',
 					key='gcs_file_project_name', placeholder='e.g. my-gcp-project', )
 				
