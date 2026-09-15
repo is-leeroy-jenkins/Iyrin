@@ -5412,6 +5412,7 @@ if mode == 'Web Loading':
 			# ---- Expander Wikipedia Loader
 			# ----------------------------
 			with st.expander( label='Wikipedia Loader', icon='📚', expanded=False ):
+				st.caption( 'API', cfg.WIKIPEDIA_LOADER )
 				wiki_query = st.text_input( 'Query',
 					placeholder='e.g., Natural language processing', key='wiki_query', )
 				
@@ -5474,6 +5475,7 @@ if mode == 'Web Loading':
 			# ----- Expander GitHub Loader
 			# ----------------------------
 			with st.expander( label='GitHub Loader', icon='🐙', expanded=False ):
+				st.caption( 'API', cfg.GITHUB_LOADER )
 				gh_url = st.text_input( 'GitHub API URL', placeholder='https://api.github.com',
 					value='https://api.github.com', key='gh_url',
 					help='GitHub REST API base URL.', )
@@ -5543,6 +5545,7 @@ if mode == 'Web Loading':
 			# -------- Expander Outlook Loader
 			# ----------------------------
 			with st.expander( label='Outlook Loader', icon='📨', expanded=False ):
+				st.caption( 'API', cfg.OUTLOOK_LOADER )
 				outlook_file = st.file_uploader( 'Upload Outlook Message', type=[ 'msg' ],
 					key='outlook_upload', )
 				
@@ -5618,6 +5621,7 @@ if mode == 'Web Loading':
 			# ------- Expander Web Loader
 			# ----------------------------
 			with st.expander( label='Web Loader', icon='🌐', expanded=False ):
+				st.caption( 'API', cfg.WEB_LOADER )
 				urls = st.text_area( 'Enter one URL per line',
 					placeholder="https://example.com\nhttps://another.com", key='web_urls', )
 				
@@ -5681,6 +5685,7 @@ if mode == 'Web Loading':
 			# ----- Expander Web Crawler
 			# ----------------------------
 			with st.expander( label='Web Crawler', icon='🕷️', expanded=False ):
+				st.caption( 'API', cfg.WEB_CRAWLER )
 				start_url = st.text_input( 'Start URL', placeholder='https://example.com',
 					key='crawl_start_url', )
 				
@@ -5755,6 +5760,7 @@ if mode == 'Web Loading':
 			# ----- Expander Email Loader
 			# ----------------------------
 			with st.expander( label='E-mail Loader', icon='📧', expanded=False ):
+				st.caption( 'API', cfg.EMAIL_LOADER )
 				email_file = st.file_uploader( 'Upload Email File', type=[ 'eml' ],
 					key='email_upload', )
 				
