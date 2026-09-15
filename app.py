@@ -4161,7 +4161,7 @@ elif mode == 'Site Crawler':
 # =============================================================================
 # DOCUMENT LOADING MODE
 # =============================================================================
-if mode == 'Web Loading':
+if mode == 'Web Data':
 	tokens = st.session_state[ 'tokens' ]
 	documents = st.session_state[ 'documents' ]
 	raw_text = st.session_state[ 'raw_text' ]
