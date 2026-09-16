@@ -192,11 +192,11 @@ WIKIPEDIA_LOADER = r'''The LangChain Wikipedia Loader (WikipediaLoader) is a com
 '''
 
 ARXIV_LOADER = r'''arXiv is a free distribution service and an open-access archive for nearly 2.4 million
-		scholarly articles in the fields of physics, mathematics, computer science, quantitative
-		biology, quantitative finance, statistics, electrical engineering and systems science, and
-		economics. Materials on this site are not peer-reviewed by arXiv.
+scholarly articles in the fields of physics, mathematics, computer science, quantitative
+biology, quantitative finance, statistics, electrical engineering and systems science, and
+economics. Materials on this site are not peer-reviewed by arXiv.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/arxiv/ArxivLoader
+	https://reference.langchain.com/python/langchain-community/document_loaders/arxiv/ArxivLoader
 '''
 
 PDF_LOADER = r'''Public, SDK-oriented PDF loader with: Page-aware metadata, Two-stage chunking,
@@ -220,47 +220,47 @@ POWERPOINT_LOADER = r'''The UnstructuredPowerPointLoader (within LangChain) is a
 '''
 
 JSON_LOADER = r'''The LangChain JSONLoader is a specialized document loader used to transform JSON
-		and JSON Lines data into standardized LangChain Document objects. It is a critical component
-		for building applications like Retrieval-Augmented Generation (RAG) that need to process structured data.
+and JSON Lines data into standardized LangChain Document objects. It is a critical component
+for building applications like Retrieval-Augmented Generation (RAG) that need to process structured data.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/json_loader/JSONLoader
+	https://reference.langchain.com/python/langchain-community/document_loaders/json_loader/JSONLoader
 '''
 
 MARKDOWN_LOADER = r'''LangChain's Markdown document loaders are specialized tools used to convert
-		Markdown files into standardized LangChain Document objects. These objects are then used
-		for downstream tasks like Retrieval Augmented Generation (RAG), embedding generation,
-		or semantic chunking.
+Markdown files into standardized LangChain Document objects. These objects are then used
+for downstream tasks like Retrieval Augmented Generation (RAG), embedding generation,
+or semantic chunking.
 
 		https://reference.langchain.com/python/langchain-community/document_loaders/markdown/UnstructuredMarkdownLoader
 '''
 
 XML_LOADER = r'''The UnstructuredXMLLoader in LangChain is a specialized tool designed to load and
-		parse XML files into standardized LangChain Document objects. It leverages the Unstructured.io
-		library to extract text content and preserve document structure for use in downstream LLM
-		applications like RAG.
+parse XML files into standardized LangChain Document objects. It leverages the Unstructured.io
+library to extract text content and preserve document structure for use in downstream LLM
+applications like RAG.
 
 		https://reference.langchain.com/python/langchain-community/document_loaders/xml/UnstructuredXMLLoader
 '''
 
 CSV_LOADER = r'''The LangChain CSVLoader is a standard utility within the langchain-community package
-		designed to transform structured CSV data into a list of standardized Document objects.
-		This process is the foundational step for integrating tabular data into LLM-powered workflows,
-		such as Retrieval Augmented Generation (RAG).
+designed to transform structured CSV data into a list of standardized Document objects.
+This process is the foundational step for integrating tabular data into LLM-powered workflows,
+such as Retrieval Augmented Generation (RAG).
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/csv_loader/CSVLoader
+	https://reference.langchain.com/python/langchain-community/document_loaders/csv_loader/CSVLoader
 '''
 
 WORD_LOADER = '''Works with both .docx and .doc files. You can run the loader in one of two modes:
-		"single" and "elements". If you use "single" mode, the document will be returned as a
-		single langchain Document object. If you use "elements" mode, the unstructured library will
-		split the document into elements such as Title and NarrativeText.
+"single" and "elements". If you use "single" mode, the document will be returned as a
+single langchain Document object. If you use "elements" mode, the unstructured library will
+split the document into elements such as Title and NarrativeText.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/word_document/UnstructuredWordDocumentLoader
+	https://reference.langchain.com/python/langchain-community/document_loaders/word_document/UnstructuredWordDocumentLoader
 '''
 
 NOTEBOOK_LOADER = '''Loads .ipynb notebook files.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/notebook/NotebookLoader
+	https://reference.langchain.com/python/langchain-community/document_loaders/notebook/NotebookLoader
 '''
 
 GOOGLE_CLOUD_FILE_LOADER = r'''
@@ -297,153 +297,192 @@ Community S3FileLoader and PyTorch DataPipe S3FileLoader to parse text, PDFs, or
 
 # --------------- API
 AIR_NOW = r'''AirNow is the official U.S. government website and app providing real-time,
-		local air quality data and forecasts using the color-coded Air Quality Index (AQI).
-		It covers ozone and particle pollution ( and  ) via a partnership of the EPA, NOAA, and
-		local agencies, offering a "Fire and Smoke Map" to monitor smoke impacts. https://docs.airnowapi.org/
+local air quality data and forecasts using the color-coded Air Quality Index (AQI).
+It covers ozone and particle pollution ( and  ) via a partnership of the EPA, NOAA, and
+local agencies, offering a "Fire and Smoke Map" to monitor smoke impacts.
+
+	https://docs.airnowapi.org/
 '''
 
 PURPLE_AIR = r'''PurpleAir provides low-cost, real-time air quality monitors and a public,
-		crowdsourced map to measure, visualize, and share hyper-local,, particulate matter data.
-		Using laser counters, these sensors empower communities to track pollution, particularly
-		during wildfire events. Data is accessible via the PurpleAir Map and is used by researchers,
-		public agencies, and individuals worldwide. https://api.purpleair.com/
+crowdsourced map to measure, visualize, and share hyper-local,, particulate matter data.
+Using laser counters, these sensors empower communities to track pollution, particularly
+during wildfire events. Data is accessible via the PurpleAir Map and is used by researchers,
+public agencies, and individuals worldwide.
+
+	https://api.purpleair.com/
 '''
 
 OPEN_AQ = r'''OpenAQ is a non-profit organization that aggregates, harmonizes, and shares open-source,
-		global air quality data to fight "air inequality". It provides real-time and historical
-		data—primarily on PM2.5, PM10, and other pollutants—from over 48,000 locations across 150 c
-		ountries. The platform empowers researchers, journalists, and communities to access, analyze,
-		and use air quality data through an open API, fostering collaboration to improve public
-		health and policy. https://docs.openaq.org/
+global air quality data to fight "air inequality". It provides real-time and historical
+data—primarily on PM2.5, PM10, and other pollutants—from over 48,000 locations across 150 c
+ountries. The platform empowers researchers, journalists, and communities to access, analyze,
+and use air quality data through an open API, fostering collaboration to improve public
+health and policy.
+
+	https://docs.openaq.org/
 '''
 
 NOAA_CLIMATE_DATA = r'''NOAA climate data is provided primarily through the National Centers for
-		Environmental Information (NCEI), serving as the world's largest archive of atmospheric,
-		coastal, and geophysical data. It offers free access to historical weather records, 30-year
-		Climate Normals, and datasets on temperature, precipitation, and storms. Data is accessible
-		via the NCEI Climate Data Online (CDO) portal and https://www.ncdc.noaa.gov/cdo-web/
+Environmental Information (NCEI), serving as the world's largest archive of atmospheric,
+coastal, and geophysical data. It offers free access to historical weather records, 30-year
+Climate Normals, and datasets on temperature, precipitation, and storms. Data is accessible
+via the NCEI Climate Data Online (CDO) portal.
+
+	https://www.ncdc.noaa.gov/cdo-web/
 '''
 
 USGS_NATIONAL_MAP = r'''The USGS National Map is a premier collaborative program providing free,
-		accurate, and public domain geospatial data for the United States and its territories.
-		It offers topographic maps, 3D elevation data, and 8+ data layers (transportation,
-		hydrography, structures) via an online viewer, data downloads, and web services for public,
-		academic, and government use. https://tnmaccess.nationalmap.gov/api/v1/docs
+accurate, and public domain geospatial data for the United States and its territories.
+It offers topographic maps, 3D elevation data, and 8+ data layers (transportation,
+hydrography, structures) via an online viewer, data downloads, and web services for public,
+academic, and government use.
+
+	https://tnmaccess.nationalmap.gov/api/v1/docs
 '''
 
 USGS_EARTHQUAKES = r'''The USGS Earthquake Hazards Program monitors, reports, and researches global
-		seismic activity to reduce losses and save lives. It operates the National Earthquake
-		Information Center (NEIC) and Advanced National Seismic System (ANSS) to detect magnitude,
-		location, and impacts, providing data for public safety, engineering, and hazard assessments
-		https://earthquake.usgs.gov/fdsnws/event/1/
+seismic activity to reduce losses and save lives. It operates the National Earthquake
+Information Center (NEIC) and Advanced National Seismic System (ANSS) to detect magnitude,
+location, and impacts, providing data for public safety, engineering, and hazard assessments
+
+	https://earthquake.usgs.gov/fdsnws/event/1/
 '''
 
 USGS_WATER = r'''The USGS Water Resources Mission Area monitors, assesses, and conducts research on
-		the nation's water, providing data on streamflow, groundwater, water quality, and water use.
-		https://api.waterdata.usgs.gov/
+the nation's water, providing data on streamflow, groundwater, water quality, and water use.
+
+	https://api.waterdata.usgs.gov/
 '''
 
 NOAA_TIDES_CURRENTS = r'''NOAA Tides & Currents, managed by the Center for Operational Oceanographic
-		Products and Services (CO-OPS), is the authoritative U.S. source for water level, tidal, and
-		oceanographic data. It offers real-time monitoring and predictions for over 3,000 stations,
-		crucial for navigation, safety, and coastal resilience. https://tidesandcurrents.noaa.gov/web_services_info.html
+Products and Services (CO-OPS), is the authoritative U.S. source for water level, tidal, and
+oceanographic data. It offers real-time monitoring and predictions for over 3,000 stations,
+crucial for navigation, safety, and coastal resilience.
+
+	https://tidesandcurrents.noaa.gov/web_services_info.html
 '''
 
 STAR_MAP = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
-		XML API, Site Linker, and Image Generator interfaces. https://starmap360.com/blog/starmap-api-for-developers-and-sellers/
+XML API, Site Linker, and Image Generator interfaces.
+
+	https://starmap360.com/blog/starmap-api-for-developers-and-sellers/
 '''
 
 NASA_OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
-		multi-modal space life science data—including omics, physiological, phenotypic, behavioral,
-		and environmental telemetry—to advance basic and applied research as well as operational
-		outcomes for human space exploration.
+multi-modal space life science data—including omics, physiological, phenotypic, behavioral,
+and environmental telemetry—to advance basic and applied research as well as operational
+outcomes for human space exploration.
+
+	https://api.nasa.gov/#open-science-data-repository
 '''
 
 OPEN_SKY = r'''The OpenSky Network consists of a multitude of sensors connected to the Internet by
-		volunteers, industrial supporters, and academic/governmental organizations. All collected
-		raw data is archived in a large historical database. The database is primarily used by
-		researchers from different areas to analyze and improve air traffic control technologies
-		and processes. The main technologies behind the OpenSky Network are the Automatic Dependent
-		Surveillance-Broadcast (ADS-B) and Mode S. These technologies provide detailed (live) aircraft
-		information over the publicly accessible 1090 MHz radio frequency channel.
+volunteers, industrial supporters, and academic/governmental organizations. All collected
+raw data is archived in a large historical database. The database is primarily used by
+researchers from different areas to analyze and improve air traffic control technologies
+and processes. The main technologies behind the OpenSky Network are the Automatic Dependent
+Surveillance-Broadcast (ADS-B) and Mode S. These technologies provide detailed (live) aircraft
+information over the publicly accessible 1090 MHz radio frequency channel.
+
+	https://opensky-network.org/data/api
 '''
 
 EPA_ENVIROFACTS = r'''The Envirofacts Data Warehouse contains information from select EPA Environmental
-		program office databases and provides access about environmental activities that may affect air,
-		water, and land anywhere in the United States. https://www.epa.gov/enviro/envirofacts-data-service-api
+program office databases and provides access about environmental activities that may affect air,
+water, and land anywhere in the United States.
+
+	https://www.epa.gov/enviro/envirofacts-data-service-api
 '''
 
 EPA_UV_INDEX = r'''The EPA UV Index predicts daily solar UV radiation intensity on a 1–11+ scale,
-		helping to gauge sun-safe precautions. Developed with the National Weather Service, it factors
-		in ozone, clouds, and elevation to forecast noon intensity. A UV Alert is issued if the
-		index is 6+ and unusually high. https://www.epa.gov/enviro/web-services#uvindex
+helping to gauge sun-safe precautions. Developed with the National Weather Service, it factors
+in ozone, clouds, and elevation to forecast noon intensity. A UV Alert is issued if the
+index is 6+ and unusually high.
+
+	https://www.epa.gov/enviro/web-services#uvindex
 '''
 
 NASA_EONET = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
-		often in near real-time (NRT), of natural events such as dust storms, forest fires, and tropical
-		cyclones—empowering people all across the planet to locate, track, and potentially prepare for
-		and manage events that affect communities in their paths. The EONET application programming
-		interface (API) provides customization of features including curation and direct links to
-		image sources. https://eonet.gsfc.nasa.gov/docs/v2.1
+often in near real-time (NRT), of natural events such as dust storms, forest fires, and tropical
+cyclones—empowering people all across the planet to locate, track, and potentially prepare for
+and manage events that affect communities in their paths. The EONET application programming
+interface (API) provides customization of features including curation and direct links to
+image sources.
+
+	https://eonet.gsfc.nasa.gov/docs/v2.1
 '''
 
 NASA_FIRMS = r'''NASA’s Fire Information for Resource Management System (FIRMS) provides near
-		real-time, satellite-derived active fire and hotspot data (within 3 hours of observation)
-		to monitor wildfires. Using sensors from MODIS and VIIRS, it offers global coverage through
-		an interactive map, email alerts, and GIS data. It is designed for firefighters, scientists,
-		and natural resource managers. https://firms.modaps.eosdis.nasa.gov/api/
+real-time, satellite-derived active fire and hotspot data (within 3 hours of observation)
+to monitor wildfires. Using sensors from MODIS and VIIRS, it offers global coverage through
+an interactive map, email alerts, and GIS data. It is designed for firefighters, scientists,
+and natural resource managers.
+
+	https://firms.modaps.eosdis.nasa.gov/api/
 '''
 
 OPEN_WEATHER = r''' Open-Meteo leverages a powerful combination of global (11 km) and mesoscale (1 km) weather
-		models from esteemed national weather services, providing comprehensive forecasts with
-		remarkable precision. https://open-meteo.com/en/docs
+models from esteemed national weather services, providing comprehensive forecasts with
+remarkable precision.
+
+	https://open-meteo.com/en/docs
 '''
 
 HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name and date using the
-		Open-Meteo Geocoding API and Open-Meteo Historical Weather API. This class is intentionally
-		designed around the actual user-facing need in the Foo fetcher expander: enter a location
-		and a date, resolve that location to coordinates, then retrieve historical weather for that date.
-		https://open-meteo.com/en/docs/historical-weather-api
+Open-Meteo Geocoding API and Open-Meteo Historical Weather API. This class is intentionally
+designed around the actual user-facing need in the Foo fetcher expander: enter a location
+and a date, resolve that location to coordinates, then retrieve historical weather for that date.
+
+	https://open-meteo.com/en/docs/historical-weather-api
 '''
 
 ASTRONOMY_CATALOG = r'''The Open Astronomy Catalog (OAC) API is a RESTful interface designed for
-		programmatic access to open-access astronomical data, specifically focusing on transient events.
-		https://astrocats.space/
+programmatic access to open-access astronomical data, specifically focusing on transient events.
+
+	https://astrocats.space/
 		
 '''
 
 ASTRO_QUERY = r'''Access to the astropy package that contains key functionality and common tools needed for
-		performing astronomy and astrophysics with Python. It is at the core of the Astropy Project,
-		which aims to enable the community to develop a robust ecosystem of affiliated packages
-		covering a broad range of needs for astronomical research, data processing, and data analysis.
-		https://docs.astropy.org/en/stable/
+performing astronomy and astrophysics with Python. It is at the core of the Astropy Project,
+which aims to enable the community to develop a robust ecosystem of affiliated packages
+covering a broad range of needs for astronomical research, data processing, and data analysis.
+
+	https://docs.astropy.org/en/stable/
 '''
 
 US_NAVAL_OBSERVATORY = r'''Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
-		Assumed Position and Time:  this data service provides all the astronomical information
-		necessary to plot navigational lines of position from observations of the altitudes of
-		celestial bodies. https://aa.usno.navy.mil/data/api
+Assumed Position and Time:  this data service provides all the astronomical information
+necessary to plot navigational lines of position from observations of the altitudes of
+celestial bodies.
+
+	https://aa.usno.navy.mil/data/api
 '''
 
 GOOGLE_CSE = r'''The Cse Service is the endpoint that returns the requested searches.
-		You must identify a particular search engine to use in your request
-		(using the cx query parameter) as well as the search query (using the q query parameter).
-		In addition, you should provide a developer key (using the key query parameter).
+You must identify a particular search engine to use in your request
+(using the cx query parameter) as well as the search query (using the q query parameter).
+In addition, you should provide a developer key (using the key query parameter).
 '''
 
 GOOGLE_WEATHER = r'''The Google Weather API lets you request real-time, hyperlocal weather data for
-		locations around the world. Weather information includes temperature, precipitation,
-		humidity, and more. Include the latitude and longitude coordinates of the location in your
-		request URL parameters. https://developers.google.com/maps/documentation/weather/overview
+locations around the world. Weather information includes temperature, precipitation,
+humidity, and more. Include the latitude and longitude coordinates of the location in your
+request URL parameters.
+
+	https://developers.google.com/maps/documentation/weather/overview
 '''
 
 NASA_GLOBAL_IMAGERY = r'''NASA's Global Imagery Browse Services (GIBS) system provides visualizations
-		of NASA Earth Science observations through standardized web services. These services deliver
-		global, full-resolution visualizations of satellite data to users in a highly responsive manner,
-		enabling visual discovery of scientific phenomena, supporting timely decision-making for
-		natural hazards, educating the next generation of scientists, and making imagery of the planet
-		more accessible to the media and public. Browse all of these visualizations through our
-		Worldview application. https://nasa-gibs.github.io/gibs-api-docs/
+of NASA Earth Science observations through standardized web services. These services deliver
+global, full-resolution visualizations of satellite data to users in a highly responsive manner,
+enabling visual discovery of scientific phenomena, supporting timely decision-making for
+natural hazards, educating the next generation of scientists, and making imagery of the planet
+more accessible to the media and public. Browse all of these visualizations through our
+Worldview application.
+
+	https://nasa-gibs.github.io/gibs-api-docs/
 '''
 
 CDC_WONDER = r'''Wide-ranging ONline Data for Epidemiologic Research -- an easy-to-use, menu-driven
@@ -451,17 +490,19 @@ system that makes the information resources of the Centers for Disease Control a
 Prevention (CDC) available to public health professionals and the public at large. It provides
 access to a wide array of public health information.
 
-https://wonder.cdc.gov/wonder/help/wonder-api.html
+	https://wonder.cdc.gov/wonder/help/wonder-api.html
 '''
 
 SPACE_WEATHER = r'''The Space Weather Database Of Notifications, Knowledge, Information (DONKI) is
-		a comprehensive on-line tool for space weather forecasters, scientists, and the general
-		space science community. DONKI chronicles the daily interpretations of space weather
-		observations, analysis, models, forecasts, and notifications provided by the Space Weather
-		Research Center (SWRC), comprehensive knowledge-base search functionality to support anomaly
-		resolution and space science research, intelligent linkages, relationships, cause-and-effects
-		between space weather activities and comprehensive webservice API access to information
-		stored in DONKI. https://ccmc.gsfc.nasa.gov/tools/DONKI/
+a comprehensive on-line tool for space weather forecasters, scientists, and the general
+space science community. DONKI chronicles the daily interpretations of space weather
+observations, analysis, models, forecasts, and notifications provided by the Space Weather
+Research Center (SWRC), comprehensive knowledge-base search functionality to support anomaly
+resolution and space science research, intelligent linkages, relationships, cause-and-effects
+between space weather activities and comprehensive webservice API access to information
+stored in DONKI.
+
+	https://ccmc.gsfc.nasa.gov/tools/DONKI/
 '''
 
 STAR_CHART = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG

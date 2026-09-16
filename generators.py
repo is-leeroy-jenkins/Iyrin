@@ -66,7 +66,6 @@ from mistralai.client import Mistral as MistralAI
 import re
 import urllib
 
-
 def throw_if( name: str, value: object ) -> None:
 	"""Throw if.
 
@@ -301,7 +300,7 @@ class Grok( Generator ):
 			else:
 				parts = [ str( domains ) ]
 			
-			values: List[ str ] = [ ]
+			values: List[ str ]=[ ]
 			for entry in parts:
 				value = str( entry ).strip( ).lower( )
 				if not value:
@@ -346,7 +345,8 @@ class Grok( Generator ):
 		    bool: ``True`` when the condition is satisfied; otherwise ``False``.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata,
+		        writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'model', model )
@@ -374,7 +374,8 @@ class Grok( Generator ):
 		    bool: ``True`` when the condition is satisfied; otherwise ``False``.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and
+		        method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'model', model )
@@ -418,8 +419,8 @@ class Grok( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_instructions( self, system: str = None,
-			response_format: str = None ) -> str | None:
+	def build_instructions( self, system: str=None,
+			response_format: str=None ) -> str | None:
 		"""Build instructions.
 
 		Purpose:
@@ -436,8 +437,7 @@ class Grok( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			parts: List[ str ] = [ ]
-			
+			parts: List[ str ]=[ ]
 			if system and str( system ).strip( ):
 				parts.append( str( system ).strip( ) )
 			
@@ -459,8 +459,8 @@ class Grok( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_tools( self, web_search: bool = False, search_domains: Any = None ) -> List[
-		Dict[ str, Any ] ]:
+	def build_tools( self, web_search: bool=False,
+	                 search_domains: Any=None ) -> List[ Dict[ str, Any ] ]:
 		"""Build tools.
 
 		Purpose:
@@ -478,7 +478,6 @@ class Grok( Generator ):
 		"""
 		try:
 			tools: List[ Dict[ str, Any ] ] = [ ]
-			
 			if not web_search:
 				return tools
 			
@@ -499,8 +498,7 @@ class Grok( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_response_format( self, response_format: str = None ) -> Dict[
-		                                                                  str, Any ] | None:
+	def build_response_format( self, response_format: str=None ) -> Dict[ str, Any ] | None:
 		"""Build response format.
 
 		Purpose:
@@ -517,7 +515,6 @@ class Grok( Generator ):
 		"""
 		try:
 			mode = str( response_format or '' ).strip( ).lower( )
-			
 			if not mode or mode == 'auto':
 				return None
 			
@@ -533,9 +530,7 @@ class Grok( Generator ):
 			exception = Error( exc )
 			exception.module = 'generators'
 			exception.cause = 'Grok'
-			exception.method = (
-					'build_response_format( self, **args ) -> Dict[ str, Any ]'
-			)
+			exception.method = 'build_response_format( self, **args ) -> Dict[ str, Any ]'
 			Logger( ).write( exception )
 			raise exception
 	
@@ -573,7 +568,7 @@ class Grok( Generator ):
 				
 				output = response.get( 'output', [ ] )
 				if isinstance( output, list ):
-					parts: List[ str ] = [ ]
+					parts: List[ str ]=[ ]
 					
 					for item in output:
 						if not isinstance( item, dict ):
@@ -589,7 +584,7 @@ class Grok( Generator ):
 						return '\n'.join( parts ).strip( )
 			
 			if hasattr( response, '__iter__' ) and not isinstance( response, (str, bytes, dict) ):
-				parts: List[ str ] = [ ]
+				parts: List[ str ]=[ ]
 				
 				for event in response:
 					event_type = getattr( event, 'type', '' )
@@ -611,7 +606,7 @@ class Grok( Generator ):
 			
 			output = getattr( response, 'output', None )
 			if output:
-				parts: List[ str ] = [ ]
+				parts: List[ str ]=[ ]
 				
 				for item in output:
 					content = getattr( item, 'content', None )
@@ -705,13 +700,12 @@ class Grok( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def fetch( self, query: str, model: str = 'grok-4-fast-reasoning',
-			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
-			seed: int | None = None, system: str = None,
-			response_format: str = None, reasoning_effort: str = None,
-			web_search: bool = False, search_domains: Any = None,
-			stop: List[ str ] = None, stream: bool = False, store: bool = True,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
+	def fetch( self, query: str, model: str='grok-4-fast-reasoning',
+	           temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0,
+	           seed: int | None=None, system: str=None, response_format: str=None,
+	           reasoning_effort: str=None, web_search: bool=False, search_domains: Any=None,
+	           stop: List[ str ]=None, stream: bool=False, store: bool=True,
+	           parallel_tool_calls: bool=True, tool_choice: str='auto' ) -> str | None:
 		"""Fetch.
 
 		Purpose:
@@ -762,26 +756,14 @@ class Grok( Generator ):
 				search_domains=self.search_domains )
 			
 			input_messages: List[ Dict[ str, str ] ] = [ ]
-			
 			if self.system_instructions:
-				input_messages.append( {
-							'role': 'system',
-							'content': self.system_instructions
-					} )
+				input_messages.append( { 'role': 'system', 'content': self.system_instructions } )
 			
-			input_messages.append( {
-						'role': 'user',
-						'content': self.query
-				} )
+			input_messages.append( { 'role': 'user', 'content': self.query } )
 			
-			self.params = {
-					'model': self.model,
-					'input': input_messages,
-					'max_output_tokens': self.max_tokens,
-					'stream': self.stream,
-					'store': self.store,
-					'parallel_tool_calls': self.parallel_tool_calls
-			}
+			self.params = { 'model': self.model, 'input': input_messages,
+					'max_output_tokens': self.max_tokens, 'stream': self.stream,
+					'store': self.store, 'parallel_tool_calls': self.parallel_tool_calls }
 			
 			if seed is not None:
 				self.params[ 'seed' ] = int( seed )
@@ -795,7 +777,6 @@ class Grok( Generator ):
 				self.params[ 'tool_choice' ] = self.tool_choice
 			
 			is_reasoning = self.is_reasoning_model( self.model )
-			
 			if self.supports_reasoning_effort( self.model ) and self.reasoning_effort:
 				self.params[ 'reasoning_effort' ] = self.reasoning_effort
 			elif self.supports_reasoning_object( self.model ) and self.reasoning_effort:
@@ -819,13 +800,13 @@ class Grok( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate_text( self, query: str, model: str = 'grok-4-fast-reasoning',
-			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
-			seed: int | None = None, system: str = None,
-			response_format: str = None, reasoning_effort: str = None,
-			web_search: bool = False, search_domains: Any = None,
-			stop: List[ str ] = None, stream: bool = False, store: bool = True,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
+	def generate_text( self, query: str, model: str='grok-4-fast-reasoning',
+			temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0,
+			seed: int | None=None, system: str=None,
+			response_format: str=None, reasoning_effort: str=None,
+			web_search: bool=False, search_domains: Any=None,
+			stop: List[ str ]=None, stream: bool=False, store: bool=True,
+			parallel_tool_calls: bool=True, tool_choice: str='auto' ) -> str | None:
 		"""Generate text.
 
 		Purpose:
@@ -870,12 +851,12 @@ class Grok( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def search_web( self, query: str, model: str = 'grok-4-fast-reasoning',
-			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
-			seed: int | None = None, system: str = None,
-			response_format: str = None, reasoning_effort: str = None,
-			search_domains: Any = None, stream: bool = False, store: bool = True,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto' ) -> str | None:
+	def search_web( self, query: str, model: str='grok-4-fast-reasoning',
+			temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0,
+			seed: int | None=None, system: str=None,
+			response_format: str=None, reasoning_effort: str=None,
+			search_domains: Any=None, stream: bool=False, store: bool=True,
+			parallel_tool_calls: bool=True, tool_choice: str='auto' ) -> str | None:
 		"""Search web.
 
 		Purpose:
@@ -922,7 +903,8 @@ class Gemini( Generator ):
 	"""Gemini component.
 
 	Purpose:
-	    Wraps Google Gemini generation with configurable sampling, thinking controls, response formats, and Google Search grounding.
+	    Wraps Google Gemini generation with configurable sampling, thinking controls,
+	    response formats, and Google Search grounding.
 
 	Attributes:
 	    api_key (Optional[str]): Provider credential loaded from application configuration.
@@ -1039,7 +1021,8 @@ class Gemini( Generator ):
 		    List[str]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to
+		        the application logger, and re-raises it.
 		"""
 		try:
 			if domains is None:
@@ -1052,11 +1035,9 @@ class Gemini( Generator ):
 			else:
 				parts = [ str( domains ) ]
 			
-			values: List[ str ] = [ ]
-			
+			values: List[ str ]=[ ]
 			for entry in parts:
 				value = str( entry ).strip( ).lower( )
-				
 				if not value:
 					continue
 				
@@ -1138,7 +1119,8 @@ class Gemini( Generator ):
 		    bool: ``True`` when the condition is satisfied; otherwise ``False``.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata,
+		        writes it to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'model', model )
@@ -1179,8 +1161,8 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_system_instruction( self, system: str = None, response_format: str = None,
-			grounding: bool = False, search_domains: Any = None ) -> str | None:
+	def build_system_instruction( self, system: str=None, response_format: str=None,
+			grounding: bool=False, search_domains: Any=None ) -> str | None:
 		"""Build system instruction.
 
 		Purpose:
@@ -1199,7 +1181,7 @@ class Gemini( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			parts: List[ str ] = [ ]
+			parts: List[ str ]=[ ]
 			if system and str( system ).strip( ):
 				parts.append( str( system ).strip( ) )
 			
@@ -1225,9 +1207,9 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_thinking_config( self, model: str, reasoning: bool = False,
-			thinking_level: str = None, thinking_budget: int | None = None,
-			include_thoughts: bool = False ) -> Any:
+	def build_thinking_config( self, model: str, reasoning: bool=False,
+			thinking_level: str=None, thinking_budget: int | None=None,
+			include_thoughts: bool=False ) -> Any:
 		"""Build thinking config.
 
 		Purpose:
@@ -1251,10 +1233,8 @@ class Gemini( Generator ):
 				return None
 			
 			thinking_data: Dict[ str, Any ] = { }
-			
 			if self.supports_thinking_level( model ):
 				level = str( thinking_level or 'low' ).strip( ).lower( )
-				
 				if level not in [ 'minimal', 'low', 'medium', 'high' ]:
 					level = 'low'
 				
@@ -1285,7 +1265,7 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_tools( self, grounding: bool = False ) -> List[ Any ]:
+	def build_tools( self, grounding: bool=False ) -> List[ Any ]:
 		"""Build tools.
 
 		Purpose:
@@ -1317,13 +1297,13 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_config( self, model: str, temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			candidate_count: int = 1, seed: int | None = None,
-			system: str = None, response_format: str = None,
-			stop_sequences: Any = None, grounding: bool = False, search_domains: Any = None,
-			reasoning: bool = False, thinking_level: str = None,
-			thinking_budget: int | None = None, include_thoughts: bool = False,
+	def build_config( self, model: str, temperature: float=0.7,
+			max_tokens: int=2048, top_p: float=1.0, top_k: int | None=None,
+			candidate_count: int=1, seed: int | None=None,
+			system: str=None, response_format: str=None,
+			stop_sequences: Any=None, grounding: bool=False, search_domains: Any=None,
+			reasoning: bool=False, thinking_level: str=None,
+			thinking_budget: int | None=None, include_thoughts: bool=False,
 			response_json_schema: Dict[ str, Any ] = None ) -> Any:
 		"""Build config.
 
@@ -1439,7 +1419,7 @@ class Gemini( Generator ):
 			
 			candidates = getattr( response, 'candidates', None )
 			if candidates:
-				parts: List[ str ] = [ ]
+				parts: List[ str ]=[ ]
 				
 				for candidate in candidates:
 					content = getattr( candidate, 'content', None )
@@ -1467,14 +1447,14 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def fetch( self, prompt: str, model: str = 'gemini-2.5-flash',
-			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
-			top_k: int | None = None, candidate_count: int = 1,
-			seed: int | None = None, system: str = None,
-			response_format: str = None, stop_sequences: Any = None,
-			grounding: bool = False, search_domains: Any = None,
-			reasoning: bool = False, thinking_level: str = None,
-			thinking_budget: int | None = None, include_thoughts: bool = False,
+	def fetch( self, prompt: str, model: str='gemini-2.5-flash',
+			temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0,
+			top_k: int | None=None, candidate_count: int=1,
+			seed: int | None=None, system: str=None,
+			response_format: str=None, stop_sequences: Any=None,
+			grounding: bool=False, search_domains: Any=None,
+			reasoning: bool=False, thinking_level: str=None,
+			thinking_budget: int | None=None, include_thoughts: bool=False,
 			response_json_schema: Dict[ str, Any ] = None ) -> str | None:
 		"""Fetch.
 
@@ -1550,14 +1530,14 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str = 'gemini-2.5-flash',
-			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
-			top_k: int | None = None, candidate_count: int = 1,
-			seed: int | None = None, system: str = None,
-			response_format: str = None, stop_sequences: Any = None,
-			grounding: bool = False, search_domains: Any = None,
-			reasoning: bool = False, thinking_level: str = None,
-			thinking_budget: int | None = None, include_thoughts: bool = False,
+	def generate_text( self, prompt: str, model: str='gemini-2.5-flash',
+			temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0,
+			top_k: int | None=None, candidate_count: int=1,
+			seed: int | None=None, system: str=None,
+			response_format: str=None, stop_sequences: Any=None,
+			grounding: bool=False, search_domains: Any=None,
+			reasoning: bool=False, thinking_level: str=None,
+			thinking_budget: int | None=None, include_thoughts: bool=False,
 			response_json_schema: Dict[ str, Any ] = None ) -> str | None:
 		"""Generate text.
 
@@ -1606,14 +1586,14 @@ class Gemini( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def search_web( self, prompt: str, model: str = 'gemini-2.5-flash',
-			temperature: float = 0.7, max_tokens: int = 2048, top_p: float = 1.0,
-			top_k: int | None = None, candidate_count: int = 1,
-			seed: int | None = None, system: str = None,
-			response_format: str = None, stop_sequences: Any = None,
-			search_domains: Any = None, reasoning: bool = False,
-			thinking_level: str = None, thinking_budget: int | None = None,
-			include_thoughts: bool = False,
+	def search_web( self, prompt: str, model: str='gemini-2.5-flash',
+			temperature: float=0.7, max_tokens: int=2048, top_p: float=1.0,
+			top_k: int | None=None, candidate_count: int=1,
+			seed: int | None=None, system: str=None,
+			response_format: str=None, stop_sequences: Any=None,
+			search_domains: Any=None, reasoning: bool=False,
+			thinking_level: str=None, thinking_budget: int | None=None,
+			include_thoughts: bool=False,
 			response_json_schema: Dict[ str, Any ] = None ) -> str | None:
 		"""Search web.
 
@@ -1874,11 +1854,11 @@ class Claude( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def fetch( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			system: str = None, stop_sequences: List[ str ] = None,
-			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
-			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
+	def fetch( self, query: str, model: str='claude-sonnet-4-6', temperature: float=0.7,
+			max_tokens: int=2048, top_p: float=1.0, top_k: int | None=None,
+			system: str=None, stop_sequences: List[ str ]=None,
+			thinking: bool=False, thinking_budget: int | None=None, web_search: bool=False,
+			search_domains: Any=None, blocked_domains: Any=None ) -> str | None:
 		"""Fetch.
 
 		Purpose:
@@ -1983,11 +1963,11 @@ class Claude( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate_text( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			system: str = None, stop_sequences: List[ str ] = None,
-			thinking: bool = False, thinking_budget: int | None = None, web_search: bool = False,
-			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
+	def generate_text( self, query: str, model: str='claude-sonnet-4-6', temperature: float=0.7,
+			max_tokens: int=2048, top_p: float=1.0, top_k: int | None=None,
+			system: str=None, stop_sequences: List[ str ]=None,
+			thinking: bool=False, thinking_budget: int | None=None, web_search: bool=False,
+			search_domains: Any=None, blocked_domains: Any=None ) -> str | None:
 		"""Generate text.
 
 		Purpose:
@@ -2028,11 +2008,11 @@ class Claude( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def search_web( self, query: str, model: str = 'claude-sonnet-4-6', temperature: float = 0.7,
-			max_tokens: int = 2048, top_p: float = 1.0, top_k: int | None = None,
-			system: str = None, stop_sequences: List[ str ] = None,
-			thinking: bool = False, thinking_budget: int | None = None,
-			search_domains: Any = None, blocked_domains: Any = None ) -> str | None:
+	def search_web( self, query: str, model: str='claude-sonnet-4-6', temperature: float=0.7,
+			max_tokens: int=2048, top_p: float=1.0, top_k: int | None=None,
+			system: str=None, stop_sequences: List[ str ]=None,
+			thinking: bool=False, thinking_budget: int | None=None,
+			search_domains: Any=None, blocked_domains: Any=None ) -> str | None:
 		"""Search web.
 
 		Purpose:
@@ -2187,7 +2167,7 @@ class Mistral( Generator ):
 							return content.strip( )
 						
 						if isinstance( content, list ):
-							parts: List[ str ] = [ ]
+							parts: List[ str ]=[ ]
 							for item in content:
 								if isinstance( item, str ) and item.strip( ):
 									parts.append( item.strip( ) )
@@ -2209,9 +2189,9 @@ class Mistral( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def fetch( self, query: str, model: str = 'mistral-large-latest', temperature: float = 0.7,
-			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
-			safe_mode: bool = False, system: str = None ) -> str | None:
+	def fetch( self, query: str, model: str='mistral-large-latest', temperature: float=0.7,
+			max_tokens: int=1024, top_p: float=1.0, seed: int | None=None,
+			safe_mode: bool=False, system: str=None ) -> str | None:
 		"""Fetch.
 
 		Purpose:
@@ -2408,9 +2388,9 @@ class Chat( Generator ):
 	input: Optional[ Any ]
 	messages: Optional[ Any ]
 	
-	def __init__( self, num: int = 1, temp: float = 0.8, top: float = 0.9,
-			freq: float = 0.0, pres: float = 0.0, iters: int = 10000,
-			store: bool = True, stream: bool = True ) -> None:
+	def __init__( self, num: int=1, temp: float=0.8, top: float=0.9,
+			freq: float=0.0, pres: float=0.0, iters: int=10000,
+			store: bool=True, stream: bool=True ) -> None:
 		"""Initialize the instance.
 
 		Purpose:
@@ -2508,7 +2488,7 @@ class Chat( Generator ):
 			else:
 				parts = [ str( domains ) ]
 			
-			values: List[ str ] = [ ]
+			values: List[ str ]=[ ]
 			
 			for entry in parts:
 				value = str( entry ).strip( ).lower( )
@@ -2574,9 +2554,9 @@ class Chat( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_instructions( self, system: str = None,
-			response_format: str = None, web_search: bool = False,
-			search_domains: Any = None ) -> str | None:
+	def build_instructions( self, system: str=None,
+			response_format: str=None, web_search: bool=False,
+			search_domains: Any=None ) -> str | None:
 		"""Build instructions.
 
 		Purpose:
@@ -2595,7 +2575,7 @@ class Chat( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			parts: List[ str ] = [ ]
+			parts: List[ str ]=[ ]
 			
 			if system and str( system ).strip( ):
 				parts.append( str( system ).strip( ) )
@@ -2624,8 +2604,8 @@ class Chat( Generator ):
 			raise exception
 	
 	def build_text_format( self, response_format: str | Dict[ str, Any ] = None,
-			json_schema: Dict[ str, Any ] = None, schema_name: str = 'structured_response',
-			schema_description: str = 'Structured JSON response.' ) -> Dict[ str, Any ] | None:
+			json_schema: Dict[ str, Any ] = None, schema_name: str='structured_response',
+			schema_description: str='Structured JSON response.' ) -> Dict[ str, Any ] | None:
 		"""Build text format.
 
 		Purpose:
@@ -2678,9 +2658,9 @@ class Chat( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def build_tools( self, web_search: bool = False, search_domains: Any = None,
-			file_search: bool = False, vector_store_ids: List[ str ] = None,
-			max_file_results: int = 20 ) -> List[ Dict[ str, Any ] ]:
+	def build_tools( self, web_search: bool=False, search_domains: Any=None,
+			file_search: bool=False, vector_store_ids: List[ str ]=None,
+			max_file_results: int=20 ) -> List[ Dict[ str, Any ] ]:
 		"""Build tools.
 
 		Purpose:
@@ -2753,7 +2733,7 @@ class Chat( Generator ):
 					return str( response.get( 'text' ) )
 			
 			if hasattr( response, '__iter__' ) and not isinstance( response, (str, bytes, dict) ):
-				parts: List[ str ] = [ ]
+				parts: List[ str ]=[ ]
 				
 				for event in response:
 					event_type = getattr( event, 'type', '' )
@@ -2775,7 +2755,7 @@ class Chat( Generator ):
 			
 			output = getattr( response, 'output', None )
 			if output:
-				parts: List[ str ] = [ ]
+				parts: List[ str ]=[ ]
 				for item in output:
 					content = getattr( item, 'content', None )
 					if content:
@@ -2797,15 +2777,15 @@ class Chat( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def fetch( self, prompt: str, model: str = 'gpt-5-mini', temperature: float = 0.7,
-			max_tokens: int = 1024, top_p: float = 1.0, seed: int | None = None,
-			system: str = None, response_format: str | Dict[ str, Any ] = None,
-			reasoning_effort: str = None, web_search: bool = False,
-			search_domains: Any = None, store: bool = True, stream: bool = False,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto',
+	def fetch( self, prompt: str, model: str='gpt-5-mini', temperature: float=0.7,
+			max_tokens: int=1024, top_p: float=1.0, seed: int | None=None,
+			system: str=None, response_format: str | Dict[ str, Any ] = None,
+			reasoning_effort: str=None, web_search: bool=False,
+			search_domains: Any=None, store: bool=True, stream: bool=False,
+			parallel_tool_calls: bool=True, tool_choice: str='auto',
 			json_schema: Dict[ str, Any ] = None,
-			schema_name: str = 'structured_response',
-			schema_description: str = 'Structured JSON response.' ) -> str:
+			schema_name: str='structured_response',
+			schema_description: str='Structured JSON response.' ) -> str:
 		"""Fetch.
 
 		Purpose:
@@ -2904,13 +2884,13 @@ class Chat( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def generate_text( self, prompt: str, model: str = 'gpt-5-mini',
-			temperature: float = 0.7, max_tokens: int = 1024, top_p: float = 1.0,
-			seed: int | None = None, system: str = None,
+	def generate_text( self, prompt: str, model: str='gpt-5-mini',
+			temperature: float=0.7, max_tokens: int=1024, top_p: float=1.0,
+			seed: int | None=None, system: str=None,
 			response_format: str | Dict[ str, Any ] = None,
-			reasoning_effort: str = None, web_search: bool = False,
-			search_domains: Any = None, store: bool = True, stream: bool = False,
-			parallel_tool_calls: bool = True, tool_choice: str = 'auto',
+			reasoning_effort: str=None, web_search: bool=False,
+			search_domains: Any=None, store: bool=True, stream: bool=False,
+			parallel_tool_calls: bool=True, tool_choice: str='auto',
 			json_schema: Dict[ str, Any ] = None ) -> str:
 		"""Generate text.
 
@@ -3094,13 +3074,13 @@ class Chat( Generator ):
 			Logger( ).write( exception )
 			raise exception
 	
-	def search_web( self, prompt: str, model: str = 'gpt-5-mini',
-			temperature: float = 0.7, max_tokens: int = 1024, top_p: float = 1.0,
-			seed: int | None = None, system: str = None,
+	def search_web( self, prompt: str, model: str='gpt-5-mini',
+			temperature: float=0.7, max_tokens: int=1024, top_p: float=1.0,
+			seed: int | None=None, system: str=None,
 			response_format: str | Dict[ str, Any ] = None,
-			reasoning_effort: str = None, search_domains: Any = None,
-			store: bool = True, stream: bool = False, parallel_tool_calls: bool = True,
-			tool_choice: str = 'auto' ) -> str:
+			reasoning_effort: str=None, search_domains: Any=None,
+			store: bool=True, stream: bool=False, parallel_tool_calls: bool=True,
+			tool_choice: str='auto' ) -> str:
 		"""Search web.
 
 		Purpose:
