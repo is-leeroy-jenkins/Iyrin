@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f430359c-24d3-4e3f-b230-7043fd529607" name="Changes" comment="updates">
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-    </list>
+    <list default="true" id="f430359c-24d3-4e3f-b230-7043fd529607" name="Changes" comment="updates" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -90,15 +88,7 @@
       <workItem from="1789396666218" duration="14730000" />
       <workItem from="1789435497719" duration="14161000" />
       <workItem from="1789506839312" duration="7790000" />
-      <workItem from="1789585461738" duration="1944000" />
-    </task>
-    <task id="LOCAL-00017" summary="updates">
-      <option name="closed" value="true" />
-      <created>1789247938937</created>
-      <option name="number" value="00017" />
-      <option name="presentableId" value="LOCAL-00017" />
-      <option name="project" value="LOCAL" />
-      <updated>1789247938937</updated>
+      <workItem from="1789585461738" duration="2767000" />
     </task>
     <task id="LOCAL-00018" summary="updates">
       <option name="closed" value="true" />
@@ -484,7 +474,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789587430738</updated>
     </task>
-    <option name="localTasksCounter" value="66" />
+    <task id="LOCAL-00066" summary="updates">
+      <option name="closed" value="true" />
+      <created>1789587482463</created>
+      <option name="number" value="00066" />
+      <option name="presentableId" value="LOCAL-00066" />
+      <option name="project" value="LOCAL" />
+      <updated>1789587482463</updated>
+    </task>
+    <option name="localTasksCounter" value="67" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
