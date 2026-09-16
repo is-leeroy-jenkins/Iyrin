@@ -517,7 +517,7 @@ Science Data Center (NSSDC) to support a range of NASA science programs and to f
 international NASA responsibilities including those of NSSDC and the World Data Center-A
 for Rockets and Satellites.
 
-https://sscweb.gsfc.nasa.gov/
+	https://sscweb.gsfc.nasa.gov/
 '''
 
 PUB_MED_SEARCH_LOADER = r''' Queries the PubMed biomedical library to fetch publication summaries and
@@ -566,7 +566,7 @@ US_HEALTH_DATA = r'''Health & Human Services Open Data to inform decisions by th
 policymakers, drive innovation and economic activity, accelerate scientific research, and
 strengthen the foundation of an open and transparent government.
 
-https://healthdata.gov/login
+	https://healthdata.gov/login
 '''
 
 WHO_DATA = r'''The GHO portal provides a simple query interface to the World Health Organization's
@@ -581,5 +581,5 @@ focuses on improving population data at local levels and helping ensure it is us
 health, development, and humanitarian action, including tracking progress towards the
 Sustainable Development Goals (SDGs).
 
-https://www.worldpop.org/sdi/introapi/
+	https://www.worldpop.org/sdi/introapi/
 '''
