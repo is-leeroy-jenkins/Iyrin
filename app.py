@@ -5329,7 +5329,7 @@ if mode == 'Document Data':
 			# ------- Expander ArXiv Loader
 			# ----------------------------
 			with st.expander( label='ArXiv Loader', icon='🧠', expanded=False ):
-				st.caption( 'API', cfg.ARXIV_LOADER )
+				st.caption( 'API', help=cfg.ARXIV_LOADER )
 				arxiv_query = st.text_input( 'Query', placeholder='e.g., transformer OR llm',
 					key='arxiv_query', )
 				
@@ -5387,7 +5387,7 @@ if mode == 'Document Data':
 			# ---- Expander Wikipedia Loader
 			# ----------------------------
 			with st.expander( label='Wikipedia Loader', icon='📚', expanded=False ):
-				st.caption( 'API', cfg.WIKIPEDIA_LOADER )
+				st.caption( 'API', help=cfg.WIKIPEDIA_LOADER )
 				wiki_query = st.text_input( 'Query',
 					placeholder='e.g., Natural language processing', key='wiki_query', )
 				
@@ -5450,7 +5450,7 @@ if mode == 'Document Data':
 			# ----- Expander GitHub Loader
 			# ----------------------------
 			with st.expander( label='GitHub Loader', icon='🐙', expanded=False ):
-				st.caption( 'API', cfg.GITHUB_LOADER )
+				st.caption( 'API', help=cfg.GITHUB_LOADER )
 				gh_url = st.text_input( 'GitHub API URL', placeholder='https://api.github.com',
 					value='https://api.github.com', key='gh_url',
 					help='GitHub REST API base URL.', )
@@ -5520,7 +5520,7 @@ if mode == 'Document Data':
 			# -------- Expander Outlook Loader
 			# ----------------------------
 			with st.expander( label='Outlook Loader', icon='📨', expanded=False ):
-				st.caption( 'API', cfg.OUTLOOK_LOADER )
+				st.caption( 'API', help=cfg.OUTLOOK_LOADER )
 				outlook_file = st.file_uploader( 'Upload Outlook Message', type=[ 'msg' ],
 					key='outlook_upload', )
 				
@@ -5596,7 +5596,7 @@ if mode == 'Document Data':
 			# ------- Expander Web Loader
 			# ----------------------------
 			with st.expander( label='Web Loader', icon='🌐', expanded=False ):
-				st.caption( 'API', cfg.WEB_LOADER )
+				st.caption( 'API', help=cfg.WEB_LOADER )
 				urls = st.text_area( 'Enter one URL per line',
 					placeholder="https://example.com\nhttps://another.com", key='web_urls', )
 				
@@ -5660,7 +5660,7 @@ if mode == 'Document Data':
 			# ----- Expander Web Crawler
 			# ----------------------------
 			with st.expander( label='Web Crawler', icon='🕷️', expanded=False ):
-				st.caption( 'API', cfg.WEB_CRAWLER )
+				st.caption( 'API', help=cfg.WEB_CRAWLER )
 				start_url = st.text_input( 'Start URL', placeholder='https://example.com',
 					key='crawl_start_url', )
 				
@@ -5735,7 +5735,7 @@ if mode == 'Document Data':
 			# ----- Expander Email Loader
 			# ----------------------------
 			with st.expander( label='E-mail Loader', icon='📧', expanded=False ):
-				st.caption( 'API', cfg.EMAIL_LOADER )
+				st.caption( 'API', help=cfg.EMAIL_LOADER )
 				email_file = st.file_uploader( 'Upload Email File', type=[ 'eml' ],
 					key='email_upload', )
 				
@@ -5817,7 +5817,7 @@ if mode == 'Document Data':
 			# ---- Expander PubMed Loader
 			# ----------------------------
 			with st.expander( label='Pub Med Loader', icon='🧬', expanded=False ):
-				st.caption( 'API', cfg.PUBMED_LOADER )
+				st.caption( 'API', help=cfg.PUBMED_LOADER )
 				pubmed_query = st.text_input( 'PubMed Query', value='', key='pubmed_query',
 					placeholder='e.g. transformer models biomedical NLP', )
 				
@@ -5890,7 +5890,7 @@ if mode == 'Document Data':
 			# --- Expander Open City Loader
 			# ----------------------------
 			with st.expander( label='Open City Loader', icon='🏙️', expanded=False ):
-				st.caption( 'API', cfg.OPEN_CITY_DATA_LOADER )
+				st.caption( 'API', help=cfg.OPEN_CITY_DATA_LOADER )
 				open_city_id = st.text_input( 'City Domain', value='', key='open_city_id',
 					placeholder='e.g. data.sfgov.org',
 					help='City domain identifier for the Socrata-backed portal.', icon='💾',
@@ -5975,7 +5975,7 @@ if mode == 'Document Data':
 			# ---- Expander OneDrive Loader
 			# ----------------------------
 			with st.expander( label='OneDrive Loader', icon='🟦', expanded=False ):
-				st.caption( 'API', cfg.ONEDRIVE_LOADER )
+				st.caption( 'API', help=cfg.ONEDRIVE_LOADER )
 				onedrive_drive_id = st.text_input( 'Drive ID', value='', key='onedrive_drive_id',
 					placeholder='OneDrive drive identifier', )
 				
@@ -6059,7 +6059,7 @@ if mode == 'Document Data':
 			# ---- Expander Google Cloud File Loader
 			# ----------------------------
 			with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
-				st.caption( 'API', cfg.WEB_CRAWLER )
+				st.caption( 'API', help=cfg.WEB_CRAWLER )
 				gcs_project_name = st.text_input( 'Project Name', value='',
 					key='gcs_file_project_name', placeholder='e.g. my-gcp-project', )
 				
@@ -6142,7 +6142,7 @@ if mode == 'Document Data':
 			# ---- Expander AWS File Loader
 			# ----------------------------
 			with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
-				st.caption( 'API', cfg.AWS_S3FILE_LOADER )
+				st.caption( 'API', help=cfg.AWS_S3FILE_LOADER )
 				aws_file_bucket = st.text_input( 'Bucket', value='', key='aws_file_bucket',
 					placeholder='e.g. my-s3-bucket', )
 				
