@@ -4161,7 +4161,7 @@ elif mode == 'Site Crawler':
 # =============================================================================
 # DOCUMENT LOADING MODE
 # =============================================================================
-if mode == 'Web Loading':
+if mode == 'Document Data':
 	tokens = st.session_state[ 'tokens' ]
 	documents = st.session_state[ 'documents' ]
 	raw_text = st.session_state[ 'raw_text' ]
@@ -4178,6 +4178,7 @@ if mode == 'Web Loading':
 			st.success( _loader_msg )
 		
 		with st.expander( label='Local Documents', expanded=True ):
+			
 			# ----------------------------
 			# ------- Expander NLTK Loader
 			# ----------------------------
@@ -4247,7 +4248,8 @@ if mode == 'Web Loading':
 					                               d.metadata.get( 'loader' ) != 'NLTKLoader' ]
 					
 					st.session_state.raw_text = ("\n\n".join( d.page_content for d in
-					                                          st.session_state.documents ) if st.session_state.documents else None)
+					                                          st.session_state.documents ) \
+						                             if st.session_state.documents else None)
 					
 					st.session_state.active_loader = None
 					st.info( 'NLTKLoader documents removed.' )
@@ -4381,9 +4383,8 @@ if mode == 'Web Loading':
 					st.session_state.documents = documents
 					st.session_state.raw_documents = list( documents )
 					st.session_state.raw_text = "\n\n".join( d.page_content for d in documents if
-					                                         hasattr( d,
-						                                         'page_content' ) and isinstance(
-						                                         d.page_content,
+					                                         hasattr( d, 'page_content' ) \
+					                                         and isinstance( d.page_content,
 						                                         str ) and d.page_content.strip( ) )
 					
 					st.session_state.active_loader = 'TextLoader'
@@ -5350,6 +5351,7 @@ if mode == 'Web Loading':
 				render_document_processing_actions( 'JsonLoader', 'json' )
 		
 		with st.expander( label='Web Documents', expanded=False ):
+			
 			# ----------------------------
 			# ------- Expander ArXiv Loader
 			# ----------------------------
@@ -8372,7 +8374,7 @@ elif mode == 'Geoscience Data':
 # ==============================================================================
 # ASTRONOMICAL MODE
 # ==============================================================================
-elif mode == 'Astronomical':
+elif mode == 'Astronomical Data':
 	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 	with center:
 		st.subheader( 'Astronomical Data' )
@@ -9375,7 +9377,7 @@ elif mode == 'Celestial Map':
 # ==============================================================================
 # DEMOGRAPHIC MODE
 # ==============================================================================
-elif mode == 'Population & Health':
+elif mode == 'Public Health Data':
 	st.subheader( f'🩺 Population & Public Health' )
 	st.divider( )
 	demographic_location = get_global_location_default( )
@@ -11222,7 +11224,7 @@ elif mode == 'Population & Health':
 # ==============================================================================
 # TEXT GENERATION MODE
 # ==============================================================================
-elif mode == 'Generative AI':
+elif mode == 'Artificial Intelligence':
 	st.subheader( '🧠  Generative AI' )
 	st.divider( )
 	
@@ -12420,7 +12422,7 @@ elif mode == 'Generative AI':
 # ==============================================================================
 # DATA UPLOAD
 # ==============================================================================
-elif mode == 'Data Upload':
+elif mode == 'File Upload':
 	left, center, right = st.columns( [ 0.05, 0.90, 0.05 ] )
 	with center:
 		st.subheader( 'Excel / CSV' )

@@ -114,6 +114,17 @@ PURPLEAIR_API_KEY = os.getenv( 'PURPLEAIR_API_KEY' )
 SKYMAP_TOKEN = os.getenv( 'SKY_MAP_TOKEN' )
 
 
+# -------------- SETTINGS
+
+MODES = [ 'Geocoding', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
+          'Document Data', 'Geoscience Data', 'Astronomical Data', 'Celestial Map',
+          'Pupblic Health Data', 'Aritificial Intelligence', 'File Upload', 'Data Management' ]
+
+
+AGENTS = ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+		'AppleWebKit/537.36 (KHTML, like Gecko) '
+		'Chrome/147.0.0.0 Safari/537.36' )
+
 # ----------------- Models
 
 GPT_MODELS = [ 'gpt-5.4', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano',
@@ -130,17 +141,6 @@ CLAUDE_MODELS = [ 'claude-opus-4-6', 'claude-sonnet-4-6',
 
 MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
                    'mistral-small-latest', 'mistral-ocr-latest'  ]
-
-# -------------- SETTINGS
-
-MODES = [ 'Geocoding', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
-          'Web Loading', 'Geoscience Data', 'Astronomical', 'Celestial Map',
-          'Population & Health', 'Generative AI', 'Data Upload', 'Data Management' ]
-
-
-AGENTS = ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-		'AppleWebKit/537.36 (KHTML, like Gecko) '
-		'Chrome/147.0.0.0 Safari/537.36' )
 
 # -------- LOADER DEFINITIONS -------------------
 
