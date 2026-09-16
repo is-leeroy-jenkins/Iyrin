@@ -6557,6 +6557,7 @@ if mode == 'Document Data':
 # ==============================================================================
 elif mode == 'Geoscience Data':
 	with st.expander( 'Geoscience Data', expanded=True ):
+		
 		with st.expander( 'Weather', expanded=True ):
 			left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 			with center:

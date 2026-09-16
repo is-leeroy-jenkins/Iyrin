@@ -159,30 +159,30 @@ NLTK_LOADER = r'''The Natural Language Toolkit (NLTK) is a comprehensive, open-s
 '''
 
 HTML_LOADER = r'''Provides Langchain's UnstructuredHTMLLoader's functionality to parse HTML files
-		into Document objects. You can run the loader in one of two modes: "single" and "elements".
-		If you use "single" mode, the document will be returned as a single langchain Document object.
-		If you use "elements" mode, the unstructured library will split the document into elements
-		such as Title and NarrativeText. You can pass in additional unstructured kwargs after mode
-		to apply different unstructured settings.
+into Document objects. You can run the loader in one of two modes: "single" and "elements".
+If you use "single" mode, the document will be returned as a single langchain Document object.
+If you use "elements" mode, the unstructured library will split the document into elements
+such as Title and NarrativeText. You can pass in additional unstructured kwargs after mode
+to apply different unstructured settings.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/html/UnstructuredHTMLLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/html/UnstructuredHTMLLoader
 '''
 
 WEB_CRAWLER = r'''Web fetching with optional Playwright-backed page rendering.
 '''
 
 WEB_LOADER = r'''Functionality to load all text from HTML webpages into
-		a document format that can be used downstream.
+a document format that can be used downstream.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/web_base/WebBaseLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/web_base/WebBaseLoader
 '''
 
 GITHUB_LOADER = r'''The LangChain GitHub Loader is a suite of integrations designed to ingest data
-		from GitHub repositories into a format compatible with Large Language Models (LLMs).
-		These loaders are primarily used in Retrieval-Augmented Generation (RAG) pipelines to
-		allow AI agents to "chat" with codebases, analyze issues, or summarize pull requests.
+from GitHub repositories into a format compatible with Large Language Models (LLMs).
+These loaders are primarily used in Retrieval-Augmented Generation (RAG) pipelines to
+allow AI agents to "chat" with codebases, analyze issues, or summarize pull requests.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/github/GithubFileLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/github/GithubFileLoader
 '''
 
 WIKIPEDIA_LOADER = r'''The LangChain Wikipedia Loader (WikipediaLoader) is a component designed to
@@ -200,9 +200,9 @@ economics. Materials on this site are not peer-reviewed by arXiv.
 '''
 
 PDF_LOADER = r'''Public, SDK-oriented PDF loader with: Page-aware metadata, Two-stage chunking,
-		Configurable chunk profiles, Table isolation, Optional OCR fallback.
+Configurable chunk profiles, Table isolation, Optional OCR fallback.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/pdf/PyPDFLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/pdf/PyPDFLoader
 '''
 
 EXCEL_LOADER = r'''Provides LangChain's UnstructuredExcelLoader functionality
@@ -296,6 +296,7 @@ Community S3FileLoader and PyTorch DataPipe S3FileLoader to parse text, PDFs, or
 '''
 
 # --------------- API
+
 AIR_NOW = r'''AirNow is the official U.S. government website and app providing real-time,
 local air quality data and forecasts using the color-coded Air Quality Index (AQI).
 It covers ozone and particle pollution ( and  ) via a partnership of the EPA, NOAA, and
