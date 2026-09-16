@@ -266,13 +266,26 @@ NOTEBOOK_LOADER = '''Loads .ipynb notebook files.
 GOOGLE_CLOUD_FILE_LOADER = r'''
 '''
 
-GOOGLE_CLOUD_BUCKET_LOADER = r'''
+GOOGLE_CLOUD_BUCKET_LOADER = r'''Google Cloud Storage (GCS) Bucket Loader is a tool that lets you
+pull text and files out of a Google Cloud bucket so your AI application can read them. This is super
+helpful when you want to build a Retrieval-Augmented Generation (RAG) system, which lets an AI
+answer questions using your own private files.
+
+	https://docs.langchain.com/oss/python/integrations/document_loaders/google_cloud_storage_file
 '''
 
-GOOGLE_CLOUD_FILE_LOADER = r'''
+GOOGLE_CLOUD_FILE_LOADER = r'''The Google Cloud file loaders in LangChain are tools used to pull
+files and data out of Google Cloud Storage (GCS) and turn them into text format that an
+Artificial Intelligence (AI) can read.
+
+	https://docs.langchain.com/oss/python/integrations/document_loaders/google_cloud_storage_file
 '''
 
-AWS_FILE_LOADER = r'''
+AWS_FILE_LOADER = r'''A tool that pulls documents and data from an Amazon Web Services (AWS) S3
+bucket so an AI can read them. It acts like a bridge between your cloud storage and your large
+language model (LLM), which is very helpful for building Retrieval-Augmented Generation (RAG) applications
+
+	https://reference.langchain.com/python/langchain-community/document_loaders/s3_file/S3FileLoader
 '''
 
 AWS_S3FILE_LOADER = r'''An S3FileLoader is a software component used in data frameworks and AI libraries
