@@ -3739,7 +3739,6 @@ with st.sidebar:
 bootstrap_browser_geolocation( geocoder )
 ensure_active_location_state( )
 
-
 # ==============================================================================
 # Mapping Tools
 # ==============================================================================
