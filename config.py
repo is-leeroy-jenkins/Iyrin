@@ -116,7 +116,7 @@ SKYMAP_TOKEN = os.getenv( 'SKY_MAP_TOKEN' )
 
 # -------------- SETTINGS
 
-MODES = [ 'Mapping Tools', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
+MODES = [ 'Mapping Tools', 'Interactive Map', 'Site Crawler',
           'Document Data', 'Geoscience Data', 'Astronomical Data', 'Celestial Map',
           'Pupblic Health', 'Aritificial Intelligence', 'File Upload', 'Data Management' ]
 
