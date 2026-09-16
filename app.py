@@ -3739,324 +3739,14 @@ with st.sidebar:
 bootstrap_browser_geolocation( geocoder )
 ensure_active_location_state( )
 
-# ==============================================================================
-# GEOCODING MODE
-# ==============================================================================
-if mode == 'Geocoding':
-	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
-	with center:
-		st.subheader( 'Geocoding' )
-		st.divider( )
-		
-		geo_c1, geo_c2 = st.columns( [ 0.60, 0.40 ], border=True, gap='small' )
-		with geo_c2:
-			st.caption( '' )
-			geosub_c1, geosub_c2 = st.columns( 2 )
-			with geosub_c1:
-				use_places = st.checkbox( 'Use Places fallback', value=True,
-					key='geocoding_fallback' )
-			
-			with geosub_c2:
-				if st.button( label='Clear Map Results', icon='💫', width='stretch',
-						key='clear_map_results' ):
-					st.session_state[ 'df_geocoding_map_results' ] = pd.DataFrame( )
-					st.rerun( )
-		
-		with geo_c1:
-			if st.session_state.pop( 'clear_geocoding_location_input', False ):
-				st.session_state[ 'geocoding_location_input' ] = ''
-			
-			if 'geocoding_location_input' not in st.session_state:
-				st.session_state[ 'geocoding_location_input' ] = get_global_location_default( )
-			
-			query = st.text_input( 'Enter Address or Location', key='geocoding_location_input' )
-			btn_c1, btn_c2 = st.columns( 2 )
-			with btn_c1:
-				if st.button( 'Resolve Location', width='stretch', icon='📍' ):
-					if not query:
-						st.warning( 'Enter a Location.' )
-					else:
-						try:
-							result = geocoder.freeform( query )
-							append_geocoding_map_result( query, 'Geocoder', result )
-							st.json( result )
-						except NotFound:
-							if use_places:
-								try:
-									st.warning( 'Geocoding failed.' )
-									result = places.text_to_location( query )
-									append_geocoding_map_result( query, 'Places', result )
-									st.json( result )
-								except Exception as e:
-									st.error( str( e ) )
-							else:
-								st.warning( 'Geocoding failed and Places fallback is disabled.' )
-						except Exception as e:
-							st.error( str( e ) )
-			
-			with btn_c2:
-				if st.button( label='Clear Location', width='stretch', icon='🧹' ):
-					st.session_state[ 'clear_geocoding_location_input' ] = True
-					st.rerun( )
-		
-		st.divider( )
-		
-		# ------------------------------------------------------------------------------
-		# REPORTS MAP
-		# ------------------------------------------------------------------------------
-		try:
-			df_reports = get_loaded_dataset( )
-			if df_reports is None:
-				st.warning( 'No dataset is currently loaded for mapping.' )
-			else:
-				df_overlay = st.session_state.get( 'df_geocoding_map_results', pd.DataFrame( ) )
-				dataset_name = st.session_state.get( 'active_dataset_name', cfg.DEFAULT_DATA )
-				create_reports_map( df_reports, df_overlay=df_overlay,
-					source_name=dataset_name )
-				if df_overlay is not None and not df_overlay.empty:
-					with st.expander( 'Geocoded Map Results', expanded=False ):
-						st.data_editor( df_overlay, key='geocoding_map_results_table',
-							use_container_width=True, disabled=True )
-		
-		except Exception as e:
-			st.error( f'Geocoding map failed: {e}' )
 
 # ==============================================================================
-# MAP MODE
+# Mapping Tools
 # ==============================================================================
-elif mode == 'Interactive Map':
-	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
-	with center:
-		st.subheader( 'Interactive Map' )
-		st.divider( )
-		tables = list_tables( )
-		if not tables:
-			st.info( 'No tables available.' )
-		else:
-			default_table = resolve_table_name( cfg.DEFAULT_DATA, tables )
-			if default_table is None:
-				default_table = tables[ 0 ]
-			
-			default_index = tables.index( default_table )
-			
-			control_c1, control_c2, control_c3 = st.columns( [ 0.35, 0.35, 0.30 ], border=True )
-			with control_c1:
-				table = st.selectbox( 'Table', tables, index=default_index,
-					key='map_mode_table' )
-			
-			with control_c2:
-				include_overlay = st.checkbox( 'Show Geocoded Overlay', value=True,
-					key='map_mode_show_overlay' )
-			
-			with control_c3:
-				refresh_map = st.button( label='Refresh Map', key='map_mode_refresh', icon='🔄',
-					width='stretch' )
-				
-				if refresh_map:
-					st.rerun( )
-			
-			df_map_source = read_table( table )
-			df_overlay = pd.DataFrame( )
-			
-			if include_overlay:
-				df_overlay = st.session_state.get( 'df_geocoding_map_results',
-					pd.DataFrame( ) )
-			
-			create_reports_map( df_map_source, df_overlay=df_overlay, source_name=table )
-			if include_overlay and df_overlay is not None and not df_overlay.empty:
-				with st.expander( 'Geocoded Overlay Records', expanded=False ):
-					st.data_editor( df_overlay, key='map_mode_overlay_records',
-						use_container_width=True, disabled=True )
+if mode == 'Mapping Tools':
+	
+	# Consolidate the fuctionality Geocoding, Distances, Time Zones, and Static Maps modes below here
 
-# ==============================================================================
-# DISTANCES MODE
-# ==============================================================================
-elif mode == 'Distances':
-	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
-	with center:
-		st.subheader( 'Distance Matrix' )
-		st.divider( )
-		global_location = get_global_location_default( )
-		location_state = get_location_state( )
-		current_location = compose_location_from_state( )
-		status_c1, status_c2, status_c3 = st.columns( 3, border=True )
-		status_c1.metric( 'Location', current_location if current_location else global_location )
-		status_c2.metric( 'Latitude', f'{float( location_state[ "latitude" ] ):.4f}' )
-		status_c3.metric( 'Longitude', f'{float( location_state[ "longitude" ] ):.4f}' )
-		
-		set_blue_divider( )
-		
-		dist_c1, dist_c2 = st.columns( [ 0.50, 0.50 ], border=True )
-		
-		with dist_c1:
-			use_global_origin = st.checkbox( 'Use User-Location as Origin',
-				value=bool( current_location ), key='distance_use_global_origin' )
-			
-			if use_global_origin:
-				origin = current_location
-				st.text_input( 'Origin', value=origin, key='distance_origin_display',
-					disabled=True )
-			else:
-				origin_default = st.session_state.get( 'origin', '' ) or current_location
-				origin = st.text_input( 'Origin', value=origin_default,
-					key='distance_origin_input' )
-		
-		with dist_c2:
-			use_global_destination = st.checkbox( 'Use User-Location as Destination', value=False,
-				key='distance_use_global_destination' )
-			
-			if use_global_destination:
-				destination = current_location
-				st.text_input( 'Destination', value=destination, key='distance_destination_display',
-					disabled=True )
-			else:
-				destination_default = st.session_state.get( 'destination', '' )
-				destination = st.text_input( 'Destination', value=destination_default,
-					key='distance_destination_input' )
-		
-		ctl_c1, ctl_c2, ctl_c3 = st.columns( [ 0.30, 0.30, 0.40 ], border=True )
-		with ctl_c1:
-			travel_mode = st.selectbox( 'Travel Mode',
-				[ 'driving', 'walking', 'bicycling', 'transit' ], key='travel_key' )
-		
-		with ctl_c2:
-			update_global_route = st.checkbox( 'Save Route to Global State', value=True,
-				key='distance_save_route_state' )
-		
-		with ctl_c3:
-			run_distance = st.button( 'Calculate Distance', key='distance_calculate', icon='📐',
-				width='stretch' )
-		
-		if run_distance:
-			if not origin or not destination:
-				st.warning( 'Provide both origin and destination.' )
-			else:
-				try:
-					if update_global_route:
-						st.session_state[ 'origin' ] = str( origin ).strip( )
-						st.session_state[ 'destination' ] = str( destination ).strip( )
-					
-					summary = distances.summary( origin, destination, mode=travel_mode )
-					st.session_state[ 'distance_last_result' ] = summary or { }
-					st.success( 'Distance Matrix request completed.' )
-				
-				except Exception as ex:
-					st.error( f'Distance Matrix request failed: {ex}' )
-		
-		result = st.session_state.get( 'distance_last_result', { } )
-		if result:
-			set_blue_divider( )
-			st.markdown( '##### Distance Result' )
-			st.data_editor( pd.DataFrame( [ result ] ), key='distance_result_table',
-				use_container_width=True, disabled=True )
-			st.json( result )
-
-# ==============================================================================
-# MAPS MODE
-# ==============================================================================
-elif mode == 'Static Maps':
-	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
-	with center:
-		st.subheader( 'Static Map' )
-		st.divider( )
-		
-		global_location = get_global_location_default( )
-		location_state = get_location_state( )
-		has_global_coords = has_valid_global_coordinates( )
-		
-		status_c1, status_c2, status_c3 = st.columns( 3, border=True )
-		status_c1.metric( 'Location', compose_location_from_state( ) or global_location )
-		status_c2.metric( 'Latitude', f'{float( location_state[ "latitude" ] ):.4f}' )
-		status_c3.metric( 'Longitude', f'{float( location_state[ "longitude" ] ):.4f}' )
-		
-		set_blue_divider( )
-		
-		map_c1, map_c2 = st.columns( [ 0.50, 0.50 ], border=True )
-		with map_c1:
-			use_global_coordinates = st.checkbox( 'Use User-Location', value=has_global_coords,
-				key='maps_use_global_coordinates' )
-			
-			if use_global_coordinates:
-				lat = float( location_state[ 'latitude' ] )
-				lng = float( location_state[ 'longitude' ] )
-				
-				coord_c1, coord_c2 = st.columns( 2 )
-				with coord_c1:
-					st.number_input( 'Latitude', value=lat, format='%.4f',
-						key='maps_global_latitude_display', disabled=True )
-				
-				with coord_c2:
-					st.number_input( 'Longitude', value=lng, format='%.4f',
-						key='maps_global_longitude_display', disabled=True )
-			
-			else:
-				manual_default_lat = ( float( location_state[ 'latitude' ] )
-						if has_global_coords
-						else 0.0 )
-				
-				manual_default_lng = ( float( location_state[ 'longitude' ] )
-						if has_global_coords
-						else 0.0 )
-				
-				coord_c1, coord_c2 = st.columns( 2 )
-				with coord_c1:
-					lat = st.number_input( 'Latitude', value=manual_default_lat, format='%.4f',
-						key='maps_manual_latitude' )
-				
-				with coord_c2:
-					lng = st.number_input( 'Longitude', value=manual_default_lng, format='%.4f',
-						key='maps_manual_longitude' )
-		
-		with map_c2:
-			zoom_default = int( st.session_state.get( 'zoom', 8 ) or 8 )
-			size_default = str( st.session_state.get( 'map_size', '600x400' ) or '600x400' )
-			size_options = [ '400x400', '600x400', '800x600' ]
-			
-			if size_default not in size_options:
-				size_default = '600x400'
-			
-			zoom = st.slider( 'Zoom', min_value=1, max_value=20, value=zoom_default,
-				key='maps_zoom' )
-			
-			size = st.selectbox( 'Image Size', size_options,
-				index=size_options.index( size_default ), key='maps_size' )
-			
-			save_coordinates = st.checkbox( 'Save Coordinates to Global State', value=True,
-				key='maps_save_coordinates' )
-		
-		if st.button( 'Generate Map', icon='🗺️', key='maps_generate', width='content' ):
-			if use_global_coordinates and not has_global_coords:
-				st.warning( 'User coordinates are not set.' )
-			elif not has_valid_coordinates( lat, lng ):
-				st.warning( 'Provide valid coordinates before generating a map.' )
-			else:
-				try:
-					if save_coordinates:
-						set_coordinates( lat, lng )
-						st.session_state[ 'zoom' ] = int( zoom )
-						st.session_state[ 'map_size' ] = str( size )
-					
-					url = static_maps.pin( lat=float( lat ), lng=float( lng ), zoom=int( zoom ),
-						size=str( size ) )
-					
-					st.session_state[ 'maps_last_url' ] = url
-					st.session_state[ 'maps_last_latitude' ] = float( lat )
-					st.session_state[ 'maps_last_longitude' ] = float( lng )
-					st.success( 'Static map generated.' )
-				except Exception as ex:
-					st.error( f'Static map generation failed: {ex}' )
-		
-		map_url = st.session_state.get( 'maps_last_url', '' )
-		
-		if map_url:
-			set_blue_divider( )
-			st.markdown( '##### Static Map Result' )
-			st.image( map_url )
-			st.code( map_url )
-
-# ==============================================================================
-# TIME ZONE MODE
-# ==============================================================================
 elif mode == 'Time Zones':
 	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
 	with center:
@@ -4151,6 +3841,290 @@ elif mode == 'Time Zones':
 					f'{float( st.session_state.get( "timezone_last_longitude", 0.0 ) ):.6f}' )
 			
 			st.json( result )
+
+if mode == 'Geocoding':
+	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
+	with center:
+		st.subheader( 'Geocoding' )
+		st.divider( )
+		
+		geo_c1, geo_c2 = st.columns( [ 0.60, 0.40 ], border=True, gap='small' )
+		with geo_c2:
+			st.caption( '' )
+			geosub_c1, geosub_c2 = st.columns( 2 )
+			with geosub_c1:
+				use_places = st.checkbox( 'Use Places fallback', value=True,
+					key='geocoding_fallback' )
+			
+			with geosub_c2:
+				if st.button( label='Clear Map Results', icon='💫', width='stretch',
+						key='clear_map_results' ):
+					st.session_state[ 'df_geocoding_map_results' ] = pd.DataFrame( )
+					st.rerun( )
+		
+		with geo_c1:
+			if st.session_state.pop( 'clear_geocoding_location_input', False ):
+				st.session_state[ 'geocoding_location_input' ] = ''
+			
+			if 'geocoding_location_input' not in st.session_state:
+				st.session_state[ 'geocoding_location_input' ] = get_global_location_default( )
+			
+			query = st.text_input( 'Enter Address or Location', key='geocoding_location_input' )
+			btn_c1, btn_c2 = st.columns( 2 )
+			with btn_c1:
+				if st.button( 'Resolve Location', width='stretch', icon='📍' ):
+					if not query:
+						st.warning( 'Enter a Location.' )
+					else:
+						try:
+							result = geocoder.freeform( query )
+							append_geocoding_map_result( query, 'Geocoder', result )
+							st.json( result )
+						except NotFound:
+							if use_places:
+								try:
+									st.warning( 'Geocoding failed.' )
+									result = places.text_to_location( query )
+									append_geocoding_map_result( query, 'Places', result )
+									st.json( result )
+								except Exception as e:
+									st.error( str( e ) )
+							else:
+								st.warning( 'Geocoding failed and Places fallback is disabled.' )
+						except Exception as e:
+							st.error( str( e ) )
+			
+			with btn_c2:
+				if st.button( label='Clear Location', width='stretch', icon='🧹' ):
+					st.session_state[ 'clear_geocoding_location_input' ] = True
+					st.rerun( )
+		
+		st.divider( )
+
+elif mode == 'Distances':
+	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
+	with center:
+		st.subheader( 'Distance Matrix' )
+		st.divider( )
+		global_location = get_global_location_default( )
+		location_state = get_location_state( )
+		current_location = compose_location_from_state( )
+		status_c1, status_c2, status_c3 = st.columns( 3, border=True )
+		status_c1.metric( 'Location', current_location if current_location else global_location )
+		status_c2.metric( 'Latitude', f'{float( location_state[ "latitude" ] ):.4f}' )
+		status_c3.metric( 'Longitude', f'{float( location_state[ "longitude" ] ):.4f}' )
+		
+		set_blue_divider( )
+		
+		dist_c1, dist_c2 = st.columns( [ 0.50, 0.50 ], border=True )
+		
+		with dist_c1:
+			use_global_origin = st.checkbox( 'Use User-Location as Origin',
+				value=bool( current_location ), key='distance_use_global_origin' )
+			
+			if use_global_origin:
+				origin = current_location
+				st.text_input( 'Origin', value=origin, key='distance_origin_display',
+					disabled=True )
+			else:
+				origin_default = st.session_state.get( 'origin', '' ) or current_location
+				origin = st.text_input( 'Origin', value=origin_default,
+					key='distance_origin_input' )
+		
+		with dist_c2:
+			use_global_destination = st.checkbox( 'Use User-Location as Destination', value=False,
+				key='distance_use_global_destination' )
+			
+			if use_global_destination:
+				destination = current_location
+				st.text_input( 'Destination', value=destination, key='distance_destination_display',
+					disabled=True )
+			else:
+				destination_default = st.session_state.get( 'destination', '' )
+				destination = st.text_input( 'Destination', value=destination_default,
+					key='distance_destination_input' )
+		
+		ctl_c1, ctl_c2, ctl_c3 = st.columns( [ 0.30, 0.30, 0.40 ], border=True )
+		with ctl_c1:
+			travel_mode = st.selectbox( 'Travel Mode',
+				[ 'driving', 'walking', 'bicycling', 'transit' ], key='travel_key' )
+		
+		with ctl_c2:
+			update_global_route = st.checkbox( 'Save Route to Global State', value=True,
+				key='distance_save_route_state' )
+		
+		with ctl_c3:
+			run_distance = st.button( 'Calculate Distance', key='distance_calculate', icon='📐',
+				width='stretch' )
+		
+		if run_distance:
+			if not origin or not destination:
+				st.warning( 'Provide both origin and destination.' )
+			else:
+				try:
+					if update_global_route:
+						st.session_state[ 'origin' ] = str( origin ).strip( )
+						st.session_state[ 'destination' ] = str( destination ).strip( )
+					
+					summary = distances.summary( origin, destination, mode=travel_mode )
+					st.session_state[ 'distance_last_result' ] = summary or { }
+					st.success( 'Distance Matrix request completed.' )
+				
+				except Exception as ex:
+					st.error( f'Distance Matrix request failed: {ex}' )
+		
+		result = st.session_state.get( 'distance_last_result', { } )
+		if result:
+			set_blue_divider( )
+			st.markdown( '##### Distance Result' )
+			st.data_editor( pd.DataFrame( [ result ] ), key='distance_result_table',
+				use_container_width=True, disabled=True )
+			st.json( result )
+			
+elif mode == 'Static Maps':
+	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
+	with center:
+		st.subheader( 'Static Map' )
+		st.divider( )
+		
+		global_location = get_global_location_default( )
+		location_state = get_location_state( )
+		has_global_coords = has_valid_global_coordinates( )
+		
+		status_c1, status_c2, status_c3 = st.columns( 3, border=True )
+		status_c1.metric( 'Location', compose_location_from_state( ) or global_location )
+		status_c2.metric( 'Latitude', f'{float( location_state[ "latitude" ] ):.4f}' )
+		status_c3.metric( 'Longitude', f'{float( location_state[ "longitude" ] ):.4f}' )
+		
+		set_blue_divider( )
+		
+		map_c1, map_c2 = st.columns( [ 0.50, 0.50 ], border=True )
+		with map_c1:
+			use_global_coordinates = st.checkbox( 'Use User-Location', value=has_global_coords,
+				key='maps_use_global_coordinates' )
+			
+			if use_global_coordinates:
+				lat = float( location_state[ 'latitude' ] )
+				lng = float( location_state[ 'longitude' ] )
+				
+				coord_c1, coord_c2 = st.columns( 2 )
+				with coord_c1:
+					st.number_input( 'Latitude', value=lat, format='%.4f',
+						key='maps_global_latitude_display', disabled=True )
+				
+				with coord_c2:
+					st.number_input( 'Longitude', value=lng, format='%.4f',
+						key='maps_global_longitude_display', disabled=True )
+			
+			else:
+				manual_default_lat = (
+					float( location_state[ 'latitude' ] ) if has_global_coords else 0.0)
+				
+				manual_default_lng = (
+					float( location_state[ 'longitude' ] ) if has_global_coords else 0.0)
+				
+				coord_c1, coord_c2 = st.columns( 2 )
+				with coord_c1:
+					lat = st.number_input( 'Latitude', value=manual_default_lat, format='%.4f',
+						key='maps_manual_latitude' )
+				
+				with coord_c2:
+					lng = st.number_input( 'Longitude', value=manual_default_lng, format='%.4f',
+						key='maps_manual_longitude' )
+		
+		with map_c2:
+			zoom_default = int( st.session_state.get( 'zoom', 8 ) or 8 )
+			size_default = str( st.session_state.get( 'map_size', '600x400' ) or '600x400' )
+			size_options = [ '400x400', '600x400', '800x600' ]
+			
+			if size_default not in size_options:
+				size_default = '600x400'
+			
+			zoom = st.slider( 'Zoom', min_value=1, max_value=20, value=zoom_default,
+				key='maps_zoom' )
+			
+			size = st.selectbox( 'Image Size', size_options,
+				index=size_options.index( size_default ), key='maps_size' )
+			
+			save_coordinates = st.checkbox( 'Save Coordinates to Global State', value=True,
+				key='maps_save_coordinates' )
+		
+		if st.button( 'Generate Map', icon='🗺️', key='maps_generate', width='content' ):
+			if use_global_coordinates and not has_global_coords:
+				st.warning( 'User coordinates are not set.' )
+			elif not has_valid_coordinates( lat, lng ):
+				st.warning( 'Provide valid coordinates before generating a map.' )
+			else:
+				try:
+					if save_coordinates:
+						set_coordinates( lat, lng )
+						st.session_state[ 'zoom' ] = int( zoom )
+						st.session_state[ 'map_size' ] = str( size )
+					
+					url = static_maps.pin( lat=float( lat ), lng=float( lng ), zoom=int( zoom ),
+						size=str( size ) )
+					
+					st.session_state[ 'maps_last_url' ] = url
+					st.session_state[ 'maps_last_latitude' ] = float( lat )
+					st.session_state[ 'maps_last_longitude' ] = float( lng )
+					st.success( 'Static map generated.' )
+				except Exception as ex:
+					st.error( f'Static map generation failed: {ex}' )
+		
+		map_url = st.session_state.get( 'maps_last_url', '' )
+		
+		if map_url:
+			set_blue_divider( )
+			st.markdown( '##### Static Map Result' )
+			st.image( map_url )
+			st.code( map_url )
+
+# ==============================================================================
+# MAP MODE
+# ==============================================================================
+elif mode == 'Interactive Map':
+	left, center, right = st.columns( [ 0.025, 0.95, 0.025 ] )
+	with center:
+		st.subheader( 'Interactive Map' )
+		st.divider( )
+		tables = list_tables( )
+		if not tables:
+			st.info( 'No tables available.' )
+		else:
+			default_table = resolve_table_name( cfg.DEFAULT_DATA, tables )
+			if default_table is None:
+				default_table = tables[ 0 ]
+			
+			default_index = tables.index( default_table )
+			
+			control_c1, control_c2, control_c3 = st.columns( [ 0.35, 0.35, 0.30 ], border=True )
+			with control_c1:
+				table = st.selectbox( 'Table', tables, index=default_index,
+					key='map_mode_table' )
+			
+			with control_c2:
+				include_overlay = st.checkbox( 'Show Geocoded Overlay', value=True,
+					key='map_mode_show_overlay' )
+			
+			with control_c3:
+				refresh_map = st.button( label='Refresh Map', key='map_mode_refresh', icon='🔄',
+					width='stretch' )
+				
+				if refresh_map:
+					st.rerun( )
+			
+			df_map_source = read_table( table )
+			df_overlay = pd.DataFrame( )
+			
+			if include_overlay:
+				df_overlay = st.session_state.get( 'df_geocoding_map_results',
+					pd.DataFrame( ) )
+			
+			create_reports_map( df_map_source, df_overlay=df_overlay, source_name=table )
+			if include_overlay and df_overlay is not None and not df_overlay.empty:
+				with st.expander( 'Geocoded Overlay Records', expanded=False ):
+					st.data_editor( df_overlay, key='map_mode_overlay_records',
+						use_container_width=True, disabled=True )
 
 # =============================================================================
 # SCRAPING MODE
@@ -9377,7 +9351,7 @@ elif mode == 'Celestial Map':
 # ==============================================================================
 # DEMOGRAPHIC MODE
 # ==============================================================================
-elif mode == 'Public Health Data':
+elif mode == 'Public Health':
 	st.subheader( f'🩺 Population & Public Health' )
 	st.divider( )
 	demographic_location = get_global_location_default( )
@@ -9398,7 +9372,7 @@ elif mode == 'Public Health Data':
 		# ---------------------
 		with st.expander( label='U.S. Census Bureau (ACS)', icon='📊', expanded=False ):
 			CENSUS_MODES = [ 'variables', 'data' ]
-			st.caption( '', help=cfg.CENSUS_DATA )
+			st.caption( 'API', help=cfg.CENSUS_DATA )
 			
 			def _clear_census_state( ) -> None:
 				st.session_state[ 'census_clear_request' ] = True
@@ -9547,13 +9521,14 @@ elif mode == 'Public Health Data':
 			if census_submit:
 				st.session_state[ 'demographic_active_source' ] = 'u_s_census_bureau'
 			
-			render_source_processing_controls( 'demographic', 'census_results', 'demographic_active_source', 'u_s_census_bureau', 'api_u_s_census_bureau' )
+			render_source_processing_controls( 'demographic', 'census_results', 
+				'demographic_active_source', 'u_s_census_bureau', 'api_u_s_census_bureau' )
 		
 		# ---------------------
 		# ---- Expander CDC Open Data Portal
 		# ---------------------
 		with st.expander( label='CDC Open Data', icon='🩺', expanded=False ):
-			st.caption( '', help=cfg.CDC_SOCRATA )
+			st.caption( 'API', help=cfg.CDC_SOCRATA )
 			SOCRATA_MODES = [ 'rows', 'metadata' ]
 			SOCRATA_CDC_DOMAINS = [ 'data.cdc.gov', 'chronicdata.cdc.gov' ]
 			
@@ -9696,7 +9671,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander US Health Data
 		# ---------------------
 		with st.expander( label='U.S. Health', icon='🏥', expanded=False ):
-			st.caption( '', help=cfg.US_HEALTH_DATA )
+			st.caption( 'API', help=cfg.US_HEALTH_DATA )
 			HEALTHDATA_MODES = [ 'rows', 'metadata' ]
 			HEALTHDATA_DOMAINS = [ 'healthdata.gov' ]
 			
@@ -9839,7 +9814,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander WHO Global Health
 		# ---------------------
 		with st.expander( label='WHO Global', icon='🌍', expanded=False ):
-			st.caption( '', help=cfg.WHO_DATA )
+			st.caption( 'API', help=cfg.WHO_DATA )
 			WHO_MODES = [ 'indicator_registry', 'athena' ]
 			WHO_QUERY_PRESETS = [ 'Indicator', 'Dimension', 'DIMENSION/COUNTRY/DimensionValues',
 			                      'DIMENSION/REGION', 'WHOSIS_000001', 'Custom...' ]
@@ -9961,7 +9936,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander United Nations Data
 		# ---------------------
 		with st.expander( label='United Nations', icon='🇺🇳', expanded=False ):
-			st.caption( '', help=cfg.UN_DATA )
+			st.caption( 'API', help=cfg.UN_DATA )
 			UN_MODES = [ 'datasets', 'sdmx_query' ]
 			UN_QUERY_PRESETS = [ 'dataflow', 'datastructure', 'codelist', 'conceptscheme',
 			                     'dataflow/all/all/latest', 'datastructure/all/all/latest',
@@ -10071,7 +10046,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander World Population
 		# ---------------------
 		with st.expander( label='World Population', icon='👥', expanded=False ):
-			st.caption( '', help=cfg.WORLD_POP_DATA )
+			st.caption( 'API', help=cfg.WORLD_POP_DATA )
 			WORLDPOP_MODES = [ 'catalog', 'search', 'raster_metadata' ]
 			WORLDPOP_ASSET_PRESETS = [ 'data/pop', 'data/pop/wpgp', 'data/pop/wpgp?iso3=GHA',
 			                           'data/pop/wpgp?iso3=AUS', 'data/pop/wpgp?iso3=USA',
@@ -10224,7 +10199,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander CDC WONDER
 		# ---------------------
 		with st.expander( label='CDC Wonder', icon='🧬', expanded=False ):
-			st.caption( '', help=cfg.CDC_WONDER )
+			st.caption( 'API', help=cfg.CDC_WONDER )
 			WONDER_MODES = [ 'metadata_template', 'query_xml' ]
 			WONDER_DATASETS = [ 'D76', 'D140', 'D176', 'D158', 'D159', 'D160', 'D161', 'D162',
 			                    'D163', 'D164', 'D165', 'D166', 'D167', 'D168', 'D169', 'D170',
@@ -10351,7 +10326,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander Pub Med
 		# ---------------------
 		with st.expander( label='Pub Med Search', icon='🏥', expanded=False ):
-			st.caption( '', help=cfg.PUB_MED_SEARCH_LOADER )
+			st.caption( 'API', help=cfg.PUB_MED_SEARCH_LOADER )
 			def _clear_pubmed_state( ) -> None:
 				st.session_state[ 'pubmed_clear_request' ] = True
 			
@@ -10416,7 +10391,7 @@ elif mode == 'Public Health Data':
 		# ---- Expander Open City
 		# ---------------------
 		with st.expander( label='Open City Data', icon='🏙️', expanded=False ):
-			st.caption( '', help=cfg.OPEN_CITY_DATA_LOADER )
+			st.caption( 'API', help=cfg.OPEN_CITY_DATA_LOADER )
 			OPEN_CITY_DOMAINS = [ 'data.sfgov.org', 'data.cityofnewyork.us',
 			                      'data.cityofchicago.org', 'data.lacity.org', 'data.seattle.gov',
 			                      'data.austintexas.gov', 'data.cincinnati-oh.gov',

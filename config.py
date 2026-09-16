@@ -116,9 +116,9 @@ SKYMAP_TOKEN = os.getenv( 'SKY_MAP_TOKEN' )
 
 # -------------- SETTINGS
 
-MODES = [ 'Geocoding', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
+MODES = [ 'Mapping Tools', 'Interactive Map',  'Distances', 'Static Maps', 'Time Zones', 'Site Crawler',
           'Document Data', 'Geoscience Data', 'Astronomical Data', 'Celestial Map',
-          'Pupblic Health Data', 'Aritificial Intelligence', 'File Upload', 'Data Management' ]
+          'Pupblic Health', 'Aritificial Intelligence', 'File Upload', 'Data Management' ]
 
 
 AGENTS = ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
