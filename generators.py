@@ -155,7 +155,7 @@ class Generator( ):
 		"""
 		return [ 'timeout', 'headers', 'response', 'url', 'result', 'query', 'fetch' ]
 	
-	def fetch( self, query: str, url: str, time: int = 10 ) -> Result | None:
+	def fetch( self, query: str, url: str, time: int=10 ) -> Result | None:
 		"""Fetch.
 
 		Purpose:
