@@ -5898,17 +5898,16 @@ if mode == 'Web Loading':
 					st.session_state.documents = documents
 					st.session_state.raw_documents = list( documents )
 					st.session_state.raw_text = '\n\n'.join( d.page_content for d in documents if
-					                                         hasattr( d,
-						                                         'page_content' ) and isinstance(
-						                                         d.page_content,
-						                                         str ) and d.page_content.strip( ) )
+					                                         hasattr( d, 'page_content' ) \
+					                                         and isinstance( d.page_content, str ) \
+					                                         and d.page_content.strip( ) )
 					st.session_state.processed_text = None
 					st.session_state.lines = None
 					st.session_state.chunked_documents = None
 					st.session_state.df_chunks = None
 					st.session_state.active_loader = 'PubMedSearchLoader'
-					st.session_state[
-						'_loader_status' ] = f'Loaded {len( documents )} PubMed document(s).'
+					st.session_state[ '_loader_status' ] = \
+						f'Loaded {len( documents )} PubMed document(s).'
 				
 				render_document_processing_controls( 'PubMedSearchLoader', 'loader_pub_med_loader' )
 			
@@ -5982,17 +5981,16 @@ if mode == 'Web Loading':
 					st.session_state.documents = documents
 					st.session_state.raw_documents = list( documents )
 					st.session_state.raw_text = '\n\n'.join( d.page_content for d in documents if
-					                                         hasattr( d,
-						                                         'page_content' ) and isinstance(
-						                                         d.page_content,
-						                                         str ) and d.page_content.strip( ) )
+					                                         hasattr( d, 'page_content' ) \
+					                                         and isinstance( d.page_content, str )
+					                                         and d.page_content.strip( ) )
 					st.session_state.processed_text = None
 					st.session_state.lines = None
 					st.session_state.chunked_documents = None
 					st.session_state.df_chunks = None
 					st.session_state.active_loader = 'OpenCityLoader'
-					st.session_state[
-						'_loader_status' ] = f'Loaded {len( documents )} Open City document(s).'
+					st.session_state[ '_loader_status' ] = \
+						f'Loaded {len( documents )} Open City document(s).'
 				
 				render_document_processing_controls( 'OpenCityLoader', 'loader_open_city_loader' )
 		
@@ -6301,10 +6299,9 @@ if mode == 'Web Loading':
 					width='stretch' )
 				clear_gcs_bucket = col_clear.button( 'Clear', key='gcs_bucket_clear', icon='🧹',
 					width='stretch' )
-				can_save = (st.session_state.get(
-					'active_loader' ) == 'GoogleBucketLoader' and isinstance(
-					st.session_state.get( 'raw_text' ), str ) and st.session_state.get(
-					'raw_text' ).strip( ))
+				can_save = (st.session_state.get( 'active_loader' ) == 'GoogleBucketLoader' \
+				            and isinstance( st.session_state.get( 'raw_text' ), str ) \
+				            and st.session_state.get( 'raw_text' ).strip( ))
 				
 				if can_save:
 					col_save.download_button( 'Save', data=st.session_state.get( 'raw_text' ),
@@ -6357,17 +6354,16 @@ if mode == 'Web Loading':
 					st.session_state.documents = documents
 					st.session_state.raw_documents = list( documents )
 					st.session_state.raw_text = '\n\n'.join( d.page_content for d in documents if
-					                                         hasattr( d,
-						                                         'page_content' ) and isinstance(
-						                                         d.page_content,
-						                                         str ) and d.page_content.strip( ) )
+					                                         hasattr( d, 'page_content' ) \
+					                                         and isinstance(  d.page_content, str ) \
+					                                         and d.page_content.strip( ))
 					st.session_state.processed_text = None
 					st.session_state.lines = None
 					st.session_state.chunked_documents = None
 					st.session_state.df_chunks = None
 					st.session_state.active_loader = 'GoogleBucketLoader'
-					st.session_state[ '_loader_status' ] = (
-							f'Loaded {len( documents )} Google bucket document(s).')
+					st.session_state[ '_loader_status' ] = \
+						f'Loaded {len( documents )} Google bucket document(s).'
 				
 				render_document_processing_controls( 'GoogleBucketLoader',
 					'loader_google_bucket_loader' )
