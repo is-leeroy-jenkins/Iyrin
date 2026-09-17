@@ -32,6 +32,7 @@ import pandas as pd
 import pydeck as pdk
 import streamlit as st
 
+import config as cfg
 from fetchers import Firms, USGSEarthquakes
 from history import (
 	clear_live_world_history, get_live_world_history_snapshots, get_live_world_history_summary,
@@ -180,11 +181,15 @@ def initialize_live_world_state( ) -> None:
 		'live_world_aircraft': False,
 		'live_world_aircraft_radius': 2.0,
 		'live_world_aircraft_airborne_only': True,
+		'opensky_api_client_id': cfg.OPENSKY_CLIENT_ID or '',
+		'opensky_api_client_secret': cfg.OPENSKY_API_CLIENT_SECRET or '',
 		'live_world_military_aircraft': False,
 		'live_world_military_radius_nm': 250,
 		'live_world_satellites': False,
 		'live_world_satellite_group': 'stations',
 		'live_world_satellite_limit': 100,
+		'live_world_satellite_propagation_attempts': 0,
+		'live_world_satellite_propagation_failures': 0,
 		'live_world_vessels': False,
 		'live_world_aisstream_api_key': os.getenv( 'AISSTREAM_API_KEY', '' ) or '',
 		'live_world_vessel_radius': 2.0,
@@ -193,9 +198,12 @@ def initialize_live_world_state( ) -> None:
 		'live_world_earthquake_feed': 'all_day.geojson',
 		'live_world_earthquake_min_magnitude': 1.0,
 		'live_world_fires': False,
-		'live_world_firms_source': 'VIIRS_SNPP_NRT',
+		'live_world_firms_source': 'VIIRS_NOAA21_NRT',
 		'live_world_firms_day_range': 1,
 		'live_world_firms_area_mode': 'Local Bounding Box',
+		'live_world_firms_max_records': 10000,
+		'live_world_firms_source_count': 0,
+		'live_world_firms_truncated': False,
 		'live_world_infrastructure': False,
 		'live_world_infrastructure_radius_km': 50,
 		'live_world_infrastructure_categories': [
@@ -390,13 +398,15 @@ def render_live_world_sidebar( ) -> None:
 		st.checkbox( LIVE_WORLD_LAYERS[ 'fires' ], key='live_world_fires' )
 		if st.session_state[ 'live_world_fires' ]:
 			st.selectbox( 'FIRMS Source',
-				options=[ 'VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT',
+				options=[ 'VIIRS_NOAA21_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_SNPP_NRT',
 					'MODIS_NRT', 'LANDSAT_NRT' ],
 				key='live_world_firms_source' )
 			st.slider( 'Fire Day Range', min_value=1, max_value=5, step=1,
 				key='live_world_firms_day_range' )
 			st.selectbox( 'Fire Area', options=[ 'Local Bounding Box', 'World' ],
 				key='live_world_firms_area_mode' )
+			st.slider( 'Fire Record Limit', min_value=1000, max_value=50000, step=1000,
+				key='live_world_firms_max_records' )
 
 		st.checkbox( LIVE_WORLD_LAYERS[ 'measurements' ], key='live_world_measurements' )
 		if st.session_state[ 'live_world_measurements' ]:
@@ -653,9 +663,13 @@ def clear_live_world_data( ) -> None:
 	st.session_state[ 'live_world_aircraft_result' ] = { }
 	st.session_state[ 'live_world_military_aircraft_result' ] = { }
 	st.session_state[ 'live_world_satellite_result' ] = [ ]
+	st.session_state[ 'live_world_satellite_propagation_attempts' ] = 0
+	st.session_state[ 'live_world_satellite_propagation_failures' ] = 0
 	st.session_state[ 'live_world_vessel_result' ] = [ ]
 	st.session_state[ 'live_world_earthquake_result' ] = { }
 	st.session_state[ 'live_world_firms_result' ] = { }
+	st.session_state[ 'live_world_firms_source_count' ] = 0
+	st.session_state[ 'live_world_firms_truncated' ] = False
 	st.session_state[ 'live_world_infrastructure_result' ] = { }
 	st.session_state[ 'live_world_camera_result' ] = { }
 	st.session_state[ 'live_world_map_layer_result' ] = { }
@@ -731,7 +745,7 @@ def fetch_live_aircraft( latitude: float, longitude: float ) -> pd.DataFrame:
 	throw_if( 'latitude', latitude )
 	throw_if( 'longitude', longitude )
 	client_id = str( st.session_state.get( 'opensky_api_client_id', '' ) or '' )
-	client_secret = str( st.session_state.get( 'opensky_api_credentials', '' ) or '' )
+	client_secret = str( st.session_state.get( 'opensky_api_client_secret', '' ) or '' )
 	radius = float( st.session_state[ 'live_world_aircraft_radius' ] )
 	airborne_only = bool( st.session_state[ 'live_world_aircraft_airborne_only' ] )
 	service = OpenSkyLive( client_id=client_id, client_secret=client_secret, timeout=20 )
@@ -1044,17 +1058,22 @@ def fetch_live_satellites( ) -> pd.DataFrame:
 
 	'''
 	initialize_live_world_state( )
+	st.session_state[ 'live_world_satellite_propagation_attempts' ] = 0
+	st.session_state[ 'live_world_satellite_propagation_failures' ] = 0
 	group = str( st.session_state[ 'live_world_satellite_group' ] )
 	limit = int( st.session_state[ 'live_world_satellite_limit' ] )
 	service = CelesTrakLive( timeout=20 )
 	records = service.fetch_group( group=group, limit=limit )
 	when = dt.datetime.now( dt.timezone.utc )
 	entities: List[ GeoEntity ] = [ ]
+	failures = 0
+	st.session_state[ 'live_world_satellite_propagation_attempts' ] = len( records )
 
 	for record in records:
 		try:
 			position = service.propagate( record=record, when=when )
 		except Exception:
+			failures += 1
 			continue
 
 		catalog_number = str( position.get( 'CatalogNumber', '' ) or '' )
@@ -1079,7 +1098,11 @@ def fetch_live_satellites( ) -> pd.DataFrame:
 			source='CelesTrak',
 			metadata=metadata ) )
 
+	st.session_state[ 'live_world_satellite_propagation_failures' ] = failures
 	st.session_state[ 'live_world_satellite_result' ] = records
+	if records and not entities:
+		raise RuntimeError(
+			f'CelesTrak returned {len( records )} records but every propagation failed.' )
 	return entities_to_dataframe( entities )
 
 
@@ -1176,6 +1199,8 @@ def fetch_live_fires( latitude: float, longitude: float ) -> pd.DataFrame:
 	initialize_live_world_state( )
 	throw_if( 'latitude', latitude )
 	throw_if( 'longitude', longitude )
+	st.session_state[ 'live_world_firms_source_count' ] = 0
+	st.session_state[ 'live_world_firms_truncated' ] = False
 	source = str( st.session_state[ 'live_world_firms_source' ] )
 	day_range = int( st.session_state[ 'live_world_firms_day_range' ] )
 	area_mode = str( st.session_state[ 'live_world_firms_area_mode' ] )
@@ -1190,6 +1215,10 @@ def fetch_live_fires( latitude: float, longitude: float ) -> pd.DataFrame:
 		date='',
 		time=20 ) or { }
 	rows = result.get( 'rows', [ ] ) or [ ]
+	max_records = int( st.session_state[ 'live_world_firms_max_records' ] )
+	st.session_state[ 'live_world_firms_source_count' ] = len( rows )
+	st.session_state[ 'live_world_firms_truncated' ] = len( rows ) > max_records
+	rows = rows[ :max_records ]
 	entities: List[ GeoEntity ] = [ ]
 
 	for index, row in enumerate( rows ):
@@ -2559,6 +2588,12 @@ def render_live_world_map( latitude: float, longitude: float ) -> None:
 		if source_stale.get( source_key, False ):
 			message += ' Showing data from the previous successful refresh.'
 		st.error( message )
+	if (source_status.get( 'fires', '' ) == 'Success'
+			and st.session_state.get( 'live_world_firms_truncated', False )):
+		loaded_count = len( st.session_state.get( 'live_world_df_fires', pd.DataFrame( ) ).index )
+		source_count = int( st.session_state.get( 'live_world_firms_source_count', loaded_count ) )
+		st.warning(
+			f'Fires: displaying {loaded_count:,} of {source_count:,} FIRMS records for this refresh.' )
 
 	df_entities = st.session_state.get( 'live_world_df_entities', pd.DataFrame( ) )
 	if df_entities is None or df_entities.empty:
