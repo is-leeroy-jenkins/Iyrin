@@ -115,15 +115,8 @@
 				const pickerLabel   = document.createElement( 'label' );
 				pickerLabel.textContent = label;
 				const pickerEl      = document.createElement( 'div' );
-				const valueDisplay  = document.createElement( 'span' );
-				valueDisplay.className = 'picker-value';
-				valueDisplay.style.fontFamily = `Consolas, 'Courier New', monospace`;
-				valueDisplay.style.fontSize = '0.78rem';
-				valueDisplay.style.color = 'var(--text-secondary)';
-				valueDisplay.style.whiteSpace = 'nowrap';
 				wrapper.appendChild( pickerLabel );
 				wrapper.appendChild( pickerEl );
-				wrapper.appendChild( valueDisplay );
 				container.appendChild( wrapper );
 				const pickr = Pickr.create( {
 					el: pickerEl,
@@ -145,7 +138,6 @@
 					button.style.setProperty( '--pcr-color', colorValue );
 					button.style.background = colorValue;
 					button.setAttribute( 'aria-label', `${ label }: ${ colorValue }` );
-					valueDisplay.textContent = colorValue;
 				};
 				updatePickerDisplay( this.customColors[ targetColor ] );
 				pickr.on( 'change', ( color ) =>
