@@ -266,18 +266,23 @@ class AisStreamLive:
 	timeout: int
 	url: str
 	socket: WebSocket | None
+	max_retries: int
+	retry_delay: float
 
-	def __init__( self, api_key: str, timeout: int=5 ) -> None:
+	def __init__( self, api_key: str, timeout: int=5, max_retries: int=2,
+			retry_delay: float=0.5 ) -> None:
 		'''
 
 			Purpose:
 			--------
-			Initialize AIS Stream server-side WebSocket access.
+			Initialize AIS Stream server-side WebSocket access with bounded reconnect behavior.
 
 			Parameters:
 			-----------
 			api_key (str): AIS Stream API key.
 			timeout (int): WebSocket connection and receive timeout in seconds.
+			max_retries (int): Maximum reconnect attempts after the initial connection.
+			retry_delay (float): Initial reconnect delay in seconds.
 
 			Returns:
 			--------
@@ -285,8 +290,19 @@ class AisStreamLive:
 
 		'''
 		throw_if( 'api_key', api_key )
+		throw_if( 'timeout', timeout )
+		throw_if( 'max_retries', max_retries )
+		throw_if( 'retry_delay', retry_delay )
 		self.api_key = api_key
-		self.timeout = timeout
+		self.timeout = int( timeout )
+		self.max_retries = int( max_retries )
+		self.retry_delay = float( retry_delay )
+		if self.timeout < 1:
+			raise ValueError( 'Argument "timeout" must be greater than zero.' )
+		if self.max_retries < 0:
+			raise ValueError( 'Argument "max_retries" cannot be negative.' )
+		if self.retry_delay < 0.0:
+			raise ValueError( 'Argument "retry_delay" cannot be negative.' )
 		self.url = 'wss://stream.aisstream.io/v0/stream'
 		self.socket = None
 
@@ -298,7 +314,7 @@ class AisStreamLive:
 			Purpose:
 			--------
 			Collect a bounded sample of live AIS vessel position messages around a geographic
-			center point.
+			center point while reconnecting after transient WebSocket failures.
 
 			Parameters:
 			-----------
@@ -306,7 +322,7 @@ class AisStreamLive:
 			longitude (float): Bounding-box center longitude.
 			radius_degrees (float): Decimal-degree half-width of the bounding box.
 			max_messages (int): Maximum matching AIS messages returned.
-			duration_seconds (float): Maximum receive window in seconds.
+			duration_seconds (float): Maximum total receive window in seconds.
 
 			Returns:
 			--------
@@ -338,40 +354,75 @@ class AisStreamLive:
 			],
 		}
 		messages: List[ Dict[ str, Any ] ] = [ ]
-		self.socket = create_connection( self.url, timeout=self.timeout )
-		self.socket.send( json.dumps( self.subscription ) )
 		started = time.monotonic( )
+		last_error = ''
 
-		try:
-			while len( messages ) < self.max_messages:
-				elapsed = time.monotonic( ) - started
-				remaining = self.duration_seconds - elapsed
+		for attempt in range( self.max_retries + 1 ):
+			remaining_window = self.duration_seconds - (time.monotonic( ) - started)
+			if remaining_window <= 0.0:
+				break
+
+			try:
+				self.socket = create_connection( self.url, timeout=self.timeout )
+				self.socket.send( json.dumps( self.subscription ) )
+
+				while len( messages ) < self.max_messages:
+					remaining = self.duration_seconds - (time.monotonic( ) - started)
+					if remaining <= 0.0:
+						return messages
+
+					self.socket.settimeout( min( 1.0, max( 0.1, remaining ) ) )
+					try:
+						frame = self.socket.recv( )
+					except WebSocketTimeoutException:
+						continue
+
+					if frame is None or frame == '':
+						raise ConnectionError( 'AIS Stream closed the WebSocket connection.' )
+					if isinstance( frame, bytes ):
+						frame = frame.decode( 'utf-8' )
+					try:
+						payload = json.loads( frame )
+					except json.JSONDecodeError:
+						continue
+					if not isinstance( payload, dict ):
+						continue
+					provider_error = str( payload.get( 'Error', payload.get( 'error', '' ) ) or '' )
+					if provider_error:
+						raise RuntimeError( f'AIS Stream rejected the subscription: {provider_error}' )
+					if payload.get( 'MessageType' ) == 'SubscriptionConfirmation':
+						continue
+					metadata = payload.get( 'MetaData', { } ) or { }
+					if metadata.get( 'Latitude' ) is None or metadata.get( 'Longitude' ) is None:
+						continue
+					messages.append( payload )
+
+				return messages
+
+			except Exception as ex:
+				last_error = str( ex )
+
+			finally:
+				if self.socket is not None:
+					try:
+						self.socket.close( )
+					except Exception:
+						pass
+					self.socket = None
+
+			if attempt < self.max_retries:
+				remaining = self.duration_seconds - (time.monotonic( ) - started)
 				if remaining <= 0.0:
 					break
+				delay = min( self.retry_delay * (2 ** attempt), remaining )
+				if delay > 0.0:
+					time.sleep( delay )
 
-				self.socket.settimeout( min( 1.0, max( 0.1, remaining ) ) )
-				try:
-					frame = self.socket.recv( )
-				except WebSocketTimeoutException:
-					continue
-
-				if isinstance( frame, bytes ):
-					frame = frame.decode( 'utf-8' )
-				payload = json.loads( frame )
-				if not isinstance( payload, dict ):
-					continue
-				if payload.get( 'MessageType' ) == 'SubscriptionConfirmation':
-					continue
-				metadata = payload.get( 'MetaData', { } ) or { }
-				if metadata.get( 'Latitude' ) is None or metadata.get( 'Longitude' ) is None:
-					continue
-				messages.append( payload )
-
-		finally:
-			if self.socket is not None:
-				self.socket.close( )
-				self.socket = None
-
+		if messages:
+			return messages
+		if last_error:
+			raise RuntimeError(
+				f'AIS Stream failed after {self.max_retries + 1} connection attempts: {last_error}' )
 		return messages
 
 
@@ -495,7 +546,121 @@ class CelesTrakLive:
 		}
 
 
-class OverpassInfrastructure:
+class OverpassClient:
+	'''
+
+		Purpose:
+		--------
+		Provide shared resilient HTTP transport for Iyr OpenStreetMap Overpass providers.
+
+	'''
+	timeout: int
+	retries: int
+	retry_delay: float
+	url: str
+	endpoints: List[ str ]
+	headers: Dict[ str, str ]
+	response: Response | None
+
+	def __init__( self, timeout: int=30, retries: int=2,
+			retry_delay: float=0.75 ) -> None:
+		'''
+
+			Purpose:
+			--------
+			Initialize shared Overpass request identity, endpoints, and retry policy.
+
+			Parameters:
+			-----------
+			timeout (int): HTTP timeout in seconds.
+			retries (int): Retries per endpoint for transient provider responses.
+			retry_delay (float): Initial exponential-backoff delay in seconds.
+
+			Returns:
+			--------
+			None
+
+		'''
+		throw_if( 'timeout', timeout )
+		throw_if( 'retries', retries )
+		throw_if( 'retry_delay', retry_delay )
+		self.timeout = int( timeout )
+		self.retries = int( retries )
+		self.retry_delay = float( retry_delay )
+		if self.timeout < 1:
+			raise ValueError( 'Argument "timeout" must be greater than zero.' )
+		if self.retries < 0:
+			raise ValueError( 'Argument "retries" cannot be negative.' )
+		if self.retry_delay < 0.0:
+			raise ValueError( 'Argument "retry_delay" cannot be negative.' )
+		self.endpoints = [
+			'https://overpass-api.de/api/interpreter',
+			'https://overpass.kumi.systems/api/interpreter',
+		]
+		self.url = self.endpoints[ 0 ]
+		self.headers = {
+			'User-Agent': 'Iyrin/1.0 (+https://github.com/is-leeroy-jenkins/iyr)',
+			'Accept': 'application/json',
+			'Content-Type': 'application/x-www-form-urlencoded',
+		}
+		self.response = None
+
+	def execute( self, query: str ) -> Dict[ str, Any ]:
+		'''
+
+			Purpose:
+			--------
+			Execute one Overpass query with request identification, bounded retry, and
+			alternate-endpoint fallback.
+
+			Parameters:
+			-----------
+			query (str): Overpass QL query.
+
+			Returns:
+			--------
+			Dict[str, Any]: Decoded Overpass JSON response.
+
+		'''
+		throw_if( 'query', query )
+		transient_statuses = { 406, 429, 500, 502, 503, 504 }
+		errors: List[ str ] = [ ]
+
+		for endpoint in self.endpoints:
+			for attempt in range( self.retries + 1 ):
+				try:
+					self.url = endpoint
+					self.response = None
+					self.response = requests.post(
+						self.url, data={ 'data': query }, headers=self.headers,
+						timeout=self.timeout )
+					status_code = int( self.response.status_code )
+					if status_code in transient_statuses and attempt < self.retries:
+						delay = self.retry_delay * (2 ** attempt)
+						if delay > 0.0:
+							time.sleep( delay )
+						continue
+					self.response.raise_for_status( )
+					payload = self.response.json( ) or { }
+					if not isinstance( payload, dict ):
+						raise TypeError( 'Overpass response must be a dictionary.' )
+					return payload
+
+				except ( requests.RequestException, TypeError, ValueError ) as ex:
+					errors.append( f'{endpoint}: {ex}' )
+					status_code = int( self.response.status_code ) if self.response is not None else 0
+					if status_code and status_code not in transient_statuses:
+						break
+					if attempt < self.retries:
+						delay = self.retry_delay * (2 ** attempt)
+						if delay > 0.0:
+							time.sleep( delay )
+
+		detail = ' | '.join( errors[ -6: ] )
+		raise RuntimeError( f'Overpass request failed across configured endpoints: {detail}' )
+
+
+class OverpassInfrastructure( OverpassClient ):
 	'''
 
 		Purpose:
@@ -525,9 +690,7 @@ class OverpassInfrastructure:
 			None
 
 		'''
-		self.timeout = timeout
-		self.url = 'https://overpass-api.de/api/interpreter'
-		self.response = None
+		super( ).__init__( timeout=timeout )
 		self.category_filters = {
 			'Airports': [ '["aeroway"="aerodrome"]', '["aeroway"="heliport"]' ],
 			'Ports': [ '["harbour"="yes"]', '["amenity"="ferry_terminal"]' ],
@@ -588,9 +751,7 @@ class OverpassInfrastructure:
 					f'nwr(around:{radius_meters},{self.latitude:.6f},{self.longitude:.6f})'
 					f'{tag_filter};' )
 		query = '[out:json][timeout:25];(' + ''.join( selectors ) + ');out center tags qt;'
-		self.response = requests.post( self.url, data={ 'data': query }, timeout=self.timeout )
-		self.response.raise_for_status( )
-		payload = self.response.json( ) or { }
+		payload = self.execute( query )
 		if not isinstance( payload, dict ):
 			raise TypeError( 'Overpass response must be a dictionary.' )
 		elements = payload.get( 'elements', [ ] ) or [ ]
@@ -649,7 +810,7 @@ class OverpassInfrastructure:
 			return 'Military Installations'
 		return ''
 
-class OverpassCameras:
+class OverpassCameras( OverpassClient ):
 	'''
 
 		Purpose:
@@ -679,9 +840,7 @@ class OverpassCameras:
 			None
 
 		'''
-		self.timeout = timeout
-		self.url = 'https://overpass-api.de/api/interpreter'
-		self.response = None
+		super( ).__init__( timeout=timeout )
 		self.category_filters = {
 			'CCTV / Surveillance': [
 				'["man_made"="surveillance"]', '["surveillance:type"="camera"]' ],
@@ -739,9 +898,7 @@ class OverpassCameras:
 					f'nwr(around:{radius_meters},{self.latitude:.6f},{self.longitude:.6f})'
 					f'{tag_filter};' )
 		query = '[out:json][timeout:25];(' + ''.join( selectors ) + ');out center tags qt;'
-		self.response = requests.post( self.url, data={ 'data': query }, timeout=self.timeout )
-		self.response.raise_for_status( )
-		payload = self.response.json( ) or { }
+		payload = self.execute( query )
 		if not isinstance( payload, dict ):
 			raise TypeError( 'Overpass camera response must be a dictionary.' )
 		elements = payload.get( 'elements', [ ] ) or [ ]
@@ -792,7 +949,7 @@ class OverpassCameras:
 			return 'CCTV / Surveillance'
 		return ''
 
-class OverpassMapLayers:
+class OverpassMapLayers( OverpassClient ):
 	'''
 
 		Purpose:
@@ -821,9 +978,7 @@ class OverpassMapLayers:
 			None
 
 		'''
-		self.timeout = timeout
-		self.url = 'https://overpass-api.de/api/interpreter'
-		self.response = None
+		super( ).__init__( timeout=timeout )
 		self.category_filters = {
 			'Public Transit': [ '["public_transport"="station"]', '["railway"="station"]' ],
 			'Bike Share': [ '["amenity"="bicycle_rental"]' ],
@@ -887,9 +1042,7 @@ class OverpassMapLayers:
 					f'nwr(around:{radius_meters},{self.latitude:.6f},{self.longitude:.6f})'
 					f'{tag_filter};' )
 		query = '[out:json][timeout:25];(' + ''.join( selectors ) + ');out center tags qt;'
-		self.response = requests.post( self.url, data={ 'data': query }, timeout=self.timeout )
-		self.response.raise_for_status( )
-		payload = self.response.json( ) or { }
+		payload = self.execute( query )
 		if not isinstance( payload, dict ):
 			raise TypeError( 'Overpass map-layer response must be a dictionary.' )
 		elements = payload.get( 'elements', [ ] ) or [ ]
