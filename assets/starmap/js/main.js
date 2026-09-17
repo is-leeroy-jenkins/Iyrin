@@ -110,11 +110,20 @@
 			}
 			const createPicker = ( label, targetColor ) =>
 			{
-				const wrapper     = document.createElement( 'div' );
-				wrapper.className = 'picker-wrapper';
-				wrapper.innerHTML = `<label>${ label }</label>`;
-				const pickerEl    = document.createElement( 'div' );
+				const wrapper       = document.createElement( 'div' );
+				wrapper.className   = 'picker-wrapper';
+				const pickerLabel   = document.createElement( 'label' );
+				pickerLabel.textContent = label;
+				const pickerEl      = document.createElement( 'div' );
+				const valueDisplay  = document.createElement( 'span' );
+				valueDisplay.className = 'picker-value';
+				valueDisplay.style.fontFamily = `Consolas, 'Courier New', monospace`;
+				valueDisplay.style.fontSize = '0.78rem';
+				valueDisplay.style.color = 'var(--text-secondary)';
+				valueDisplay.style.whiteSpace = 'nowrap';
+				wrapper.appendChild( pickerLabel );
 				wrapper.appendChild( pickerEl );
+				wrapper.appendChild( valueDisplay );
 				container.appendChild( wrapper );
 				const pickr = Pickr.create( {
 					el: pickerEl,
@@ -130,9 +139,32 @@
 						}
 					}
 				} );
+				const updatePickerDisplay = ( colorValue ) =>
+				{
+					const button = pickr.getRoot().button;
+					button.style.setProperty( '--pcr-color', colorValue );
+					button.style.background = colorValue;
+					button.setAttribute( 'aria-label', `${ label }: ${ colorValue }` );
+					valueDisplay.textContent = colorValue;
+				};
+				updatePickerDisplay( this.customColors[ targetColor ] );
+				pickr.on( 'change', ( color ) =>
+				{
+					if( color )
+					{
+						updatePickerDisplay( color.toRGBA().toString() );
+					}
+				} );
 				pickr.on( 'save', ( color ) =>
 				{
-					this.customColors[ targetColor ] = color.toRGBA().toString();
+					if( !color )
+					{
+						pickr.hide();
+						return;
+					}
+					const selectedColor = color.toRGBA().toString();
+					this.customColors[ targetColor ] = selectedColor;
+					updatePickerDisplay( selectedColor );
 					this.debouncedHandleSubmit();
 					pickr.hide();
 				} );
