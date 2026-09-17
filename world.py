@@ -3164,6 +3164,56 @@ def render_live_world_map( latitude: float, longitude: float ) -> None:
 				st.data_editor( df_geofence_events, key='live_world_geofence_events_table',
 					use_container_width=True, disabled=True, hide_index=True )
 
+	with history_tab:
+		if not st.session_state[ 'live_world_historical_replay' ]:
+			st.info( 'Enable Historical Replay in AI & Advanced Tools.' )
+		else:
+			history_summary = get_live_world_history_summary( )
+			history_c1, history_c2, history_c3, history_c4 = st.columns( 4, border=True )
+			history_c1.metric( 'Observations', f'{int( history_summary[ "ObservationCount" ] ):,}' )
+			history_c2.metric( 'Snapshots', f'{int( history_summary[ "SnapshotCount" ] ):,}' )
+			history_c3.metric( 'Replay Records', f'{len( df_history ):,}' )
+			history_c4.metric( 'Replay Entities', f'{len( df_history_latest ):,}' )
+			if st.session_state[ 'live_world_history_last_error' ]:
+				st.error( f'Historical Replay failed: {st.session_state[ "live_world_history_last_error" ]}' )
+			st.caption( f'Replay snapshot: {st.session_state.get( "live_world_history_snapshot", "" ) or "None"}' )
+			st.caption( f'Last refresh inserted {int( st.session_state.get( "live_world_history_last_saved", 0 ) ):,} historical observations.' )
+			if df_history.empty:
+				st.info( 'No persisted observations match the selected replay window and entity types.' )
+			else:
+				st.markdown( '**Replay Positions**' )
+				st.data_editor( make_live_world_display_frame( df_history_latest ),
+					key='live_world_history_latest_table', use_container_width=True,
+					disabled=True, hide_index=True )
+				st.markdown( '**Historical Observations**' )
+				st.data_editor( make_live_world_display_frame( df_history ),
+					key='live_world_history_table', use_container_width=True,
+					disabled=True, hide_index=True )
+
+	with agent_tools_tab:
+		if not st.session_state[ 'live_world_agent_tools' ]:
+			st.info( 'Enable Agent Tools in AI & Advanced Tools.' )
+		else:
+			provider_status = LIVE_WORLD_AGENT_TOOLS[ 'get_live_world_source_status' ]( )
+			agent_c1, agent_c2, agent_c3 = st.columns( 3, border=True )
+			agent_c1.metric( 'Callable Tools', f'{len( LIVE_WORLD_AGENT_TOOLS ):,}' )
+			agent_c2.metric( 'Entity Types', '9' )
+			agent_c3.metric( 'Provider Sources', f'{len( provider_status ):,}' )
+			st.markdown( '**Available Callable Tools**' )
+			df_agent_tools = pd.DataFrame( [ {
+				'Tool': name,
+				'Callable': callable( tool ),
+			} for name, tool in LIVE_WORLD_AGENT_TOOLS.items( ) ] )
+			st.data_editor( df_agent_tools, key='live_world_agent_tools_table',
+				width='stretch', disabled=True, hide_index=True )
+			st.markdown( '**Provider Status**' )
+			st.data_editor( pd.DataFrame( provider_status ),
+				key='live_world_agent_provider_status_table', width='stretch',
+				disabled=True, hide_index=True )
+			st.caption(
+				'Provider-neutral tools operate on normalized Live World state and return '
+				'JSON-serializable results for external agent frameworks.' )
+
 
 def get_metadata_number( metadata: object, key: str, default: float=0.0 ) -> float:
 	'''
@@ -3217,44 +3267,3 @@ def make_live_world_display_frame( df_frame: pd.DataFrame ) -> pd.DataFrame:
 		if column in df_display.columns:
 			df_display = df_display.drop( columns=[ column ] )
 	return df_display
-
-	with history_tab:
-		if not st.session_state[ 'live_world_historical_replay' ]:
-			st.info( 'Enable Historical Replay in AI & Advanced Tools.' )
-		else:
-			history_summary = get_live_world_history_summary( )
-			history_c1, history_c2, history_c3, history_c4 = st.columns( 4, border=True )
-			history_c1.metric( 'Observations', f'{int( history_summary[ "ObservationCount" ] ):,}' )
-			history_c2.metric( 'Snapshots', f'{int( history_summary[ "SnapshotCount" ] ):,}' )
-			history_c3.metric( 'Replay Records', f'{len( df_history ):,}' )
-			history_c4.metric( 'Replay Entities', f'{len( df_history_latest ):,}' )
-			if st.session_state[ 'live_world_history_last_error' ]:
-				st.error( f'Historical Replay failed: {st.session_state[ "live_world_history_last_error" ]}' )
-			st.caption( f'Replay snapshot: {st.session_state.get( "live_world_history_snapshot", "" ) or "None"}' )
-			st.caption( f'Last refresh inserted {int( st.session_state.get( "live_world_history_last_saved", 0 ) ):,} historical observations.' )
-			if df_history.empty:
-				st.info( 'No persisted observations match the selected replay window and entity types.' )
-			else:
-				st.markdown( '**Replay Positions**' )
-				st.data_editor( make_live_world_display_frame( df_history_latest ),
-					key='live_world_history_latest_table', use_container_width=True,
-					disabled=True, hide_index=True )
-				st.markdown( '**Historical Observations**' )
-				st.data_editor( make_live_world_display_frame( df_history ),
-					key='live_world_history_table', use_container_width=True,
-					disabled=True, hide_index=True )
-
-	with agent_tools_tab:
-		if not st.session_state[ 'live_world_agent_tools' ]:
-			st.info( 'Enable Agent Tools in AI & Advanced Tools.' )
-		else:
-			st.markdown( '**Available Callable Tools**' )
-			df_agent_tools = pd.DataFrame( [ {
-				'Tool': name,
-				'Callable': callable( tool ),
-			} for name, tool in LIVE_WORLD_AGENT_TOOLS.items( ) ] )
-			st.data_editor( df_agent_tools, key='live_world_agent_tools_table',
-				width='stretch', disabled=True, hide_index=True )
-			st.caption(
-				'Provider-neutral tools operate on normalized Live World state and return '
-				'JSON-serializable results for external agent frameworks.' )
