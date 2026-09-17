@@ -26,7 +26,7 @@ import json
 import math
 import os
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 import pandas as pd
 import pydeck as pdk
@@ -48,6 +48,54 @@ LIVE_WORLD_LAYERS: Dict[ str, str ] = { 'aircraft': '✈️ Aircraft (Live)',
 		'cameras': '📷 CCTV / Web Cameras', 'map_layers': '🗺️ Additional Map Layers', }
 
 LIVE_WORLD_PENDING_LAYERS: Dict[ str, str ] = { }
+
+LIVE_WORLD_DATA_SOURCES: Dict[ str, Dict[ str, str ] ] = {
+	'aircraft': {
+		'label': 'Aircraft',
+		'enabled_key': 'live_world_aircraft',
+		'frame_key': 'live_world_df_aircraft',
+	},
+	'military_aircraft': {
+		'label': 'Military Aircraft',
+		'enabled_key': 'live_world_military_aircraft',
+		'frame_key': 'live_world_df_military_aircraft',
+	},
+	'satellites': {
+		'label': 'Satellites',
+		'enabled_key': 'live_world_satellites',
+		'frame_key': 'live_world_df_satellites',
+	},
+	'vessels': {
+		'label': 'Vessels',
+		'enabled_key': 'live_world_vessels',
+		'frame_key': 'live_world_df_vessels',
+	},
+	'earthquakes': {
+		'label': 'Earthquakes',
+		'enabled_key': 'live_world_earthquakes',
+		'frame_key': 'live_world_df_earthquakes',
+	},
+	'fires': {
+		'label': 'Fires',
+		'enabled_key': 'live_world_fires',
+		'frame_key': 'live_world_df_fires',
+	},
+	'infrastructure': {
+		'label': 'Infrastructure',
+		'enabled_key': 'live_world_infrastructure',
+		'frame_key': 'live_world_df_infrastructure',
+	},
+	'cameras': {
+		'label': 'Cameras',
+		'enabled_key': 'live_world_cameras',
+		'frame_key': 'live_world_df_cameras',
+	},
+	'map_layers': {
+		'label': 'Map Features',
+		'enabled_key': 'live_world_map_layers',
+		'frame_key': 'live_world_df_map_layers',
+	},
+}
 
 AI_ADVANCED_TOOLS: Dict[ str, str ] = { 'cross_layer_analysis': '🧭 Cross-Layer Analysis',
 		'geofencing': '🛡️ Geofencing', 'historical_replay': '🕓 Historical Replay', }
@@ -216,6 +264,16 @@ def initialize_live_world_state( ) -> None:
 		'live_world_refresh_requested': False,
 		'live_world_last_refresh': '',
 		'live_world_last_error': '',
+		'live_world_source_status': {
+			key: 'Not Refreshed' for key in LIVE_WORLD_DATA_SOURCES },
+		'live_world_source_errors': {
+			key: '' for key in LIVE_WORLD_DATA_SOURCES },
+		'live_world_source_last_attempt': {
+			key: '' for key in LIVE_WORLD_DATA_SOURCES },
+		'live_world_source_last_success': {
+			key: '' for key in LIVE_WORLD_DATA_SOURCES },
+		'live_world_source_stale': {
+			key: False for key in LIVE_WORLD_DATA_SOURCES },
 		'live_world_df_entities': pd.DataFrame( ),
 		'live_world_df_aircraft': pd.DataFrame( ),
 		'live_world_df_military_aircraft': pd.DataFrame( ),
@@ -610,6 +668,16 @@ def clear_live_world_data( ) -> None:
 	st.session_state[ 'live_world_geofence_last_refresh_processed' ] = ''
 	st.session_state[ 'live_world_last_refresh' ] = ''
 	st.session_state[ 'live_world_last_error' ] = ''
+	st.session_state[ 'live_world_source_status' ] = {
+		key: 'Not Refreshed' for key in LIVE_WORLD_DATA_SOURCES }
+	st.session_state[ 'live_world_source_errors' ] = {
+		key: '' for key in LIVE_WORLD_DATA_SOURCES }
+	st.session_state[ 'live_world_source_last_attempt' ] = {
+		key: '' for key in LIVE_WORLD_DATA_SOURCES }
+	st.session_state[ 'live_world_source_last_success' ] = {
+		key: '' for key in LIVE_WORLD_DATA_SOURCES }
+	st.session_state[ 'live_world_source_stale' ] = {
+		key: False for key in LIVE_WORLD_DATA_SOURCES }
 	st.session_state[ 'live_world_refresh_requested' ] = False
 
 
@@ -2251,12 +2319,117 @@ def get_live_world_tracking_frame( ) -> pd.DataFrame:
 		'Altitude', 'Heading', 'Speed', 'Timestamp', 'ObservedAt' ]
 	return pd.DataFrame( history, columns=columns )
 
+def update_live_world_source_state( source_key: str, status: str, error: str='',
+		stale: bool=False, attempted_at: str='', successful_at: str='' ) -> None:
+	'''
+
+		Purpose:
+		--------
+		Update the operational state for one Live World provider without changing any
+		other provider state.
+
+		Parameters:
+		-----------
+		source_key (str): Live World source identifier.
+		status (str): Current source status.
+		error (str): Current source error text.
+		stale (bool): Whether retained source data predates the current refresh attempt.
+		attempted_at (str): UTC timestamp for the most recent refresh attempt.
+		successful_at (str): UTC timestamp for the most recent successful refresh.
+
+		Returns:
+		--------
+		None
+
+	'''
+	initialize_live_world_state( )
+	throw_if( 'source_key', source_key )
+	throw_if( 'status', status )
+	if source_key not in LIVE_WORLD_DATA_SOURCES:
+		raise ValueError( f'Unsupported Live World source: {source_key}' )
+
+	statuses = dict( st.session_state[ 'live_world_source_status' ] )
+	errors = dict( st.session_state[ 'live_world_source_errors' ] )
+	last_attempt = dict( st.session_state[ 'live_world_source_last_attempt' ] )
+	last_success = dict( st.session_state[ 'live_world_source_last_success' ] )
+	stale_state = dict( st.session_state[ 'live_world_source_stale' ] )
+	statuses[ source_key ] = status
+	errors[ source_key ] = error
+	stale_state[ source_key ] = stale
+	if attempted_at:
+		last_attempt[ source_key ] = attempted_at
+	if successful_at:
+		last_success[ source_key ] = successful_at
+	st.session_state[ 'live_world_source_status' ] = statuses
+	st.session_state[ 'live_world_source_errors' ] = errors
+	st.session_state[ 'live_world_source_last_attempt' ] = last_attempt
+	st.session_state[ 'live_world_source_last_success' ] = last_success
+	st.session_state[ 'live_world_source_stale' ] = stale_state
+
+
+def refresh_live_world_source( source_key: str,
+		fetcher: Callable[ [ ], pd.DataFrame ] ) -> pd.DataFrame:
+	'''
+
+		Purpose:
+		--------
+		Refresh one enabled Live World provider while isolating provider failures from
+		the remaining refresh cycle.
+
+		Parameters:
+		-----------
+		source_key (str): Live World source identifier.
+		fetcher (Callable[[], pd.DataFrame]): Source-specific fetch operation.
+
+		Returns:
+		--------
+		pd.DataFrame: Current source frame, including retained stale data after a failure.
+
+	'''
+	initialize_live_world_state( )
+	throw_if( 'source_key', source_key )
+	throw_if( 'fetcher', fetcher )
+	if source_key not in LIVE_WORLD_DATA_SOURCES:
+		raise ValueError( f'Unsupported Live World source: {source_key}' )
+
+	source = LIVE_WORLD_DATA_SOURCES[ source_key ]
+	frame_key = source[ 'frame_key' ]
+	previous_frame = st.session_state.get( frame_key, pd.DataFrame( ) )
+	if previous_frame is None or not isinstance( previous_frame, pd.DataFrame ):
+		previous_frame = pd.DataFrame( )
+	attempted_at = dt.datetime.now( dt.timezone.utc ).isoformat( )
+	update_live_world_source_state(
+		source_key, 'Refreshing', attempted_at=attempted_at )
+
+	try:
+		df_source = fetcher( )
+		if df_source is None:
+			df_source = entities_to_dataframe( [ ] )
+		if not isinstance( df_source, pd.DataFrame ):
+			raise TypeError(
+				f'Live World source {source_key} must return a pandas DataFrame.' )
+		st.session_state[ frame_key ] = df_source
+		update_live_world_source_state(
+			source_key, 'Success', attempted_at=attempted_at,
+			successful_at=dt.datetime.now( dt.timezone.utc ).isoformat( ) )
+		return df_source
+
+	except Exception as ex:
+		has_stale_data = not previous_frame.empty
+		st.session_state[ frame_key ] = previous_frame
+		update_live_world_source_state(
+			source_key, 'Failed', error=str( ex ), stale=has_stale_data,
+			attempted_at=attempted_at )
+		return previous_frame
+
+
 def refresh_live_world_data( latitude: float, longitude: float ) -> pd.DataFrame:
 	'''
 
 		Purpose:
 		--------
-		Refresh every enabled implemented Live World layer and persist the combined frame.
+		Refresh every enabled implemented Live World layer independently and persist the
+		combined frame only when all enabled providers complete successfully.
 
 		Parameters:
 		-----------
@@ -2271,81 +2444,34 @@ def refresh_live_world_data( latitude: float, longitude: float ) -> pd.DataFrame
 	initialize_live_world_state( )
 	throw_if( 'latitude', latitude )
 	throw_if( 'longitude', longitude )
-	frames: List[ pd.DataFrame ] = [ ]
 	st.session_state[ 'live_world_last_error' ] = ''
 
+	fetchers: Dict[ str, Callable[ [ ], pd.DataFrame ] ] = {
+		'aircraft': lambda: fetch_live_aircraft( latitude, longitude ),
+		'military_aircraft': lambda: fetch_live_military_aircraft( latitude, longitude ),
+		'satellites': lambda: fetch_live_satellites( ),
+		'vessels': lambda: fetch_live_vessels( latitude, longitude ),
+		'earthquakes': lambda: fetch_live_earthquakes( ),
+		'fires': lambda: fetch_live_fires( latitude, longitude ),
+		'infrastructure': lambda: fetch_live_infrastructure( latitude, longitude ),
+		'cameras': lambda: fetch_live_cameras( latitude, longitude ),
+		'map_layers': lambda: fetch_live_map_layers( latitude, longitude ),
+	}
+
 	try:
-		if st.session_state[ 'live_world_aircraft' ]:
-			df_aircraft = fetch_live_aircraft( latitude, longitude )
-			st.session_state[ 'live_world_df_aircraft' ] = df_aircraft
-			if not df_aircraft.empty:
-				frames.append( df_aircraft )
-		else:
-			st.session_state[ 'live_world_df_aircraft' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_military_aircraft' ]:
-			df_military = fetch_live_military_aircraft( latitude, longitude )
-			st.session_state[ 'live_world_df_military_aircraft' ] = df_military
-			if not df_military.empty:
-				frames.append( df_military )
-		else:
-			st.session_state[ 'live_world_df_military_aircraft' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_satellites' ]:
-			df_satellites = fetch_live_satellites( )
-			st.session_state[ 'live_world_df_satellites' ] = df_satellites
-			if not df_satellites.empty:
-				frames.append( df_satellites )
-		else:
-			st.session_state[ 'live_world_df_satellites' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_vessels' ]:
-			df_vessels = fetch_live_vessels( latitude, longitude )
-			st.session_state[ 'live_world_df_vessels' ] = df_vessels
-			if not df_vessels.empty:
-				frames.append( df_vessels )
-		else:
-			st.session_state[ 'live_world_df_vessels' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_earthquakes' ]:
-			df_earthquakes = fetch_live_earthquakes( )
-			st.session_state[ 'live_world_df_earthquakes' ] = df_earthquakes
-			if not df_earthquakes.empty:
-				frames.append( df_earthquakes )
-		else:
-			st.session_state[ 'live_world_df_earthquakes' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_fires' ]:
-			df_fires = fetch_live_fires( latitude, longitude )
-			st.session_state[ 'live_world_df_fires' ] = df_fires
-			if not df_fires.empty:
-				frames.append( df_fires )
-		else:
-			st.session_state[ 'live_world_df_fires' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_infrastructure' ]:
-			df_infrastructure = fetch_live_infrastructure( latitude, longitude )
-			st.session_state[ 'live_world_df_infrastructure' ] = df_infrastructure
-			if not df_infrastructure.empty:
-				frames.append( df_infrastructure )
-		else:
-			st.session_state[ 'live_world_df_infrastructure' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_cameras' ]:
-			df_cameras = fetch_live_cameras( latitude, longitude )
-			st.session_state[ 'live_world_df_cameras' ] = df_cameras
-			if not df_cameras.empty:
-				frames.append( df_cameras )
-		else:
-			st.session_state[ 'live_world_df_cameras' ] = pd.DataFrame( )
-
-		if st.session_state[ 'live_world_map_layers' ]:
-			df_map_layers = fetch_live_map_layers( latitude, longitude )
-			st.session_state[ 'live_world_df_map_layers' ] = df_map_layers
-			if not df_map_layers.empty:
-				frames.append( df_map_layers )
-		else:
-			st.session_state[ 'live_world_df_map_layers' ] = pd.DataFrame( )
+		frames: List[ pd.DataFrame ] = [ ]
+		for source_key, source in LIVE_WORLD_DATA_SOURCES.items( ):
+			frame_key = source[ 'frame_key' ]
+			enabled_key = source[ 'enabled_key' ]
+			if st.session_state[ enabled_key ]:
+				df_source = refresh_live_world_source(
+					source_key, fetchers[ source_key ] )
+				if not df_source.empty:
+					frames.append( df_source )
+			else:
+				st.session_state[ frame_key ] = pd.DataFrame( )
+				update_live_world_source_state(
+					source_key, 'Disabled', error='', stale=False )
 
 		df_entities = pd.concat( frames,
 			ignore_index=True ) if frames else entities_to_dataframe( [ ] )
@@ -2354,7 +2480,18 @@ def refresh_live_world_data( latitude: float, longitude: float ) -> pd.DataFrame
 		observed_at = dt.datetime.now( dt.timezone.utc ).isoformat( )
 		st.session_state[ 'live_world_last_refresh' ] = dt.datetime.now( ).strftime(
 			'%Y-%m-%d %H:%M:%S' )
-		if st.session_state[ 'live_world_history_persist' ]:
+
+		statuses = dict( st.session_state[ 'live_world_source_status' ] )
+		errors = dict( st.session_state[ 'live_world_source_errors' ] )
+		failures: List[ str ] = [ ]
+		for source_key, status in statuses.items( ):
+			if status != 'Failed':
+				continue
+			label = LIVE_WORLD_DATA_SOURCES[ source_key ][ 'label' ]
+			failures.append( f'{label}: {errors.get( source_key, "" )}' )
+		st.session_state[ 'live_world_last_error' ] = '; '.join( failures )
+
+		if st.session_state[ 'live_world_history_persist' ] and not failures:
 			try:
 				st.session_state[ 'live_world_history_last_saved' ] = persist_live_world_history(
 					df_entities, observed_at, observed_at )
@@ -2364,13 +2501,13 @@ def refresh_live_world_data( latitude: float, longitude: float ) -> pd.DataFrame
 			except Exception as history_ex:
 				st.session_state[ 'live_world_history_last_saved' ] = 0
 				st.session_state[ 'live_world_history_last_error' ] = str( history_ex )
-		st.session_state[ 'live_world_refresh_requested' ] = False
+		elif failures:
+			st.session_state[ 'live_world_history_last_saved' ] = 0
+
 		return df_entities
 
-	except Exception as ex:
-		st.session_state[ 'live_world_last_error' ] = str( ex )
+	finally:
 		st.session_state[ 'live_world_refresh_requested' ] = False
-		raise
 
 
 def render_live_world_map( latitude: float, longitude: float ) -> None:
@@ -2408,7 +2545,20 @@ def render_live_world_map( latitude: float, longitude: float ) -> None:
 			with st.spinner( 'Refreshing Live World Data...' ):
 				refresh_live_world_data( latitude, longitude )
 		except Exception as ex:
-			st.error( f'Live World refresh failed: {ex}' )
+			st.error( f'Live World refresh failed before provider isolation completed: {ex}' )
+
+	source_status = dict( st.session_state[ 'live_world_source_status' ] )
+	source_errors = dict( st.session_state[ 'live_world_source_errors' ] )
+	source_stale = dict( st.session_state[ 'live_world_source_stale' ] )
+	for source_key, status in source_status.items( ):
+		if status != 'Failed':
+			continue
+		label = LIVE_WORLD_DATA_SOURCES[ source_key ][ 'label' ]
+		error = source_errors.get( source_key, '' ) or 'Unknown provider error.'
+		message = f'{label} refresh failed: {error}'
+		if source_stale.get( source_key, False ):
+			message += ' Showing data from the previous successful refresh.'
+		st.error( message )
 
 	df_entities = st.session_state.get( 'live_world_df_entities', pd.DataFrame( ) )
 	if df_entities is None or df_entities.empty:
