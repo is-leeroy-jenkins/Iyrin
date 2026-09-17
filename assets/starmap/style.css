@@ -1169,3 +1169,31 @@ input[type='datetime-local'],
 	border: 1px solid rgba(0, 120, 252, 0.30);
 	color: var(--text);
 }
+
+/* What's Up Tonight state overrides */
+#whatUpTonightBtn:hover
+{
+	background: #2B3139;
+	border-color: #4B5563;
+	color: white;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
+}
+
+#whatUpTonightBtn:active
+{
+	background: var(--primary-dark);
+	border-color: var(--primary);
+	color: white;
+	transform: translateY(1px);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) inset;
+}
+
+#whatUpTonightBtn:focus-visible
+{
+	background: var(--primary-dark);
+	border-color: var(--primary);
+	color: white;
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.45);
+}
