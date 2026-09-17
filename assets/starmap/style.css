@@ -118,6 +118,7 @@ h1
 	height: 200%;
 	background: radial-gradient(circle at center, rgba(20, 20, 20, 0.05) 0%, transparent 60%);
 	z-index: 0;
+	pointer-events: none;
 }
 
 .form-group
@@ -220,6 +221,8 @@ input[type='datetime-local']:focus,
 .button-group
 {
 	margin-bottom: 2rem;
+	position: relative;
+	z-index: 1;
 }
 
 .secondary-btn
