@@ -6,7 +6,7 @@
  Created:                 09-12-2026
 
  Last Modified By:        Terry D. Eppler / Assistant
- Last Modified On:        09-12-2026
+ Last Modified On:        09-17-2026
 ******************************************************************************************
 
 Purpose:
@@ -19,6 +19,7 @@ Purpose:
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
@@ -30,6 +31,9 @@ import config as cfg
 
 
 HISTORY_TABLE = 'LiveWorldHistory'
+HISTORY_STATE_TABLE = 'LiveWorldHistoryState'
+HISTORY_DEDUP_ENTITY_TYPES: List[ str ] = [
+    'Earthquake', 'Fire', 'Infrastructure', 'Camera', 'Map Feature' ]
 HISTORY_COLUMNS: List[ str ] = [
     'RefreshId', 'ObservedAt', 'EntityId', 'EntityType', 'Name', 'Latitude', 'Longitude',
     'Altitude', 'Heading', 'Speed', 'Timestamp', 'Source', 'Metadata' ]
@@ -64,7 +68,7 @@ def initialize_live_world_history( ) -> None:
 
         Purpose:
         --------
-        Create the Live World history table and supporting indexes when they do not exist.
+        Create the Live World history tables and supporting indexes when they do not exist.
 
         Returns:
         --------
@@ -101,21 +105,72 @@ def initialize_live_world_history( ) -> None:
             CREATE INDEX IF NOT EXISTS IX_{HISTORY_TABLE}_Entity
             ON {HISTORY_TABLE} (EntityType, EntityId, ObservedAt)
         ''' )
+        conn.execute( f'''
+            CREATE TABLE IF NOT EXISTS {HISTORY_STATE_TABLE} (
+                EntityType TEXT NOT NULL,
+                EntityId TEXT NOT NULL,
+                Fingerprint TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL,
+                PRIMARY KEY (EntityType, EntityId)
+            )
+        ''' )
 
 
-def persist_live_world_history( df_entities: pd.DataFrame, refresh_id: str,
-        observed_at: str ) -> int:
+def create_live_world_history_fingerprint( row: pd.Series ) -> str:
     '''
 
         Purpose:
         --------
-        Persist one normalized Live World refresh snapshot without duplicate observations.
+        Create a stable content fingerprint for event/static Live World entities so
+        unchanged observations are not persisted repeatedly across refreshes.
+
+        Parameters:
+        -----------
+        row (pd.Series): Normalized Live World entity row.
+
+        Returns:
+        --------
+        str: SHA-256 fingerprint of the entity's persisted state excluding observation time.
+
+    '''
+    throw_if( 'row', row )
+    metadata = row.get( 'Metadata', { } )
+    metadata_value = metadata if isinstance( metadata, dict ) else { }
+    state = {
+        'EntityType': str( row.get( 'EntityType', '' ) ),
+        'EntityId': str( row.get( 'EntityId', '' ) ),
+        'Name': str( row.get( 'Name', '' ) ),
+        'Latitude': float( row.get( 'Latitude', 0.0 ) ),
+        'Longitude': float( row.get( 'Longitude', 0.0 ) ),
+        'Altitude': float( row.get( 'Altitude', 0.0 ) )
+            if pd.notna( row.get( 'Altitude', 0.0 ) ) else None,
+        'Heading': float( row.get( 'Heading', 0.0 ) )
+            if pd.notna( row.get( 'Heading', 0.0 ) ) else None,
+        'Speed': float( row.get( 'Speed', 0.0 ) )
+            if pd.notna( row.get( 'Speed', 0.0 ) ) else None,
+        'Source': str( row.get( 'Source', '' ) ),
+        'Metadata': metadata_value,
+    }
+    payload = json.dumps( state, sort_keys=True, ensure_ascii=False,
+        separators=( ',', ':' ), default=str )
+    return hashlib.sha256( payload.encode( 'utf-8' ) ).hexdigest( )
+
+
+def persist_live_world_history( df_entities: pd.DataFrame, refresh_id: str,
+        observed_at: str, max_rows_per_source: int=5000 ) -> int:
+    '''
+
+        Purpose:
+        --------
+        Persist one normalized Live World refresh while bounding per-source growth and
+        suppressing unchanged event/static observations across refreshes.
 
         Parameters:
         -----------
         df_entities (pd.DataFrame): Normalized Live World entity frame.
         refresh_id (str): Stable identifier for the refresh snapshot.
         observed_at (str): UTC ISO timestamp for the refresh.
+        max_rows_per_source (int): Maximum rows persisted for one entity type in a refresh.
 
         Returns:
         --------
@@ -125,40 +180,77 @@ def persist_live_world_history( df_entities: pd.DataFrame, refresh_id: str,
     throw_if( 'df_entities', df_entities )
     throw_if( 'refresh_id', refresh_id )
     throw_if( 'observed_at', observed_at )
+    throw_if( 'max_rows_per_source', max_rows_per_source )
+    if max_rows_per_source < 1:
+        raise ValueError( 'Argument "max_rows_per_source" must be greater than zero.' )
     initialize_live_world_history( )
     if df_entities.empty:
         return 0
 
-    records: List[ tuple ] = [ ]
-    for _, row in df_entities.iterrows( ):
-        metadata = row.get( 'Metadata', { } )
-        metadata_text = json.dumps( metadata if isinstance( metadata, dict ) else { },
-            ensure_ascii=False, default=str )
-        records.append( (
-            refresh_id,
-            observed_at,
-            str( row.get( 'EntityId', '' ) ),
-            str( row.get( 'EntityType', '' ) ),
-            str( row.get( 'Name', '' ) ),
-            float( row.get( 'Latitude', 0.0 ) ),
-            float( row.get( 'Longitude', 0.0 ) ),
-            float( row.get( 'Altitude', 0.0 ) ) if pd.notna( row.get( 'Altitude', 0.0 ) ) else None,
-            float( row.get( 'Heading', 0.0 ) ) if pd.notna( row.get( 'Heading', 0.0 ) ) else None,
-            float( row.get( 'Speed', 0.0 ) ) if pd.notna( row.get( 'Speed', 0.0 ) ) else None,
-            str( row.get( 'Timestamp', '' ) ),
-            str( row.get( 'Source', '' ) ),
-            metadata_text,
-        ) )
-
+    source_counts: Dict[ str, int ] = { }
+    inserted = 0
     with sqlite3.connect( cfg.DB_PATH ) as conn:
-        before = conn.total_changes
-        conn.executemany( f'''
-            INSERT OR IGNORE INTO {HISTORY_TABLE} (
-                RefreshId, ObservedAt, EntityId, EntityType, Name, Latitude, Longitude,
-                Altitude, Heading, Speed, Timestamp, Source, Metadata )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', records )
-        return conn.total_changes - before
+        for _, row in df_entities.iterrows( ):
+            entity_type = str( row.get( 'EntityType', '' ) )
+            entity_id = str( row.get( 'EntityId', '' ) )
+            source_counts[ entity_type ] = source_counts.get( entity_type, 0 )
+            if source_counts[ entity_type ] >= max_rows_per_source:
+                continue
+            source_counts[ entity_type ] += 1
+
+            fingerprint = ''
+            if entity_type in HISTORY_DEDUP_ENTITY_TYPES:
+                fingerprint = create_live_world_history_fingerprint( row )
+                previous = conn.execute( f'''
+                    SELECT Fingerprint
+                    FROM {HISTORY_STATE_TABLE}
+                    WHERE EntityType = ? AND EntityId = ?
+                ''', (entity_type, entity_id) ).fetchone( )
+                if previous is not None and str( previous[ 0 ] ) == fingerprint:
+                    continue
+
+            metadata = row.get( 'Metadata', { } )
+            metadata_text = json.dumps(
+                metadata if isinstance( metadata, dict ) else { },
+                ensure_ascii=False, default=str )
+            cursor = conn.execute( f'''
+                INSERT OR IGNORE INTO {HISTORY_TABLE} (
+                    RefreshId, ObservedAt, EntityId, EntityType, Name, Latitude, Longitude,
+                    Altitude, Heading, Speed, Timestamp, Source, Metadata )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                refresh_id,
+                observed_at,
+                entity_id,
+                entity_type,
+                str( row.get( 'Name', '' ) ),
+                float( row.get( 'Latitude', 0.0 ) ),
+                float( row.get( 'Longitude', 0.0 ) ),
+                float( row.get( 'Altitude', 0.0 ) )
+                    if pd.notna( row.get( 'Altitude', 0.0 ) ) else None,
+                float( row.get( 'Heading', 0.0 ) )
+                    if pd.notna( row.get( 'Heading', 0.0 ) ) else None,
+                float( row.get( 'Speed', 0.0 ) )
+                    if pd.notna( row.get( 'Speed', 0.0 ) ) else None,
+                str( row.get( 'Timestamp', '' ) ),
+                str( row.get( 'Source', '' ) ),
+                metadata_text,
+            ) )
+            if cursor.rowcount != 1:
+                continue
+            inserted += 1
+
+            if fingerprint:
+                conn.execute( f'''
+                    INSERT INTO {HISTORY_STATE_TABLE} (
+                        EntityType, EntityId, Fingerprint, UpdatedAt )
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT (EntityType, EntityId) DO UPDATE SET
+                        Fingerprint = excluded.Fingerprint,
+                        UpdatedAt = excluded.UpdatedAt
+                ''', (entity_type, entity_id, fingerprint, observed_at) )
+
+    return inserted
 
 
 def purge_live_world_history( retention_days: int ) -> int:
@@ -166,7 +258,8 @@ def purge_live_world_history( retention_days: int ) -> int:
 
         Purpose:
         --------
-        Delete persisted Live World observations older than the configured retention period.
+        Delete persisted Live World observations older than the configured retention period
+        and remove deduplication state for entities no longer present in retained history.
 
         Parameters:
         -----------
@@ -185,7 +278,17 @@ def purge_live_world_history( retention_days: int ) -> int:
     with sqlite3.connect( cfg.DB_PATH ) as conn:
         cursor = conn.execute( f'DELETE FROM {HISTORY_TABLE} WHERE ObservedAt < ?',
             (cutoff.isoformat( ),) )
-        return int( cursor.rowcount if cursor.rowcount is not None else 0 )
+        deleted = int( cursor.rowcount if cursor.rowcount is not None else 0 )
+        conn.execute( f'''
+            DELETE FROM {HISTORY_STATE_TABLE}
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM {HISTORY_TABLE}
+                WHERE {HISTORY_TABLE}.EntityType = {HISTORY_STATE_TABLE}.EntityType
+                    AND {HISTORY_TABLE}.EntityId = {HISTORY_STATE_TABLE}.EntityId
+            )
+        ''' )
+        return deleted
 
 
 def clear_live_world_history( ) -> int:
@@ -193,7 +296,7 @@ def clear_live_world_history( ) -> int:
 
         Purpose:
         --------
-        Delete all persisted Live World historical observations.
+        Delete all persisted Live World historical observations and deduplication state.
 
         Returns:
         --------
@@ -203,7 +306,9 @@ def clear_live_world_history( ) -> int:
     initialize_live_world_history( )
     with sqlite3.connect( cfg.DB_PATH ) as conn:
         cursor = conn.execute( f'DELETE FROM {HISTORY_TABLE}' )
-        return int( cursor.rowcount if cursor.rowcount is not None else 0 )
+        deleted = int( cursor.rowcount if cursor.rowcount is not None else 0 )
+        conn.execute( f'DELETE FROM {HISTORY_STATE_TABLE}' )
+        return deleted
 
 
 def get_live_world_history_snapshots( hours: int=24 ) -> List[ str ]:
@@ -243,7 +348,8 @@ def load_live_world_history( hours: int, entity_types: List[ str ], snapshot: st
 
         Purpose:
         --------
-        Load persisted observations through a selected replay snapshot.
+        Load the most recent bounded set of persisted observations through a selected replay
+        snapshot and return those observations in chronological order.
 
         Parameters:
         -----------
@@ -254,7 +360,7 @@ def load_live_world_history( hours: int, entity_types: List[ str ], snapshot: st
 
         Returns:
         --------
-        pd.DataFrame: Historical observations ordered chronologically.
+        pd.DataFrame: Recent historical observations ordered chronologically.
 
     '''
     throw_if( 'hours', hours )
@@ -280,10 +386,15 @@ def load_live_world_history( hours: int, entity_types: List[ str ], snapshot: st
     query = f'''
         SELECT RefreshId, ObservedAt, EntityId, EntityType, Name, Latitude, Longitude,
             Altitude, Heading, Speed, Timestamp, Source, Metadata
-        FROM {HISTORY_TABLE}
-        WHERE {' AND '.join( clauses )}
+        FROM (
+            SELECT RefreshId, ObservedAt, EntityId, EntityType, Name, Latitude, Longitude,
+                Altitude, Heading, Speed, Timestamp, Source, Metadata
+            FROM {HISTORY_TABLE}
+            WHERE {' AND '.join( clauses )}
+            ORDER BY ObservedAt DESC, EntityType ASC, EntityId ASC
+            LIMIT ?
+        )
         ORDER BY ObservedAt ASC, EntityType ASC, EntityId ASC
-        LIMIT ?
     '''
     with sqlite3.connect( cfg.DB_PATH ) as conn:
         df_history = pd.read_sql_query( query, conn, params=parameters )

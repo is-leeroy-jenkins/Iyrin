@@ -259,8 +259,9 @@ def initialize_live_world_state( ) -> None:
 		'live_world_geofence_initialized': False,
 		'live_world_geofence_last_refresh_processed': '',
 		'live_world_historical_replay': False,
-		'live_world_history_persist': True,
+		'live_world_history_persist': False,
 		'live_world_history_retention_days': 30,
+		'live_world_history_max_rows_per_source': 5000,
 		'live_world_history_window': '24 Hours',
 		'live_world_history_entity_types': [
 			'Aircraft', 'Military Aircraft', 'Satellite', 'Vessel', 'Earthquake', 'Fire',
@@ -606,6 +607,8 @@ def render_live_world_sidebar( ) -> None:
 				with history_c2:
 					st.slider( 'Retention (Days)', min_value=1, max_value=365, step=1,
 						key='live_world_history_retention_days' )
+				st.slider( 'Max Rows / Source / Refresh', min_value=100, max_value=10000,
+					step=100, key='live_world_history_max_rows_per_source' )
 				st.multiselect( 'Replay Entity Types',
 					options=[ 'Aircraft', 'Military Aircraft', 'Satellite', 'Vessel',
 						'Earthquake', 'Fire', 'Infrastructure', 'Camera', 'Map Feature' ], key='live_world_history_entity_types' )
@@ -633,6 +636,8 @@ def render_live_world_sidebar( ) -> None:
 							width='stretch' ):
 						clear_live_world_history( )
 						st.session_state[ 'live_world_history_snapshot' ] = ''
+						st.session_state[ 'live_world_history_last_saved' ] = 0
+						st.session_state[ 'live_world_history_last_error' ] = ''
 			for label in AI_ADVANCED_PENDING_TOOLS.values( ):
 				st.checkbox( label, value=False, disabled=True )
 
@@ -1248,7 +1253,8 @@ def fetch_live_fires( latitude: float, longitude: float ) -> pd.DataFrame:
 			'Day/Night': get_row_value( row, [ 'daynight', 'Day/Night' ] ),
 			'Version': get_row_value( row, [ 'version', 'Version' ] ),
 		}
-		entity_id = f'FIRMS-{source}-{acq_date}-{acq_time}-{index + 1}'
+		entity_id = (
+			f'FIRMS-{source}-{acq_date}-{acq_time}-{lat:.5f}-{lon:.5f}' )
 		entities.append( GeoEntity(
 			entity_id=entity_id,
 			entity_type='Fire',
@@ -2520,10 +2526,12 @@ def refresh_live_world_data( latitude: float, longitude: float ) -> pd.DataFrame
 			failures.append( f'{label}: {errors.get( source_key, "" )}' )
 		st.session_state[ 'live_world_last_error' ] = '; '.join( failures )
 
-		if st.session_state[ 'live_world_history_persist' ] and not failures:
+		if (st.session_state[ 'live_world_historical_replay' ]
+				and st.session_state[ 'live_world_history_persist' ] and not failures):
 			try:
 				st.session_state[ 'live_world_history_last_saved' ] = persist_live_world_history(
-					df_entities, observed_at, observed_at )
+					df_entities, observed_at, observed_at,
+					int( st.session_state[ 'live_world_history_max_rows_per_source' ] ) )
 				purge_live_world_history(
 					int( st.session_state[ 'live_world_history_retention_days' ] ) )
 				st.session_state[ 'live_world_history_last_error' ] = ''
