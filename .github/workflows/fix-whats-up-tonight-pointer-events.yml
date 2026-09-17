@@ -1,0 +1,96 @@
+name: Fix Tonight Button Pointer Events
+
+on:
+  push:
+    branches:
+      - fix/whats-up-tonight-pointer-events
+    paths:
+      - .github/workflows/fix-whats-up-tonight-pointer-events.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/whats-up-tonight-pointer-events
+          fetch-depth: 0
+
+      - name: Fix interaction layer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('assets/starmap/style.css')
+          source = path.read_text(encoding='utf-8')
+
+          old_overlay = '''.controls::before
+{
+\tcontent: '';
+\tposition: absolute;
+\ttop: -50%;
+\tleft: -50%;
+\twidth: 200%;
+\theight: 200%;
+\tbackground: radial-gradient(circle at center, rgba(20, 20, 20, 0.05) 0%, transparent 60%);
+\tz-index: 0;
+}'''
+
+          new_overlay = '''.controls::before
+{
+\tcontent: '';
+\tposition: absolute;
+\ttop: -50%;
+\tleft: -50%;
+\twidth: 200%;
+\theight: 200%;
+\tbackground: radial-gradient(circle at center, rgba(20, 20, 20, 0.05) 0%, transparent 60%);
+\tz-index: 0;
+\tpointer-events: none;
+}'''
+
+          old_button_group = '''.button-group
+{
+\tmargin-bottom: 2rem;
+}'''
+
+          new_button_group = '''.button-group
+{
+\tmargin-bottom: 2rem;
+\tposition: relative;
+\tz-index: 1;
+}'''
+
+          if source.count(old_overlay) != 1:
+              raise RuntimeError('Expected exactly one controls overlay block.')
+
+          if source.count(old_button_group) != 1:
+              raise RuntimeError('Expected exactly one button group block.')
+
+          source = source.replace(old_overlay, new_overlay, 1)
+          source = source.replace(old_button_group, new_button_group, 1)
+          path.write_text(source, encoding='utf-8')
+          PY
+
+      - name: Validate
+        run: |
+          git diff --check
+          grep -A 12 "^.controls::before" assets/starmap/style.css | grep -q "pointer-events: none;"
+          grep -A 6 "^.button-group" assets/starmap/style.css | grep -q "z-index: 1;"
+          grep -q '<button type="button" id="whatUpTonightBtn" class="secondary-btn">' assets/starmap/index.html
+          grep -q "whatUpTonightBtn').addEventListener('click'" assets/starmap/js/modules/UIController.js
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/fix-whats-up-tonight-pointer-events.yml
+
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/starmap/style.css .github/workflows/fix-whats-up-tonight-pointer-events.yml
+          git diff --cached --check
+          git commit -m "Fix What's Up Tonight pointer interaction"
+          git push origin fix/whats-up-tonight-pointer-events
