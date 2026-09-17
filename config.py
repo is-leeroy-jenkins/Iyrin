@@ -100,7 +100,7 @@ XAI_API_KEY = os.getenv( 'XAI_API_KEY' )
 O365_CLIENT_ID = os.getenv( 'O365_CLIENT_ID' )
 O365_CLIENT_SECRET = os.getenv( 'O365_CLIENT_SECRET' )
 OPENAQ_API_KEY = os.getenv( 'OPENAQ_API_KEY' )
-OPENSKY_API_CLIENT_ID = os.getenv( 'OPENSKY_API_CLIENT_ID' )
+OPENSKY_CLIENT_ID = os.getenv( 'OPENSKY_API_CLIENT_ID' )
 OPENSKY_API_CREDENTIALS = os.getenv( 'OPENSKY_API_CREDENTIALS' )
 OPENSKY_API_CLIENT_SECRET = os.getenv( 'OPENSKY_API_CLIENT_SECRET' )
 CENSUS_API_KEY = os.getenv( 'CENSUS_API_KEY' )
@@ -583,4 +583,12 @@ health, development, and humanitarian action, including tracking progress toward
 Sustainable Development Goals (SDGs).
 
 	https://www.worldpop.org/sdi/introapi/
+'''
+
+OPENSKY_NETWORK = r'''Live air traffic surveillance data. Operating via thousands of volunteer-run
+sensors worldwide, it captures raw ADS-B, Mode S, and FLARM signals. It stores complete, unfiltered
+historical data to support academic, scientific, and institutional research on airspace
+safety and efficiency.
+
+https://openskynetwork.github.io/opensky-api/rest.html
 '''

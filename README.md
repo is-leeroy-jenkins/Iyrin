@@ -290,7 +290,7 @@ Iyrin reads provider credentials from environment variables where required.
 | `AIRNOW_API_KEY`          | EPA AirNow                       |
 | `OPENAQ_API_KEY`          | OpenAQ                           |
 | `PURPLEAIR_API_KEY`       | PurpleAir                        |
-| `OPENSKY_API_CLIENT_ID`   | OpenSky OAuth client ID          |
+| `OPENSKY_CLIENT_ID`   | OpenSky OAuth client ID          |
 | `OPENSKY_API_CREDENTIALS` | OpenSky OAuth client credentials |
 | `AISSTREAM_API_KEY`       | AIS Stream                       |
 | `PINECONE_API_KEY`        | Pinecone vector storage          |

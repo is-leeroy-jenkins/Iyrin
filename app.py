@@ -352,7 +352,7 @@ if st.session_state.nasa_earthdata_token == '':
 		os.environ[ 'NASA_EARTHDATA_TOKEN' ] = default
 
 if st.session_state.opensky_api_client_id == '':
-	default = cfg.OPENSKY_API_CLIENT_ID
+	default = cfg.OPENSKY_CLIENT_ID
 	if default:
 		st.session_state.opensky_api_client_id = default
 		os.environ[ 'OPENSKY_API_CLIENT_ID' ] = default
