@@ -8474,7 +8474,7 @@ elif mode == 'Astronomical Data':
 				
 			# --------- STAR CHART
 			with st.expander( '✨ Star Chart', expanded=False ):
-				st.badge( label='About API', color='blue', help=cfg.STAR_CHART )
+				st.caption( 'API', help=cfg.STAR_CHART )
 				chart_mode = st.selectbox( 'Mode',
 					options=[ 'Object Chart', 'Coordinate Chart', 'Static Chart' ],
 					key='astro_chart_mode' )
@@ -8650,11 +8650,12 @@ elif mode == 'Astronomical Data':
 						st.session_state[ 'astro_last_url' ] = ''
 			
 				st.divider( )
-				render_source_processing_controls( 'astro', 'astro_last_result', 'astro_last_source', 'Star Chart', 'astro_star_chart' )
+				render_source_processing_controls( 'astro', 'astro_last_result',
+					'astro_last_source', 'Star Chart', 'astro_star_chart' )
 			
 			# --------- SATELLITE CENTER
 			with st.expander( '🛰️ Satellite Center', expanded=False ):
-				st.badge( label='About API', color='blue', help=cfg.SATELLITE_CENTER )
+				st.caption( 'API', help=cfg.SATELLITE_CENTER )
 				satellite_mode = st.selectbox( 'Mode',
 					options=[ 'observatories', 'ground_stations', 'locations' ],
 					key='astro_satellite_mode' )
@@ -8745,7 +8746,7 @@ elif mode == 'Astronomical Data':
 			
 			# --------- ASTRO CATALOG
 			with st.expander( '🔭 Astro Catalog', expanded=False ):
-				st.badge( label='About API', color='blue', help=cfg.ASTRONOMY_CATALOG )
+				st.caption( 'API', help=cfg.ASTRONOMY_CATALOG )
 				catalog_mode = st.selectbox( 'Mode', options=[ 'object_query', 'cone_search' ],
 					key='astro_catalog_mode' )
 				
@@ -8847,7 +8848,7 @@ elif mode == 'Astronomical Data':
 			
 			# --------- ASTROQUERY / SIMBAD
 			with st.expander( '🌌 AstroQuery / SIMBAD', expanded=False ):
-				st.badge( label='About API', color='blue', help=cfg.ASTRO_QUERY )
+				st.caption( 'API', help=cfg.ASTRO_QUERY )
 				astroquery_mode = st.selectbox( 'Mode',
 					options=[ 'object_search', 'object_ids', 'region_search' ],
 					key='astro_astroquery_mode' )
@@ -8930,7 +8931,7 @@ elif mode == 'Astronomical Data':
 			
 			# --------- STAR MAP
 			with st.expander( '🗺️ Star Map', expanded=False ):
-				st.badge( label='About API', color='blue', help=cfg.STAR_MAP )
+				st.caption( 'API', help=cfg.STAR_MAP )
 				starmap_mode = st.selectbox(
 					'Mode',
 					options=[ 'object_link', 'coordinate_link', 'snapshot' ],
@@ -9036,6 +9037,7 @@ elif mode == 'Astronomical Data':
 
 			# --------- JPL NEARBY OBJECTS
 			with st.expander( '☄️ JPL Nearby Objects', expanded=False ):
+				st.caption( 'API', help=cfg.NASA_EONET )
 				nearby_mode = st.selectbox( 'Mode',
 					options=[ 'close_approaches', 'object_lookup', 'nhats_summary', 'nhats_object',
 					          'fireballs' ], key='astro_nearby_mode' )
@@ -9152,6 +9154,7 @@ elif mode == 'Astronomical Data':
 
 			# --------- NASA OPEN SCIENCE DATA REPOSITORY
 			with st.expander( '🧬 NASA Open Science Data', expanded=False ):
+				st.caption( 'API', help=cfg.NASA_OPEN_SCIENCE )
 				open_science_mode = st.selectbox( 'Mode',
 					options=[ 'dataset', 'metadata', 'assays', 'data' ],
 					key='astro_open_science_mode' )
@@ -9200,6 +9203,7 @@ elif mode == 'Astronomical Data':
 				st.divider( )
 				render_source_processing_controls( 'astro', 'astro_last_result',
 					'astro_last_source', 'NASA Open Science Data', 'astro_open_science' )
+		
 		with astro_c2:
 			render_mode_document_tabs( 'astro', '📄 Loaded' )
 			
