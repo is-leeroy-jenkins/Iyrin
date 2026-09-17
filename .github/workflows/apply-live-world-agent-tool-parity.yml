@@ -1,0 +1,60 @@
+name: Apply Live World Agent Tool Parity
+
+on:
+  push:
+    branches:
+      - fix/live-world-agent-tool-parity
+    paths:
+      - .github/workflows/apply-live-world-agent-tool-parity.yml
+      - .tmp_apply_live_world_agent_tool_parity.py
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/live-world-agent-tool-parity
+          fetch-depth: 0
+
+      - name: Apply agent-tool parity
+        run: python .tmp_apply_live_world_agent_tool_parity.py
+
+      - name: Validate implementation
+        run: |
+          python -m py_compile tools.py world.py history.py
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          tools = Path('tools.py').read_text(encoding='utf-8')
+          world = Path('world.py').read_text(encoding='utf-8')
+          readme = Path('README.md').read_text(encoding='utf-8')
+          for value in [ 'Infrastructure', 'Camera', 'Map Feature' ]:
+              assert value in tools
+          for name in [
+              'get_live_world_source_status', 'get_live_world_analysis_status',
+              'get_live_world_history_status', 'list_live_world_history' ]:
+              assert f"'{name}': {name}" in tools
+          assert "'agent_tools': '🤖 Agent Tools'" in world
+          assert "key='live_world_agent_tools'" in world
+          assert "'🤖 Agent Tools'" in world
+          assert 'AI_ADVANCED_PENDING_TOOLS' not in world
+          assert '`OPENSKY_API_CLIENT_SECRET`' in readme
+          assert '`OPENSKY_API_CREDENTIALS`' in readme
+          PY
+
+      - name: Remove temporary transformation files
+        run: |
+          rm .tmp_apply_live_world_agent_tool_parity.py
+          rm .github/workflows/apply-live-world-agent-tool-parity.yml
+
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools.py world.py README.md .tmp_apply_live_world_agent_tool_parity.py .github/workflows/apply-live-world-agent-tool-parity.yml
+          git commit -m "Complete Live World agent-tool parity"
+          git push origin HEAD:fix/live-world-agent-tool-parity
