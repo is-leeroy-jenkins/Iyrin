@@ -1,0 +1,111 @@
+name: Update Tonight Button Colors
+
+on:
+  push:
+    branches:
+      - ui/whats-up-tonight-colors
+    paths:
+      - .github/workflows/update-whats-up-tonight-colors.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ui/whats-up-tonight-colors
+          fetch-depth: 0
+
+      - name: Update interaction colors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('assets/starmap/style.css')
+          source = path.read_text(encoding='utf-8')
+
+          old = '''.secondary-btn:hover
+{
+\tbackground: rgba(0, 120, 252, 0.16);
+\tborder-color: var(--primary-light);
+\tcolor: white;
+}
+
+#whatUpTonightBtn:hover
+{
+\ttransform: translateY(-2px);
+\tbox-shadow: 0 6px 16px rgba(0, 120, 252, 0.28);
+}
+
+#whatUpTonightBtn:active
+{
+\ttransform: translateY(1px);
+\tbackground: rgba(0, 120, 252, 0.28);
+\tborder-color: var(--primary);
+\tbox-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) inset;
+}
+
+#whatUpTonightBtn:focus-visible
+{
+\toutline: none;
+\tbox-shadow: 0 0 0 3px rgba(77, 163, 255, 0.32);
+}'''
+
+          new = '''.secondary-btn:hover
+{
+\tbackground: #2B3139;
+\tborder-color: #4B5563;
+\tcolor: white;
+}
+
+#whatUpTonightBtn:hover
+{
+\ttransform: translateY(-2px);
+\tbox-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
+}
+
+#whatUpTonightBtn:active
+{
+\ttransform: translateY(1px);
+\tbackground: var(--primary-dark);
+\tborder-color: var(--primary);
+\tcolor: white;
+\tbox-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) inset;
+}
+
+#whatUpTonightBtn:focus-visible
+{
+\toutline: none;
+\tbackground: var(--primary-dark);
+\tborder-color: var(--primary);
+\tcolor: white;
+\tbox-shadow: 0 0 0 3px rgba(0, 87, 184, 0.45);
+}'''
+
+          if source.count(old) != 1:
+              raise RuntimeError('Expected exactly one Tonight button interaction block.')
+
+          path.write_text(source.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Validate
+        run: |
+          git diff --check
+          grep -q "background: #2B3139;" assets/starmap/style.css
+          grep -q "background: var(--primary-dark);" assets/starmap/style.css
+          grep -q "#whatUpTonightBtn:focus-visible" assets/starmap/style.css
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/update-whats-up-tonight-colors.yml
+
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/starmap/style.css .github/workflows/update-whats-up-tonight-colors.yml
+          git diff --cached --check
+          git commit -m "Adjust What's Up Tonight interaction colors"
+          git push origin ui/whats-up-tonight-colors
