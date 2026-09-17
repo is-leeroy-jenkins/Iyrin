@@ -40,6 +40,7 @@ from history import (
 from sources import (
 	AdsbLolMilitary, AisStreamLive, CelesTrakLive, OpenSkyLive, OverpassCameras, OverpassInfrastructure,
 	OverpassMapLayers )
+from tools import LIVE_WORLD_AGENT_TOOLS
 
 LIVE_WORLD_LAYERS: Dict[ str, str ] = { 'aircraft': '✈️ Aircraft (Live)',
 		'military_aircraft': '🛩️ Military Aircraft', 'satellites': '🛰️ Satellites',
@@ -99,9 +100,8 @@ LIVE_WORLD_DATA_SOURCES: Dict[ str, Dict[ str, str ] ] = {
 }
 
 AI_ADVANCED_TOOLS: Dict[ str, str ] = { 'cross_layer_analysis': '🧭 Cross-Layer Analysis',
-		'geofencing': '🛡️ Geofencing', 'historical_replay': '🕓 Historical Replay', }
-
-AI_ADVANCED_PENDING_TOOLS: Dict[ str, str ] = { 'agent_tools': '🤖 Agent Tools', }
+		'geofencing': '🛡️ Geofencing', 'historical_replay': '🕓 Historical Replay',
+		'agent_tools': '🤖 Agent Tools', }
 
 
 @dataclass
@@ -270,6 +270,7 @@ def initialize_live_world_state( ) -> None:
 		'live_world_history_snapshot': '',
 		'live_world_history_last_saved': 0,
 		'live_world_history_last_error': '',
+		'live_world_agent_tools': False,
 		'live_world_refresh_requested': False,
 		'live_world_last_refresh': '',
 		'live_world_last_error': '',
@@ -638,8 +639,7 @@ def render_live_world_sidebar( ) -> None:
 						st.session_state[ 'live_world_history_snapshot' ] = ''
 						st.session_state[ 'live_world_history_last_saved' ] = 0
 						st.session_state[ 'live_world_history_last_error' ] = ''
-			for label in AI_ADVANCED_PENDING_TOOLS.values( ):
-				st.checkbox( label, value=False, disabled=True )
+			st.checkbox( AI_ADVANCED_TOOLS[ 'agent_tools' ], key='live_world_agent_tools' )
 
 
 def clear_live_world_data( ) -> None:
@@ -2955,10 +2955,10 @@ def render_live_world_map( latitude: float, longitude: float ) -> None:
 		map_style=map_style_options[ st.session_state[ 'live_world_map_style' ] ], tooltip=tooltip )
 	st.pydeck_chart( deck, use_container_width=True )
 
-	entities_tab, aircraft_tab, military_tab, satellites_tab, vessels_tab, earthquakes_tab, fires_tab, infrastructure_tab, cameras_tab, map_layers_tab, tracking_tab, measurements_tab, analysis_tab, geofence_tab, history_tab = st.tabs(
+	entities_tab, aircraft_tab, military_tab, satellites_tab, vessels_tab, earthquakes_tab, fires_tab, infrastructure_tab, cameras_tab, map_layers_tab, tracking_tab, measurements_tab, analysis_tab, geofence_tab, history_tab, agent_tools_tab = st.tabs(
 		[ '🌐 Entities', '✈️ Aircraft', '🛩️ Military', '🛰️ Satellites', '🚢 Vessels',
 			'📈 Earthquakes', '🔥 Fires', '📡 Infrastructure', '📷 Cameras', '🗺️ Map Layers', '🎯 Tracking',
-			'📏 Measurements', '🧭 Analysis', '🛡️ Geofence', '🕓 Historical Replay' ] )
+			'📏 Measurements', '🧭 Analysis', '🛡️ Geofence', '🕓 Historical Replay', '🤖 Agent Tools' ] )
 
 	with entities_tab:
 		st.data_editor( make_live_world_display_frame( df_map ), key='live_world_entities_table',
@@ -3244,3 +3244,17 @@ def make_live_world_display_frame( df_frame: pd.DataFrame ) -> pd.DataFrame:
 					key='live_world_history_table', use_container_width=True,
 					disabled=True, hide_index=True )
 
+	with agent_tools_tab:
+		if not st.session_state[ 'live_world_agent_tools' ]:
+			st.info( 'Enable Agent Tools in AI & Advanced Tools.' )
+		else:
+			st.markdown( '**Available Callable Tools**' )
+			df_agent_tools = pd.DataFrame( [ {
+				'Tool': name,
+				'Callable': callable( tool ),
+			} for name, tool in LIVE_WORLD_AGENT_TOOLS.items( ) ] )
+			st.data_editor( df_agent_tools, key='live_world_agent_tools_table',
+				width='stretch', disabled=True, hide_index=True )
+			st.caption(
+				'Provider-neutral tools operate on normalized Live World state and return '
+				'JSON-serializable results for external agent frameworks.' )

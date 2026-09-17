@@ -169,6 +169,10 @@ Supported tool-oriented operations include:
 - Great-circle distance calculations.
 - Bearing calculations.
 - Cross-layer geospatial context suitable for downstream agent reasoning.
+- Provider refresh status and stale/error diagnostics.
+- Cross-Layer Analysis, Geofencing, Tracking, and Historical Replay status.
+- Bounded retrieval of persisted Historical Replay observations.
+- Full normalized entity-type parity, including Infrastructure, Camera, and Map Feature.
 
 The tool surface is intentionally decoupled from any single agent SDK. Provider registration can be performed by an external agent framework without changing the underlying Iyrin geospatial implementation.
 
@@ -277,7 +281,7 @@ streamlit run app.py
 
 ## ⚙️ Configuration 
 
-Iyrin reads provider credentials from environment variables where required.
+Iyrin reads provider credentials from environment variables where required. Legacy `OPENSKY_API_CLIENT_ID`, `OPENSKY_API_CREDENTIALS`, and `NASA_FIRMS_MAP_KEY` names remain accepted as compatibility aliases.
 
 | Environment Variable      | Service                          |
 |---------------------------|----------------------------------|
@@ -290,8 +294,8 @@ Iyrin reads provider credentials from environment variables where required.
 | `AIRNOW_API_KEY`          | EPA AirNow                       |
 | `OPENAQ_API_KEY`          | OpenAQ                           |
 | `PURPLEAIR_API_KEY`       | PurpleAir                        |
-| `OPENSKY_CLIENT_ID`   | OpenSky OAuth client ID          |
-| `OPENSKY_API_CREDENTIALS` | OpenSky OAuth client credentials |
+| `OPENSKY_CLIENT_ID`          | OpenSky OAuth client ID          |
+| `OPENSKY_API_CLIENT_SECRET` | OpenSky OAuth client secret       |
 | `AISSTREAM_API_KEY`       | AIS Stream                       |
 | `PINECONE_API_KEY`        | Pinecone vector storage          |
 

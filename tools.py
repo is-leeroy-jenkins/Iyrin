@@ -24,6 +24,8 @@ from typing import Dict, List
 import pandas as pd
 import streamlit as st
 
+from history import get_live_world_history_summary, load_live_world_history
+
 
 LIVE_WORLD_ENTITY_TYPES: List[ str ] = [
     'Aircraft',
@@ -32,6 +34,9 @@ LIVE_WORLD_ENTITY_TYPES: List[ str ] = [
     'Vessel',
     'Earthquake',
     'Fire',
+    'Infrastructure',
+    'Camera',
+    'Map Feature',
 ]
 
 
@@ -338,6 +343,121 @@ def get_live_world_geofence_status( ) -> Dict[ str, object ]:
     }
 
 
+def get_live_world_source_status( ) -> List[ Dict[ str, object ] ]:
+    '''
+
+        Purpose:
+        --------
+        Return provider-level Live World refresh status and failure diagnostics.
+
+        Returns:
+        --------
+        List[Dict[str, object]]: Provider status records.
+
+    '''
+    statuses = dict( st.session_state.get( 'live_world_source_status', { } ) or { } )
+    errors = dict( st.session_state.get( 'live_world_source_errors', { } ) or { } )
+    last_attempt = dict( st.session_state.get( 'live_world_source_last_attempt', { } ) or { } )
+    last_success = dict( st.session_state.get( 'live_world_source_last_success', { } ) or { } )
+    stale = dict( st.session_state.get( 'live_world_source_stale', { } ) or { } )
+    keys = sorted( set( statuses ) | set( errors ) | set( last_attempt ) | set( last_success ) )
+    return [ {
+        'Source': key,
+        'Status': str( statuses.get( key, 'Not Refreshed' ) ),
+        'Error': str( errors.get( key, '' ) ),
+        'LastAttempt': str( last_attempt.get( key, '' ) ),
+        'LastSuccess': str( last_success.get( key, '' ) ),
+        'Stale': bool( stale.get( key, False ) ),
+    } for key in keys ]
+
+
+def get_live_world_analysis_status( ) -> Dict[ str, object ]:
+    '''
+
+        Purpose:
+        --------
+        Return the current Cross-Layer Analysis configuration exposed by the Live World UI.
+
+        Returns:
+        --------
+        Dict[str, object]: Cross-layer analysis configuration.
+
+    '''
+    return {
+        'Enabled': bool( st.session_state.get( 'live_world_cross_layer_analysis', False ) ),
+        'Origin': str( st.session_state.get( 'live_world_analysis_origin', 'Current Location' ) ),
+        'RadiusNM': float( st.session_state.get( 'live_world_analysis_radius_nm', 250 ) ),
+        'EntityTypes': list( st.session_state.get( 'live_world_analysis_entity_types', [ ] ) or [ ] ),
+        'Limit': int( st.session_state.get( 'live_world_analysis_limit', 100 ) ),
+    }
+
+
+def get_live_world_history_status( ) -> Dict[ str, object ]:
+    '''
+
+        Purpose:
+        --------
+        Return Historical Replay configuration and persisted-history summary statistics.
+
+        Returns:
+        --------
+        Dict[str, object]: Historical Replay configuration and persistence summary.
+
+    '''
+    summary = get_live_world_history_summary( )
+    return {
+        'Enabled': bool( st.session_state.get( 'live_world_historical_replay', False ) ),
+        'PersistRefreshes': bool( st.session_state.get( 'live_world_history_persist', False ) ),
+        'RetentionDays': int( st.session_state.get( 'live_world_history_retention_days', 30 ) ),
+        'Window': str( st.session_state.get( 'live_world_history_window', '24 Hours' ) ),
+        'EntityTypes': list( st.session_state.get( 'live_world_history_entity_types', [ ] ) or [ ] ),
+        'Limit': int( st.session_state.get( 'live_world_history_limit', 5000 ) ),
+        'Snapshot': str( st.session_state.get( 'live_world_history_snapshot', '' ) ),
+        'LastSaved': int( st.session_state.get( 'live_world_history_last_saved', 0 ) ),
+        'LastError': str( st.session_state.get( 'live_world_history_last_error', '' ) ),
+        'Summary': summary,
+    }
+
+
+def list_live_world_history( hours: int, entity_type: str, snapshot: str,
+        limit: int ) -> List[ Dict[ str, object ] ]:
+    '''
+
+        Purpose:
+        --------
+        Return persisted Live World observations through a selected historical snapshot.
+
+        Parameters:
+        -----------
+        hours (int): Replay lookback in hours; zero loads all retained history.
+        entity_type (str): Entity type or All.
+        snapshot (str): Maximum replay timestamp to include.
+        limit (int): Maximum observations returned.
+
+        Returns:
+        --------
+        List[Dict[str, object]]: Historical observations in chronological order.
+
+    '''
+    throw_if( 'hours', hours )
+    throw_if( 'entity_type', entity_type )
+    throw_if( 'snapshot', snapshot )
+    throw_if( 'limit', limit )
+    if hours < 0:
+        raise ValueError( 'Argument "hours" cannot be negative.' )
+    if entity_type != 'All' and entity_type not in LIVE_WORLD_ENTITY_TYPES:
+        raise ValueError( f'Unsupported entity type: {entity_type}' )
+    if limit < 1 or limit > 25000:
+        raise ValueError( 'Argument "limit" must be between 1 and 25000.' )
+    entity_types = LIVE_WORLD_ENTITY_TYPES if entity_type == 'All' else [ entity_type ]
+    df_history = load_live_world_history(
+        hours=hours, entity_types=entity_types, snapshot=snapshot, limit=limit )
+    if df_history.empty:
+        return [ ]
+    return [ make_entity_record( row ) for _, row in df_history.iterrows( ) ]
+
+
+
 def get_live_world_tracking_status( ) -> Dict[ str, object ]:
     '''
 
@@ -366,6 +486,10 @@ LIVE_WORLD_AGENT_TOOLS: Dict[ str, object ] = {
     'list_live_world_entities': list_live_world_entities,
     'search_live_world_entities': search_live_world_entities,
     'find_live_world_nearest': find_live_world_nearest,
+    'get_live_world_source_status': get_live_world_source_status,
+    'get_live_world_analysis_status': get_live_world_analysis_status,
     'get_live_world_geofence_status': get_live_world_geofence_status,
     'get_live_world_tracking_status': get_live_world_tracking_status,
+    'get_live_world_history_status': get_live_world_history_status,
+    'list_live_world_history': list_live_world_history,
 }
