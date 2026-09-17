@@ -1401,7 +1401,8 @@ class Gemini( Generator ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it
+		        to the application logger, and re-raises it.
 		"""
 		try:
 			if response is None:
@@ -1456,7 +1457,8 @@ class Gemini( Generator ):
 		"""Fetch.
 
 		Purpose:
-		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
+		    Dispatches the requested retrieval or generation operation using the class
+		    configuration and returns the normalized result.
 
 		Args:
 		    prompt (str): Prompt supplied by the caller and interpreted according to the method contract.
@@ -1743,7 +1745,8 @@ class Claude( Generator ):
 		    List[str]: Ordered values or records produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it to
+		        the application logger, and re-raises it.
 		"""
 		try:
 			if domains is None:
@@ -1798,7 +1801,8 @@ class Claude( Generator ):
 		    bool: ``True`` when the condition is satisfied; otherwise ``False``.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata, writes it
+		        to the application logger, and re-raises it.
 		"""
 		try:
 			throw_if( 'model', model )
@@ -1825,7 +1829,8 @@ class Claude( Generator ):
 		    str: Normalized text produced by the operation.
 
 		Raises:
-		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
+		    Error: Wraps the source exception with module, class, and method metadata, writes
+		        it to the application logger, and re-raises it.
 		"""
 		try:
 			if response is None:
@@ -1859,7 +1864,8 @@ class Claude( Generator ):
 		"""Fetch.
 
 		Purpose:
-		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
+		    Dispatches the requested retrieval or generation operation using the class configuration
+		    and returns the normalized result.
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
@@ -2192,7 +2198,8 @@ class Mistral( Generator ):
 		"""Fetch.
 
 		Purpose:
-		    Dispatches the requested retrieval or generation operation using the class configuration and returns the normalized result.
+		    Dispatches the requested retrieval or generation operation using the class configuration
+		    and returns the normalized result.
 
 		Args:
 		    query (str): Search text, prompt, or provider query submitted by the caller.
@@ -2306,8 +2313,7 @@ class Mistral( Generator ):
 			exception = Error( e )
 			exception.module = 'fetchers'
 			exception.cause = 'Mistral'
-			exception.method = ('create_schema( self, function: str, tool: str, description: str, '
-			                    'parameters: dict, required: list[ str ] ) -> Dict[ str, str ]')
+			exception.method = ('create_schema( self, **kwargs ) -> Dict[ str, str ]')
 			Logger( ).write( exception )
 			raise exception
 

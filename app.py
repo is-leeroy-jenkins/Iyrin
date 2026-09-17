@@ -4138,12 +4138,10 @@ if mode == 'Document Data':
 	tokens = st.session_state[ 'tokens' ]
 	documents = st.session_state[ 'documents' ]
 	raw_text = st.session_state[ 'raw_text' ]
-	
 	st.subheader( '📤 Document Loading' )
 	st.divider( )
-	# ------------------------------------------------------------------
-	# LEFT COLUMN - LOADERS
-	# ------------------------------------------------------------------
+	
+	# ----------- LEFT COLUMN - LOADERS
 	document_loaders_column, document_results_column = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
 	with document_loaders_column:
 		_loader_msg = st.session_state.pop( '_loader_status', None )
@@ -4152,9 +4150,7 @@ if mode == 'Document Data':
 		
 		with st.expander( label='Local Documents', expanded=True ):
 			
-			# ----------------------------
 			# ------- Expander NLTK Loader
-			# ----------------------------
 			with st.expander( label='Corpora Loader', icon='📚', expanded=False ):
 				st.caption( 'API', help=cfg.NLTK_LOADER )
 				import nltk
@@ -4287,9 +4283,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'NLTKLoader', 'loader_corpora_loader' )
 			
-			# ----------------------------
 			# ------ Expander Text Loader
-			# ----------------------------
 			with st.expander( label='Text Loader', icon='📝', expanded=False ):
 				st.caption( 'API', help=cfg.TEXT_LOADER )
 				files = st.file_uploader( 'Upload Text File(s)', type=[ 'txt', 'text', 'log' ],
@@ -4365,9 +4359,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_actions( 'TextLoader', 'txt' )
 			
-			# ----------------------------
 			# ------ Expander CSV Loader
-			# ----------------------------
 			with st.expander( label='CSV Loader', icon='📑', expanded=False ):
 				st.caption( 'API', help=cfg.CSV_LOADER )
 				csv_file = st.file_uploader( label='Upload CSV', type=[ 'csv' ], key='csv_upload' )
@@ -4440,9 +4432,7 @@ if mode == 'Document Data':
 				# ----------------------------
 				render_document_processing_actions( 'CsvLoader', 'csv' )
 			
-			# ----------------------------
 			# ------ Expander XML Loader
-			# ----------------------------
 			with st.expander( label='XML Loader', icon='🧬', expanded=False ):
 				st.caption( 'API', help=cfg.XML_LOADER )
 				if 'xml_loader' not in st.session_state or st.session_state.xml_loader is None:
@@ -4595,9 +4585,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'XmlLoader', 'loader_xml_loader' )
 			
-			# ----------------------------
 			# ------- Expander Word Loader
-			# ----------------------------
 			with st.expander( label='Word Document Loader', icon='📘', expanded=False ):
 				st.caption( 'API', help=cfg.WORD_LOADER )
 				word_file = st.file_uploader( 'Upload Word Document', type=[ 'docx' ],
@@ -4671,9 +4659,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_actions( 'WordLoader', 'word' )
 			
-			# ----------------------------
 			# ------- Expander PDF Loader
-			# ----------------------------
 			with st.expander( label='PDF Loader', icon='📕', expanded=False ):
 				st.caption( 'API', help=cfg.PDF_LOADER )
 				pdf = st.file_uploader( 'Upload PDF', type=[ 'pdf' ], key='pdf_upload', )
@@ -4818,9 +4804,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_actions( 'PdfLoader', 'pdf' )
 			
-			# ----------------------------
 			# ------- Expander PPT Loader
-			# ----------------------------
 			with st.expander( label='Power Point Loader', icon='📽', expanded=False ):
 				st.caption( 'API', help=cfg.POWERPOINT_LOADER )
 				pptx = st.file_uploader( 'Upload PPTX', type=[ 'pptx' ], key='pptx_upload' )
@@ -4881,9 +4865,7 @@ if mode == 'Document Data':
 				# ----------------------------
 				render_document_processing_actions( 'PowerPointLoader', 'pptx' )
 			
-			# ----------------------------
 			# ------- Expander Notebook Loader
-			# ----------------------------
 			with st.expander( label='Jupyter Notebook Loader', icon='📓', expanded=False ):
 				st.caption( 'API', help=cfg.NOTEBOOK_LOADER )
 				notebook_file = st.file_uploader( 'Upload Notebook', type=[ 'ipynb' ],
@@ -4974,9 +4956,7 @@ if mode == 'Document Data':
 				render_document_processing_controls( 'JupyterNotebookLoader',
 					'loader_jupyter_notebook_loader' )
 			
-			# ----------------------------
 			# ------- Expander Excel Loader
-			# ----------------------------
 			with st.expander( label='Excel Loader', icon='📊', expanded=False ):
 				st.caption( 'API', help=cfg.EXCEL_LOADER )
 				excel_file = st.file_uploader( 'Upload Excel file', type=[ 'xlsx', 'xls' ],
@@ -5123,9 +5103,7 @@ if mode == 'Document Data':
 				# ----------------------------
 				render_document_processing_actions( 'ExcelLoader', 'excel' )
 			
-			# ----------------------------
 			# ------- Expander Markdown Loader
-			# ----------------------------
 			with st.expander( label='Markdown Loader', icon='🧾', expanded=False ):
 				st.caption( 'API', help=cfg.MARKDOWN_LOADER )
 				md = st.file_uploader( 'Upload Markdown', type=[ 'md', 'markdown' ],
@@ -5190,9 +5168,7 @@ if mode == 'Document Data':
 				# ----------------------------
 				render_document_processing_actions( 'MarkdownLoader', 'md' )
 			
-			# ----------------------------
 			# ------- Expander HTML Loader
-			# ----------------------------
 			with st.expander( label='HTML Loader', icon='🌐', expanded=False ):
 				st.caption( 'API', help=cfg.HTML_LOADER )
 				html = st.file_uploader( 'Upload HTML', type=[ 'html', 'htm' ], key='html_upload' )
@@ -5250,9 +5226,7 @@ if mode == 'Document Data':
 				# ----------------------------
 				render_document_processing_actions( 'HtmlLoader', 'html' )
 			
-			# ----------------------------
 			# ------- Expander JSON Loader
-			# ----------------------------
 			with st.expander( label='JSON Loader', icon='🧩', expanded=False ):
 				st.caption( 'API', help=cfg.JSON_LOADER )
 				js = st.file_uploader( 'Upload JSON', type=[ 'json', 'jsonl' ], key='json_upload', )
@@ -5325,9 +5299,7 @@ if mode == 'Document Data':
 		
 		with st.expander( label='Web Documents', expanded=False ):
 			
-			# ----------------------------
 			# ------- Expander ArXiv Loader
-			# ----------------------------
 			with st.expander( label='ArXiv Loader', icon='🧠', expanded=False ):
 				st.caption( 'API', help=cfg.ARXIV_LOADER )
 				arxiv_query = st.text_input( 'Query', placeholder='e.g., transformer OR llm',
@@ -5383,9 +5355,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'ArXivLoader', 'loader_arxiv_loader' )
 			
-			# ----------------------------
-			# ---- Expander Wikipedia Loader
-			# ----------------------------
+			# ------- Expander Wikipedia Loader
 			with st.expander( label='Wikipedia Loader', icon='📚', expanded=False ):
 				st.caption( 'API', help=cfg.WIKIPEDIA_LOADER )
 				wiki_query = st.text_input( 'Query',
@@ -5446,9 +5416,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'WikiLoader', 'loader_wikipedia_loader' )
 			
-			# ----------------------------
-			# ----- Expander GitHub Loader
-			# ----------------------------
+			# ------- Expander GitHub Loader
 			with st.expander( label='GitHub Loader', icon='🐙', expanded=False ):
 				st.caption( 'API', help=cfg.GITHUB_LOADER )
 				gh_url = st.text_input( 'GitHub API URL', placeholder='https://api.github.com',
@@ -5516,9 +5484,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'GithubLoader', 'loader_github_loader' )
 			
-			# ----------------------------
-			# -------- Expander Outlook Loader
-			# ----------------------------
+			# ------- Expander Outlook Loader
 			with st.expander( label='Outlook Loader', icon='📨', expanded=False ):
 				st.caption( 'API', help=cfg.EMAIL_LOADER )
 				outlook_file = st.file_uploader( 'Upload Outlook Message', type=[ 'msg' ],
@@ -5592,9 +5558,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'OutlookLoader', 'loader_outlook_loader' )
 			
-			# ----------------------------
 			# ------- Expander Web Loader
-			# ----------------------------
 			with st.expander( label='Web Loader', icon='🌐', expanded=False ):
 				st.caption( 'API', help=cfg.WEB_LOADER )
 				urls = st.text_area( 'Enter one URL per line',
@@ -5656,9 +5620,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'WebLoader', 'loader_web_loader' )
 			
-			# ----------------------------
-			# ----- Expander Web Crawler
-			# ----------------------------
+			# ------- Expander Web Crawler
 			with st.expander( label='Web Crawler', icon='🕷️', expanded=False ):
 				st.caption( 'API', help=cfg.WEB_CRAWLER )
 				start_url = st.text_input( 'Start URL', placeholder='https://example.com',
@@ -5731,9 +5693,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'WebCrawler', 'loader_web_crawler' )
 			
-			# ----------------------------
-			# ----- Expander Email Loader
-			# ----------------------------
+			# ------- Expander Email Loader
 			with st.expander( label='E-mail Loader', icon='📧', expanded=False ):
 				st.caption( 'API', help=cfg.EMAIL_LOADER )
 				email_file = st.file_uploader( 'Upload Email File', type=[ 'eml' ],
@@ -5813,9 +5773,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'EmailLoader', 'loader_e_mail_loader' )
 			
-			# ----------------------------
-			# ---- Expander PubMed Loader
-			# ----------------------------
+			# ------- Expander PubMed Loader
 			with st.expander( label='Pub Med Loader', icon='🧬', expanded=False ):
 				st.caption( 'API', help=cfg.PUBMED_LOADER )
 				pubmed_query = st.text_input( 'PubMed Query', value='', key='pubmed_query',
@@ -5886,9 +5844,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'PubMedSearchLoader', 'loader_pub_med_loader' )
 			
-			# ----------------------------
-			# --- Expander Open City Loader
-			# ----------------------------
+			# ------- Expander Open City Loader
 			with st.expander( label='Open City Loader', icon='🏙️', expanded=False ):
 				st.caption( 'API', help=cfg.OPEN_CITY_DATA_LOADER )
 				open_city_id = st.text_input( 'City Domain', value='', key='open_city_id',
@@ -5971,9 +5927,7 @@ if mode == 'Document Data':
 		
 		with st.expander( label='Cloud Documents', expanded=False ):
 			
-			# ----------------------------
-			# ---- Expander OneDrive Loader
-			# ----------------------------
+			# ------- Expander OneDrive Loader
 			with st.expander( label='OneDrive Loader', icon='🟦', expanded=False ):
 				st.caption( 'API', help=cfg.ONEDRIVE_LOADER )
 				onedrive_drive_id = st.text_input( 'Drive ID', value='', key='onedrive_drive_id',
@@ -6055,9 +6009,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'OneDriveDocLoader', 'loader_onedrive_loader' )
 			
-			# ----------------------------
-			# ---- Expander Google Cloud File Loader
-			# ----------------------------
+			# ------- Expander Google Cloud File Loader
 			with st.expander( label='Google Cloud File Loader', icon='☁️', expanded=False ):
 				st.caption( 'API', help=cfg.WEB_CRAWLER )
 				gcs_project_name = st.text_input( 'Project Name', value='',
@@ -6138,9 +6090,7 @@ if mode == 'Document Data':
 				render_document_processing_controls( 'GoogleCloudFileLoader',
 					'loader_google_cloud_file_loader' )
 			
-			# ----------------------------
-			# ---- Expander AWS File Loader
-			# ----------------------------
+			# ------- Expander AWS File Loader
 			with st.expander( label='AWS File Loader', icon='🪣', expanded=False ):
 				st.caption( 'API', help=cfg.AWS_S3FILE_LOADER )
 				aws_file_bucket = st.text_input( 'Bucket', value='', key='aws_file_bucket',
@@ -6250,9 +6200,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'AwsFileLoader', 'loader_aws_file_loader' )
 			
-			# ----------------------------
-			# ----- Expander Google Bucket Loader
-			# ----------------------------
+			# ------- Expander Google Bucket Loader
 			with st.expander( label='Google Bucket Loader', icon='🗂️', expanded=False ):
 				gcs_bucket_project_name = st.text_input( 'Project Name', value='',
 					key='gcs_bucket_project_name', placeholder='e.g. my-gcp-project', )
@@ -6343,9 +6291,7 @@ if mode == 'Document Data':
 				render_document_processing_controls( 'GoogleBucketLoader',
 					'loader_google_bucket_loader' )
 			
-			# ----------------------------
-			# ---- Expander AWS Bucket Loader
-			# ----------------------------
+			# ------- Expander AWS Bucket Loader
 			with st.expander( label='AWS Bucket Loader', icon='🗃️', expanded=False ):
 				aws_bucket_name = st.text_input( 'Bucket', value='', key='aws_bucket_name',
 					placeholder='e.g. my-s3-bucket', )
@@ -6465,9 +6411,7 @@ if mode == 'Document Data':
 				
 				render_document_processing_controls( 'AwsBucketLoader', 'loader_aws_bucket_loader' )
 			
-			# ---------------------------
-			# ---- Expander SharePoint Loader
-			# ---------------------------
+			# ------- Expander SharePoint Loader
 			with st.expander( label='SharePoint Loader', icon='🟩', expanded=False ):
 				spfx_library_id = st.text_input( 'Library ID', value='', key='spfx_library_id',
 					placeholder='SharePoint document library identifier', )
