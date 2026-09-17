@@ -145,17 +145,17 @@ MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
 # -------- LOADER DEFINITIONS -------------------
 
 TEXT_LOADER = r'''Provides LangChain's TextLoader functionality to parse plain-text files
-		into Document objects.
+	into Document objects.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/text/TextLoader
+	https://reference.langchain.com/python/langchain-community/document_loaders/text/TextLoader
 '''
 
 NLTK_LOADER = r'''The Natural Language Toolkit (NLTK) is a comprehensive, open-source Python library
-		used for symbolic and statistical Natural Language Processing (NLP). Developed originally at
-		the University of Pennsylvania by Steven Bird and Edward Loper, it has become a standard tool
-		in academia for teaching and research in computational linguistics.
+used for symbolic and statistical Natural Language Processing (NLP). Developed originally at
+the University of Pennsylvania by Steven Bird and Edward Loper, it has become a standard tool
+in academia for teaching and research in computational linguistics.
 
-		https://www.nltk.org/
+https://www.nltk.org/
 '''
 
 HTML_LOADER = r'''Provides Langchain's UnstructuredHTMLLoader's functionality to parse HTML files
@@ -186,9 +186,9 @@ https://reference.langchain.com/python/langchain-community/document_loaders/gith
 '''
 
 WIKIPEDIA_LOADER = r'''The LangChain Wikipedia Loader (WikipediaLoader) is a component designed to
-        fetch and convert Wikipedia pages into a standardized Document format for use in LLM applications.
+fetch and convert Wikipedia pages into a standardized Document format for use in LLM applications.
 
-        https://reference.langchain.com/python/langchain-community/document_loaders/wikipedia/WikipediaLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/wikipedia/WikipediaLoader
 '''
 
 ARXIV_LOADER = r'''arXiv is a free distribution service and an open-access archive for nearly 2.4 million
@@ -196,7 +196,7 @@ scholarly articles in the fields of physics, mathematics, computer science, quan
 biology, quantitative finance, statistics, electrical engineering and systems science, and
 economics. Materials on this site are not peer-reviewed by arXiv.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/arxiv/ArxivLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/arxiv/ArxivLoader
 '''
 
 PDF_LOADER = r'''Public, SDK-oriented PDF loader with: Page-aware metadata, Two-stage chunking,
@@ -206,24 +206,24 @@ https://reference.langchain.com/python/langchain-community/document_loaders/pdf/
 '''
 
 EXCEL_LOADER = r'''Provides LangChain's UnstructuredExcelLoader functionality
-		to parse Excel spreadsheets into documents.
+to parse Excel spreadsheets into documents.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/excel/UnstructuredExcelLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/excel/UnstructuredExcelLoader
 '''
 
 POWERPOINT_LOADER = r'''The UnstructuredPowerPointLoader (within LangChain) is a tool for parsing
-		Microsoft PowerPoint (.ppt/.pptx) files to extract text and metadata, enabling AI applications
-		to read and process presentations. It supports loading documents in "single" (full text) or
-		"elements" (chunked by title/narrative) modes, ideal for Retrieval Augmented Generation (RAG) tasks
+Microsoft PowerPoint (.ppt/.pptx) files to extract text and metadata, enabling AI applications
+to read and process presentations. It supports loading documents in "single" (full text) or
+"elements" (chunked by title/narrative) modes, ideal for Retrieval Augmented Generation (RAG) tasks
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/powerpoint/UnstructuredPowerPointLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/powerpoint/UnstructuredPowerPointLoader
 '''
 
 JSON_LOADER = r'''The LangChain JSONLoader is a specialized document loader used to transform JSON
 and JSON Lines data into standardized LangChain Document objects. It is a critical component
 for building applications like Retrieval-Augmented Generation (RAG) that need to process structured data.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/json_loader/JSONLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/json_loader/JSONLoader
 '''
 
 MARKDOWN_LOADER = r'''LangChain's Markdown document loaders are specialized tools used to convert
@@ -231,7 +231,7 @@ Markdown files into standardized LangChain Document objects. These objects are t
 for downstream tasks like Retrieval Augmented Generation (RAG), embedding generation,
 or semantic chunking.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/markdown/UnstructuredMarkdownLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/markdown/UnstructuredMarkdownLoader
 '''
 
 XML_LOADER = r'''The UnstructuredXMLLoader in LangChain is a specialized tool designed to load and
@@ -239,7 +239,7 @@ parse XML files into standardized LangChain Document objects. It leverages the U
 library to extract text content and preserve document structure for use in downstream LLM
 applications like RAG.
 
-		https://reference.langchain.com/python/langchain-community/document_loaders/xml/UnstructuredXMLLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/xml/UnstructuredXMLLoader
 '''
 
 CSV_LOADER = r'''The LangChain CSVLoader is a standard utility within the langchain-community package
@@ -247,7 +247,7 @@ designed to transform structured CSV data into a list of standardized Document o
 This process is the foundational step for integrating tabular data into LLM-powered workflows,
 such as Retrieval Augmented Generation (RAG).
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/csv_loader/CSVLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/csv_loader/CSVLoader
 '''
 
 WORD_LOADER = '''Works with both .docx and .doc files. You can run the loader in one of two modes:
@@ -255,12 +255,12 @@ WORD_LOADER = '''Works with both .docx and .doc files. You can run the loader in
 single langchain Document object. If you use "elements" mode, the unstructured library will
 split the document into elements such as Title and NarrativeText.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/word_document/UnstructuredWordDocumentLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/word_document/UnstructuredWordDocumentLoader
 '''
 
 NOTEBOOK_LOADER = '''Loads .ipynb notebook files.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/notebook/NotebookLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/notebook/NotebookLoader
 '''
 
 GOOGLE_CLOUD_FILE_LOADER = r'''
@@ -271,28 +271,28 @@ pull text and files out of a Google Cloud bucket so your AI application can read
 helpful when you want to build a Retrieval-Augmented Generation (RAG) system, which lets an AI
 answer questions using your own private files.
 
-	https://docs.langchain.com/oss/python/integrations/document_loaders/google_cloud_storage_file
+https://docs.langchain.com/oss/python/integrations/document_loaders/google_cloud_storage_file
 '''
 
 GOOGLE_CLOUD_FILE_LOADER = r'''The Google Cloud file loaders in LangChain are tools used to pull
 files and data out of Google Cloud Storage (GCS) and turn them into text format that an
 Artificial Intelligence (AI) can read.
 
-	https://docs.langchain.com/oss/python/integrations/document_loaders/google_cloud_storage_file
+https://docs.langchain.com/oss/python/integrations/document_loaders/google_cloud_storage_file
 '''
 
 AWS_FILE_LOADER = r'''A tool that pulls documents and data from an Amazon Web Services (AWS) S3
 bucket so an AI can read them. It acts like a bridge between your cloud storage and your large
 language model (LLM), which is very helpful for building Retrieval-Augmented Generation (RAG) applications
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/s3_file/S3FileLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/s3_file/S3FileLoader
 '''
 
 AWS_S3FILE_LOADER = r'''An S3FileLoader is a software component used in data frameworks and AI libraries
 to read files directly from an Amazon AWS S3 bucket. It is commonly used in tools like LangChain
 Community S3FileLoader and PyTorch DataPipe S3FileLoader to parse text, PDFs, or binary data for applications
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/s3_file/S3FileLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/s3_file/S3FileLoader
 '''
 
 # --------------- API
