@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/apply-live-world-agent-tool-parity.yml
       - .tmp_apply_live_world_agent_tool_parity.py
+      - .tmp_fix_live_world_agent_tool_parity_transform.py
 
 permissions:
   contents: write
@@ -19,6 +20,9 @@ jobs:
         with:
           ref: fix/live-world-agent-tool-parity
           fetch-depth: 0
+
+      - name: Correct transformation
+        run: python .tmp_fix_live_world_agent_tool_parity_transform.py
 
       - name: Apply agent-tool parity
         run: python .tmp_apply_live_world_agent_tool_parity.py
@@ -49,12 +53,13 @@ jobs:
       - name: Remove temporary transformation files
         run: |
           rm .tmp_apply_live_world_agent_tool_parity.py
+          rm .tmp_fix_live_world_agent_tool_parity_transform.py
           rm .github/workflows/apply-live-world-agent-tool-parity.yml
 
       - name: Commit implementation
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools.py world.py README.md .tmp_apply_live_world_agent_tool_parity.py .github/workflows/apply-live-world-agent-tool-parity.yml
+          git add tools.py world.py README.md .tmp_apply_live_world_agent_tool_parity.py .tmp_fix_live_world_agent_tool_parity_transform.py .github/workflows/apply-live-world-agent-tool-parity.yml
           git commit -m "Complete Live World agent-tool parity"
           git push origin HEAD:fix/live-world-agent-tool-parity
