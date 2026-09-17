@@ -238,29 +238,33 @@ input[type='datetime-local']:focus,
 
 .secondary-btn:hover
 {
-	background: rgba(0, 120, 252, 0.16);
-	border-color: var(--primary-light);
+	background: #2B3139;
+	border-color: #4B5563;
 	color: white;
 }
 
 #whatUpTonightBtn:hover
 {
 	transform: translateY(-2px);
-	box-shadow: 0 6px 16px rgba(0, 120, 252, 0.28);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
 }
 
 #whatUpTonightBtn:active
 {
 	transform: translateY(1px);
-	background: rgba(0, 120, 252, 0.28);
+	background: var(--primary-dark);
 	border-color: var(--primary);
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) inset;
+	color: white;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) inset;
 }
 
 #whatUpTonightBtn:focus-visible
 {
 	outline: none;
-	box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.32);
+	background: var(--primary-dark);
+	border-color: var(--primary);
+	color: white;
+	box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.45);
 }
 
 .animation-controls
@@ -1164,4 +1168,32 @@ input[type='datetime-local'],
 	background: var(--surface-light);
 	border: 1px solid rgba(0, 120, 252, 0.30);
 	color: var(--text);
+}
+
+/* What's Up Tonight state overrides */
+#whatUpTonightBtn:hover
+{
+	background: #2B3139;
+	border-color: #4B5563;
+	color: white;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
+}
+
+#whatUpTonightBtn:active
+{
+	background: var(--primary-dark);
+	border-color: var(--primary);
+	color: white;
+	transform: translateY(1px);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) inset;
+}
+
+#whatUpTonightBtn:focus-visible
+{
+	background: var(--primary-dark);
+	border-color: var(--primary);
+	color: white;
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.45);
 }
