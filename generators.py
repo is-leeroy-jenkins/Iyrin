@@ -1336,12 +1336,9 @@ class Gemini( Generator ):
 		    Error: Wraps the source exception with module, class, and method metadata, writes it to the application logger, and re-raises it.
 		"""
 		try:
-			config_data: Dict[ str, Any ] = {
-					'temperature': float( temperature ),
-					'max_output_tokens': int( max_tokens ),
-					'top_p': float( top_p ),
-					'candidate_count': int( candidate_count )
-			}
+			config_data: Dict[ str, Any ] = { 'temperature': float( temperature ),
+					'max_output_tokens': int( max_tokens ), 'top_p': float( top_p ),
+					'candidate_count': int( candidate_count ) }
 			
 			if top_k is not None and int( top_k ) > 0:
 				config_data[ 'top_k' ] = int( top_k )
