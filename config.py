@@ -145,9 +145,9 @@ MISTRAL_MODELS = [ 'mistral-large-latest', 'mistral-medium-latest',
 # -------- LOADER DEFINITIONS -------------------
 
 TEXT_LOADER = r'''Provides LangChain's TextLoader functionality to parse plain-text files
-	into Document objects.
+into Document objects.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/text/TextLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/text/TextLoader
 '''
 
 NLTK_LOADER = r'''The Natural Language Toolkit (NLTK) is a comprehensive, open-source Python library
@@ -302,7 +302,7 @@ local air quality data and forecasts using the color-coded Air Quality Index (AQ
 It covers ozone and particle pollution ( and  ) via a partnership of the EPA, NOAA, and
 local agencies, offering a "Fire and Smoke Map" to monitor smoke impacts.
 
-	https://docs.airnowapi.org/
+https://docs.airnowapi.org/
 '''
 
 PURPLE_AIR = r'''PurpleAir provides low-cost, real-time air quality monitors and a public,
@@ -311,7 +311,7 @@ Using laser counters, these sensors empower communities to track pollution, part
 during wildfire events. Data is accessible via the PurpleAir Map and is used by researchers,
 public agencies, and individuals worldwide.
 
-	https://api.purpleair.com/
+https://api.purpleair.com/
 '''
 
 OPEN_AQ = r'''OpenAQ is a non-profit organization that aggregates, harmonizes, and shares open-source,
@@ -321,7 +321,7 @@ ountries. The platform empowers researchers, journalists, and communities to acc
 and use air quality data through an open API, fostering collaboration to improve public
 health and policy.
 
-	https://docs.openaq.org/
+https://docs.openaq.org/
 '''
 
 NOAA_CLIMATE_DATA = r'''NOAA climate data is provided primarily through the National Centers for
@@ -330,7 +330,7 @@ coastal, and geophysical data. It offers free access to historical weather recor
 Climate Normals, and datasets on temperature, precipitation, and storms. Data is accessible
 via the NCEI Climate Data Online (CDO) portal.
 
-	https://www.ncdc.noaa.gov/cdo-web/
+https://www.ncdc.noaa.gov/cdo-web/
 '''
 
 USGS_NATIONAL_MAP = r'''The USGS National Map is a premier collaborative program providing free,
@@ -339,7 +339,7 @@ It offers topographic maps, 3D elevation data, and 8+ data layers (transportatio
 hydrography, structures) via an online viewer, data downloads, and web services for public,
 academic, and government use.
 
-	https://tnmaccess.nationalmap.gov/api/v1/docs
+https://tnmaccess.nationalmap.gov/api/v1/docs
 '''
 
 USGS_EARTHQUAKES = r'''The USGS Earthquake Hazards Program monitors, reports, and researches global
@@ -347,13 +347,13 @@ seismic activity to reduce losses and save lives. It operates the National Earth
 Information Center (NEIC) and Advanced National Seismic System (ANSS) to detect magnitude,
 location, and impacts, providing data for public safety, engineering, and hazard assessments
 
-	https://earthquake.usgs.gov/fdsnws/event/1/
+https://earthquake.usgs.gov/fdsnws/event/1/
 '''
 
 USGS_WATER = r'''The USGS Water Resources Mission Area monitors, assesses, and conducts research on
 the nation's water, providing data on streamflow, groundwater, water quality, and water use.
 
-	https://api.waterdata.usgs.gov/
+https://api.waterdata.usgs.gov/
 '''
 
 NOAA_TIDES_CURRENTS = r'''NOAA Tides & Currents, managed by the Center for Operational Oceanographic
@@ -361,13 +361,13 @@ Products and Services (CO-OPS), is the authoritative U.S. source for water level
 oceanographic data. It offers real-time monitoring and predictions for over 3,000 stations,
 crucial for navigation, safety, and coastal resilience.
 
-	https://tidesandcurrents.noaa.gov/web_services_info.html
+https://tidesandcurrents.noaa.gov/web_services_info.html
 '''
 
 STAR_MAP = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
 XML API, Site Linker, and Image Generator interfaces.
 
-	https://starmap360.com/blog/starmap-api-for-developers-and-sellers/
+https://starmap360.com/blog/starmap-api-for-developers-and-sellers/
 '''
 
 NASA_OPEN_SCIENCE = r'''NASA’s Open Science Data Repository (OSDR) enables the reuse of comprehensive,
@@ -375,7 +375,7 @@ multi-modal space life science data—including omics, physiological, phenotypic
 and environmental telemetry—to advance basic and applied research as well as operational
 outcomes for human space exploration.
 
-	https://api.nasa.gov/#open-science-data-repository
+https://api.nasa.gov/#open-science-data-repository
 '''
 
 OPEN_SKY = r'''The OpenSky Network consists of a multitude of sensors connected to the Internet by
@@ -386,14 +386,14 @@ and processes. The main technologies behind the OpenSky Network are the Automati
 Surveillance-Broadcast (ADS-B) and Mode S. These technologies provide detailed (live) aircraft
 information over the publicly accessible 1090 MHz radio frequency channel.
 
-	https://opensky-network.org/data/api
+https://opensky-network.org/data/api
 '''
 
 EPA_ENVIROFACTS = r'''The Envirofacts Data Warehouse contains information from select EPA Environmental
 program office databases and provides access about environmental activities that may affect air,
 water, and land anywhere in the United States.
 
-	https://www.epa.gov/enviro/envirofacts-data-service-api
+https://www.epa.gov/enviro/envirofacts-data-service-api
 '''
 
 EPA_UV_INDEX = r'''The EPA UV Index predicts daily solar UV radiation intensity on a 1–11+ scale,
@@ -401,7 +401,7 @@ helping to gauge sun-safe precautions. Developed with the National Weather Servi
 in ozone, clouds, and elevation to forecast noon intensity. A UV Alert is issued if the
 index is 6+ and unusually high.
 
-	https://www.epa.gov/enviro/web-services#uvindex
+https://www.epa.gov/enviro/web-services#uvindex
 '''
 
 NASA_EONET = r'''NASA Earth Observatory's Natural Event Tracker (EONET) allows users to access imagery,
@@ -411,7 +411,7 @@ and manage events that affect communities in their paths. The EONET application 
 interface (API) provides customization of features including curation and direct links to
 image sources.
 
-	https://eonet.gsfc.nasa.gov/docs/v2.1
+https://eonet.gsfc.nasa.gov/docs/v2.1
 '''
 
 NASA_FIRMS = r'''NASA’s Fire Information for Resource Management System (FIRMS) provides near
@@ -420,14 +420,14 @@ to monitor wildfires. Using sensors from MODIS and VIIRS, it offers global cover
 an interactive map, email alerts, and GIS data. It is designed for firefighters, scientists,
 and natural resource managers.
 
-	https://firms.modaps.eosdis.nasa.gov/api/
+https://firms.modaps.eosdis.nasa.gov/api/
 '''
 
 OPEN_WEATHER = r''' Open-Meteo leverages a powerful combination of global (11 km) and mesoscale (1 km) weather
 models from esteemed national weather services, providing comprehensive forecasts with
 remarkable precision.
 
-	https://open-meteo.com/en/docs
+https://open-meteo.com/en/docs
 '''
 
 HISTORICAL_WEATHER = r'''Provides historical weather retrieval by location name and date using the
@@ -435,14 +435,13 @@ Open-Meteo Geocoding API and Open-Meteo Historical Weather API. This class is in
 designed around the actual user-facing need in the Foo fetcher expander: enter a location
 and a date, resolve that location to coordinates, then retrieve historical weather for that date.
 
-	https://open-meteo.com/en/docs/historical-weather-api
+https://open-meteo.com/en/docs/historical-weather-api
 '''
 
 ASTRONOMY_CATALOG = r'''The Open Astronomy Catalog (OAC) API is a RESTful interface designed for
 programmatic access to open-access astronomical data, specifically focusing on transient events.
 
-	https://astrocats.space/
-		
+https://astrocats.space/
 '''
 
 ASTRO_QUERY = r'''Access to the astropy package that contains key functionality and common tools needed for
@@ -450,7 +449,7 @@ performing astronomy and astrophysics with Python. It is at the core of the Astr
 which aims to enable the community to develop a robust ecosystem of affiliated packages
 covering a broad range of needs for astronomical research, data processing, and data analysis.
 
-	https://docs.astropy.org/en/stable/
+https://docs.astropy.org/en/stable/
 '''
 
 US_NAVAL_OBSERVATORY = r'''Provides access to APIs from the US Naval Observatory's Celestial Navigation Data for
@@ -458,7 +457,7 @@ Assumed Position and Time:  this data service provides all the astronomical info
 necessary to plot navigational lines of position from observations of the altitudes of
 celestial bodies.
 
-	https://aa.usno.navy.mil/data/api
+https://aa.usno.navy.mil/data/api
 '''
 
 GOOGLE_CSE = r'''The Cse Service is the endpoint that returns the requested searches.
@@ -472,7 +471,7 @@ locations around the world. Weather information includes temperature, precipitat
 humidity, and more. Include the latitude and longitude coordinates of the location in your
 request URL parameters.
 
-	https://developers.google.com/maps/documentation/weather/overview
+https://developers.google.com/maps/documentation/weather/overview
 '''
 
 NASA_GLOBAL_IMAGERY = r'''NASA's Global Imagery Browse Services (GIBS) system provides visualizations
@@ -483,7 +482,7 @@ natural hazards, educating the next generation of scientists, and making imagery
 more accessible to the media and public. Browse all of these visualizations through our
 Worldview application.
 
-	https://nasa-gibs.github.io/gibs-api-docs/
+https://nasa-gibs.github.io/gibs-api-docs/
 '''
 
 CDC_WONDER = r'''Wide-ranging ONline Data for Epidemiologic Research -- an easy-to-use, menu-driven
@@ -491,7 +490,7 @@ system that makes the information resources of the Centers for Disease Control a
 Prevention (CDC) available to public health professionals and the public at large. It provides
 access to a wide array of public health information.
 
-	https://wonder.cdc.gov/wonder/help/wonder-api.html
+https://wonder.cdc.gov/wonder/help/wonder-api.html
 '''
 
 SPACE_WEATHER = r'''The Space Weather Database Of Notifications, Knowledge, Information (DONKI) is
@@ -503,7 +502,7 @@ resolution and space science research, intelligent linkages, relationships, caus
 between space weather activities and comprehensive webservice API access to information
 stored in DONKI.
 
-	https://ccmc.gsfc.nasa.gov/tools/DONKI/
+https://ccmc.gsfc.nasa.gov/tools/DONKI/
 '''
 
 STAR_CHART = r'''Provides static and link-based star chart generation using the SKY-MAP.ORG
@@ -518,19 +517,19 @@ Science Data Center (NSSDC) to support a range of NASA science programs and to f
 international NASA responsibilities including those of NSSDC and the World Data Center-A
 for Rockets and Satellites.
 
-	https://sscweb.gsfc.nasa.gov/
+https://sscweb.gsfc.nasa.gov/
 '''
 
 PUB_MED_SEARCH_LOADER = r''' Queries the PubMed biomedical library to fetch publication summaries and
 abstracts as LangChain Document objects.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/pubmed/PubMedLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/pubmed/PubMedLoader
 '''
 
 OPEN_CITY_DATA_LOADER = r'''Designed to load open data records directly from Open City datasets
 into LangChain Document objects.
 
-	https://reference.langchain.com/python/langchain-community/document_loaders/open_city_data/OpenCityDataLoader
+https://reference.langchain.com/python/langchain-community/document_loaders/open_city_data/OpenCityDataLoader
 '''
 
 UN_DATA = r'''Provides dynamic, programmatic access to data within the UNdata platform. Developers
@@ -539,7 +538,7 @@ Web page, download to local storage for further processing, etc. UNdata API is p
 SDMX Reference Infrastructure (SDMX-RI). The API is implemented as a SOAP Web Service that can be
 used to query the datamarts using the SDMX standard. The API is governed by UNdata Terms of Use.
 
-	http://data.un.org/Host.aspx?Content=API
+http://data.un.org/Host.aspx?Content=API
 '''
 
 CENSUS_DATA = r'''The American Community Survey (ACS) is the premier source of detailed information
@@ -547,7 +546,7 @@ about the nation's people and housing. As an ongoing survey conducted by the U.S
 2005, the ACS collects detailed social, economic, housing, and demographic information from a sample
 of households across the 50 states, the District of Columbia, and Puerto Rico
 
-	https://data.census.gov/
+https://data.census.gov/
 '''
 
 CDC_SOCRATA = r'''It provides information uniformly on this large scale for local areas at four
@@ -560,14 +559,14 @@ health-related social needs. These estimates can be used to identify emerging he
 to help develop and carry out effective, targeted public health prevention activities
 (ex https://cdc.gov{resource-id}.json)
 
-	https://dev.socrata.com/foundry/data.cdc.gov/swc5-untb
+https://dev.socrata.com/foundry/data.cdc.gov/swc5-untb
 '''
 
 US_HEALTH_DATA = r'''Health & Human Services Open Data to inform decisions by the public and
 policymakers, drive innovation and economic activity, accelerate scientific research, and
 strengthen the foundation of an open and transparent government.
 
-	https://healthdata.gov/login
+https://healthdata.gov/login
 '''
 
 WHO_DATA = r'''The GHO portal provides a simple query interface to the World Health Organization's
@@ -582,7 +581,7 @@ focuses on improving population data at local levels and helping ensure it is us
 health, development, and humanitarian action, including tracking progress towards the
 Sustainable Development Goals (SDGs).
 
-	https://www.worldpop.org/sdi/introapi/
+https://www.worldpop.org/sdi/introapi/
 '''
 
 OPENSKY_NETWORK = r'''Live air traffic surveillance data. Operating via thousands of volunteer-run
