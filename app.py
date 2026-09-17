@@ -4144,8 +4144,8 @@ if mode == 'Document Data':
 	# ------------------------------------------------------------------
 	# LEFT COLUMN - LOADERS
 	# ------------------------------------------------------------------
-	left, right = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
-	with left:
+	document_loaders_column, document_results_column = st.columns( [ 0.4, 0.6 ], gap='xxsmall', border=True )
+	with document_loaders_column:
 		_loader_msg = st.session_state.pop( '_loader_status', None )
 		if isinstance( _loader_msg, str ) and _loader_msg.strip( ):
 			st.success( _loader_msg )
@@ -6549,7 +6549,7 @@ if mode == 'Document Data':
 	# ------------------------------------------------------------------
 	# RIGHT COLUMN — DOCUMENT RENDERING
 	# ------------------------------------------------------------------
-	with right:
+	with document_results_column:
 		render_loading_tabs( )
 
 # ==============================================================================
