@@ -8,6 +8,7 @@ on:
       - .github/workflows/apply-live-world-agent-tool-parity.yml
       - .tmp_apply_live_world_agent_tool_parity.py
       - .tmp_fix_live_world_agent_tool_parity_transform.py
+      - .tmp_finalize_live_world_agent_tool_parity.py
 
 permissions:
   contents: write
@@ -26,6 +27,9 @@ jobs:
 
       - name: Apply agent-tool parity
         run: python .tmp_apply_live_world_agent_tool_parity.py
+
+      - name: Normalize transformed files
+        run: python .tmp_finalize_live_world_agent_tool_parity.py
 
       - name: Validate implementation
         run: |
@@ -54,12 +58,13 @@ jobs:
         run: |
           rm .tmp_apply_live_world_agent_tool_parity.py
           rm .tmp_fix_live_world_agent_tool_parity_transform.py
+          rm .tmp_finalize_live_world_agent_tool_parity.py
           rm .github/workflows/apply-live-world-agent-tool-parity.yml
 
       - name: Commit implementation
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools.py world.py README.md .tmp_apply_live_world_agent_tool_parity.py .tmp_fix_live_world_agent_tool_parity_transform.py .github/workflows/apply-live-world-agent-tool-parity.yml
+          git add tools.py world.py README.md .tmp_apply_live_world_agent_tool_parity.py .tmp_fix_live_world_agent_tool_parity_transform.py .tmp_finalize_live_world_agent_tool_parity.py .github/workflows/apply-live-world-agent-tool-parity.yml
           git commit -m "Complete Live World agent-tool parity"
           git push origin HEAD:fix/live-world-agent-tool-parity
