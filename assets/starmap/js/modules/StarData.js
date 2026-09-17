@@ -22,8 +22,19 @@
         }
 
         async load() {
+            const localData = window.StarMapApp.LOCAL_DATA;
+            if (localData && Object.keys(localData).length > 0) {
+                this.data = localData;
+                return this.data;
+            }
+
             const dataPromises = Object.entries(this.dataUrls).map(([key, url]) =>
-                fetch(url).then(r => r.json()).then(d => [key, d])
+                fetch(url).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${key}: HTTP ${response.status}`);
+                    }
+                    return response.json();
+                }).then(data => [key, data])
             );
             this.data = Object.fromEntries(await Promise.all(dataPromises));
             return this.data;

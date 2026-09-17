@@ -77,7 +77,7 @@
             const path = d3.geoPath(projection);
 
             this.currentMap.append("path")
-                .datum(graticule)
+                .datum(graticule())
                 .attr("d", path)
                 .style("fill", "none")
                 .style("stroke", color)
@@ -90,7 +90,7 @@
                 const coords = star.geometry?.coordinates;
                 if (!coords) return;
                 const [x, y] = projection(coords);
-                if (!x || !y) return;
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
                 const magnitude = star.properties.mag;
                 const size = Math.max(0.5, (3.5 - magnitude / 2) * appearance.sizeScale);
@@ -132,7 +132,7 @@
                 constellations.features.forEach(constellation => {
                     const coords = constellation.properties.display;
                     const [x, y] = projection(coords);
-                    if (!x || !y) return;
+                    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
                     let labelText;
                     const props = constellation.properties;
@@ -157,7 +157,7 @@
                 stars.features.forEach(star => {
                     if (star.properties.mag > 2.5) return;
                     const [x, y] = projection(star.geometry.coordinates);
-                    if (!x || !y) return;
+                    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
                     const name = this.getTranslatedStarName(star, labelLanguage, starnames);
                     if (!name) return;
@@ -179,7 +179,7 @@
                     const pos = CelestialMath.getPlanetPosition(planet, jd);
                     if (!pos) return;
                     const [x, y] = projection([pos.ra, pos.dec]);
-                    if (!x || !y) return;
+                    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
                     const name = planet[labelLanguage === 'default' ? 'en' : labelLanguage] || planet.name || planet.en;
 
@@ -209,7 +209,7 @@
                 const coords = dso.geometry?.coordinates;
                 if (!coords) return;
                 const [x, y] = projection(coords);
-                if (!x || !y) return;
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
                 this.currentMap.append('circle')
                     .attr('cx', x).attr('cy', y).attr('r', 3)
@@ -228,7 +228,7 @@
                 const pos = CelestialMath.getPlanetPosition(planet, jd);
                 if (!pos) return;
                 const [x, y] = projection([pos.ra, pos.dec]);
-                if (!x || !y) return;
+                if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
                 this.currentMap.append('circle')
                     .attr('cx', x).attr('cy', y).attr('r', 5)

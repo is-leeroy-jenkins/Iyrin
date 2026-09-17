@@ -18,9 +18,17 @@
 		{
 			this.starData = new StarData();
 			this.renderer = new MapRenderer( 'map' );
-			this.locationPicker = new LocationPicker( 'locationPicker', {
-				onLocationChange: ( lat, lon ) => this.handleLocationChange( lat, lon )
-			} );
+			const defaultLocation = window.StarMapApp.DEFAULT_LOCATION || { };
+            const initialLatitude = Number( defaultLocation.latitude );
+            const initialLongitude = Number( defaultLocation.longitude );
+            const initialZoom = Number( defaultLocation.zoom );
+            this.initialZoom = Number.isFinite( initialZoom ) ? initialZoom : 8;
+            this.locationPicker = new LocationPicker( 'locationPicker', {
+                initialLat: Number.isFinite( initialLatitude ) ? initialLatitude : 30.0444,
+                initialLon: Number.isFinite( initialLongitude ) ? initialLongitude : 31.2357,
+                initialZoom: this.initialZoom,
+                onLocationChange: ( lat, lon ) => this.handleLocationChange( lat, lon )
+            } );
 			this.ui = new UIController( {
 				onSubmit: () => this.handleSubmit(),
 				onInputChange: () => this.debouncedHandleSubmit(),
@@ -39,9 +47,9 @@
 				getBackgroundColor: ( ) => this.customColors.background
 			} );
 			this.selectedCoords = {
-				lat: 30.0444,
-				lon: 31.2357
-			};
+                lat: Number.isFinite( initialLatitude ) ? initialLatitude : 30.0444,
+                lon: Number.isFinite( initialLongitude ) ? initialLongitude : 31.2357
+            };
 			this.zoomScale = 1.0;
 			this.starAppearance = {
 				brightness: 1,
@@ -50,10 +58,10 @@
 			this.labelLanguage = 'en';
 			this.customColors = {
 				constellations: 'rgba(255, 255, 255, 0.6)',
-				dsos: '#6C5CE7',
-				background: '#000000',
+				dsos: '#4DA3FF',
+				background: '#05070B',
 				planets: '#FFD700',
-				graticule: 'rgba(255, 255, 255, 0.2)'
+				graticule: 'rgba(0, 120, 252, 0.28)'
 			};
 			this.animationInterval     = null;
 			this.debouncedHandleSubmit = this.debounce( ( ) => this.handleSubmit(), 300 );
@@ -78,7 +86,8 @@
 				this.ui.toggleLoading( true );
 				await this.starData.load();
 				this.initColorPickers();
-				this.locationPicker.setView( this.selectedCoords.lat, this.selectedCoords.lon );
+				this.locationPicker.setView( this.selectedCoords.lat, this.selectedCoords.lon, this.initialZoom );
+                this.ui.updateLocationDisplay( this.selectedCoords.lat, this.selectedCoords.lon );
 				this.handleSubmit();
 			}
 			catch( error )
@@ -279,15 +288,15 @@
 				const date = this.ui.getDateTime();
 				if( timeStep === 'minute' )
 				{
-					date.setMinutes( date.getMinutes() + 1 );
+					date.setUTCMinutes( date.getUTCMinutes() + 1 );
 				}
 				else if( timeStep === 'hour' )
 				{
-					date.setHours( date.getHours() + 1 );
+					date.setUTCHours( date.getUTCHours() + 1 );
 				}
 				else if( timeStep === 'day' )
 				{
-					date.setDate( date.getDate() + 1 );
+					date.setUTCDate( date.getUTCDate() + 1 );
 				}
 				this.ui.setDateTime( date );
 				this.handleSubmit( true );
