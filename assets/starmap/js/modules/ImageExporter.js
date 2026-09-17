@@ -22,7 +22,7 @@
                 this.modal.classList.remove('hidden');
                 const date = this.callbacks.getDateTime();
                 document.getElementById('mapDateLabel').value = date.toLocaleDateString(undefined, {
-                    year: 'numeric', month: 'long', day: 'numeric'
+                    year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
                 });
                 this.updatePreview();
             });

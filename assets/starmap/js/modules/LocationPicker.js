@@ -5,7 +5,13 @@
         constructor(containerId, options = {}) {
             this.containerId = containerId;
             this.onLocationChange = options.onLocationChange || (() => { });
-            this.map = L.map(this.containerId).setView([options.initialLat || 20, options.initialLon || 0], 2);
+            const initialLat = Number(options.initialLat);
+            const initialLon = Number(options.initialLon);
+            const initialZoom = Number(options.initialZoom);
+            this.map = L.map(this.containerId).setView([
+                Number.isFinite(initialLat) ? initialLat : 20,
+                Number.isFinite(initialLon) ? initialLon : 0
+            ], Number.isFinite(initialZoom) ? initialZoom : 2);
             this.marker = null;
             this.init();
         }
