@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=G.I.-530:wght@300;400;500;600;700&display=swap');
 
 :root
 {
@@ -6,16 +6,16 @@
 	--primary-light: #A28DFF;
 	--primary-dark: #141414;
 	--background: #0A0A0A;
-	--surface: #151629;
-	--surface-light: #1E1F3A;
+	--surface: #303030;
+	--surface-light: #232222;
 	--text: #E9EAFF;
 	--text-secondary: #B4B8FF;
-	--accent: #007AFC;
+	--accent: #082345;
 }
 
 body
 {
-	font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+	font-family: 'G.I.-400', 'G.I.-530', system-ui, sans-serif;
 	margin: 0;
 	background: var(--background);
 	color: var(--text);
@@ -160,7 +160,7 @@ input[type='datetime-local']:focus,
 {
 	outline: none;
 	border-color: var(--primary);
-	box-shadow: 0 0 0 2px rgba(132, 59, 255, 0.2);
+	box-shadow: 0 0 0 2px rgb(51 51 51);
 }
 
 .custom-select
@@ -291,7 +291,7 @@ input[type='datetime-local']:focus,
 	align-items: center;
 	justify-content: center;
 	gap: 0.8rem;
-	box-shadow: 0 4px 12px rgba(132, 59, 255, 0.3);
+	box-shadow: 0 4px 12px rgba(51, 51, 51, 0.3);
 	position: relative;
 	overflow: hidden;
 }
@@ -311,7 +311,7 @@ input[type='datetime-local']:focus,
 .generate-btn:hover
 {
 	transform: translateY(-2px);
-	box-shadow: 0 6px 16px rgba(132, 59, 255, 0.4);
+	box-shadow: 0 6px 16px rgb(8 35 69);
 }
 
 .generate-btn:hover::before
@@ -488,7 +488,7 @@ input[type='datetime-local']:focus,
 
 .download-btn
 {
-	background: linear-gradient(135deg, var(--accent), #E63D6D);
+	background: linear-gradient(135deg, var(--accent), #082345);
 	color: white;
 	padding: 1rem 2.5rem;
 	border: none;

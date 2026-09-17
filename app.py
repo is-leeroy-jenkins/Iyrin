@@ -5520,7 +5520,7 @@ if mode == 'Document Data':
 			# -------- Expander Outlook Loader
 			# ----------------------------
 			with st.expander( label='Outlook Loader', icon='📨', expanded=False ):
-				st.caption( 'API', help=cfg.OUTLOOK_LOADER )
+				st.caption( 'API', help=cfg.EMAIL_LOADER )
 				outlook_file = st.file_uploader( 'Upload Outlook Message', type=[ 'msg' ],
 					key='outlook_upload', )
 				
