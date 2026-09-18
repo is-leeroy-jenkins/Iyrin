@@ -40,6 +40,7 @@ from history import (
 from sources import (
 	AdsbLolMilitary, AisStreamLive, CelesTrakLive, OpenSkyLive, OverpassCameras, OverpassInfrastructure,
 	OverpassMapLayers )
+from tools import LIVE_WORLD_AGENT_TOOLS
 
 LIVE_WORLD_LAYERS: Dict[ str, str ] = { 'aircraft': '✈️ Aircraft (Live)',
 		'military_aircraft': '🛩️ Military Aircraft', 'satellites': '🛰️ Satellites',
@@ -99,9 +100,8 @@ LIVE_WORLD_DATA_SOURCES: Dict[ str, Dict[ str, str ] ] = {
 }
 
 AI_ADVANCED_TOOLS: Dict[ str, str ] = { 'cross_layer_analysis': '🧭 Cross-Layer Analysis',
-		'geofencing': '🛡️ Geofencing', 'historical_replay': '🕓 Historical Replay', }
-
-AI_ADVANCED_PENDING_TOOLS: Dict[ str, str ] = { 'agent_tools': '🤖 Agent Tools', }
+		'geofencing': '🛡️ Geofencing', 'historical_replay': '🕓 Historical Replay',
+		'agent_tools': '🤖 Agent Tools', }
 
 
 @dataclass
@@ -259,8 +259,9 @@ def initialize_live_world_state( ) -> None:
 		'live_world_geofence_initialized': False,
 		'live_world_geofence_last_refresh_processed': '',
 		'live_world_historical_replay': False,
-		'live_world_history_persist': True,
+		'live_world_history_persist': False,
 		'live_world_history_retention_days': 30,
+		'live_world_history_max_rows_per_source': 5000,
 		'live_world_history_window': '24 Hours',
 		'live_world_history_entity_types': [
 			'Aircraft', 'Military Aircraft', 'Satellite', 'Vessel', 'Earthquake', 'Fire',
@@ -269,6 +270,7 @@ def initialize_live_world_state( ) -> None:
 		'live_world_history_snapshot': '',
 		'live_world_history_last_saved': 0,
 		'live_world_history_last_error': '',
+		'live_world_agent_tools': False,
 		'live_world_refresh_requested': False,
 		'live_world_last_refresh': '',
 		'live_world_last_error': '',
@@ -606,6 +608,8 @@ def render_live_world_sidebar( ) -> None:
 				with history_c2:
 					st.slider( 'Retention (Days)', min_value=1, max_value=365, step=1,
 						key='live_world_history_retention_days' )
+				st.slider( 'Max Rows / Source / Refresh', min_value=100, max_value=10000,
+					step=100, key='live_world_history_max_rows_per_source' )
 				st.multiselect( 'Replay Entity Types',
 					options=[ 'Aircraft', 'Military Aircraft', 'Satellite', 'Vessel',
 						'Earthquake', 'Fire', 'Infrastructure', 'Camera', 'Map Feature' ], key='live_world_history_entity_types' )
@@ -633,8 +637,9 @@ def render_live_world_sidebar( ) -> None:
 							width='stretch' ):
 						clear_live_world_history( )
 						st.session_state[ 'live_world_history_snapshot' ] = ''
-			for label in AI_ADVANCED_PENDING_TOOLS.values( ):
-				st.checkbox( label, value=False, disabled=True )
+						st.session_state[ 'live_world_history_last_saved' ] = 0
+						st.session_state[ 'live_world_history_last_error' ] = ''
+			st.checkbox( AI_ADVANCED_TOOLS[ 'agent_tools' ], key='live_world_agent_tools' )
 
 
 def clear_live_world_data( ) -> None:
@@ -1248,7 +1253,8 @@ def fetch_live_fires( latitude: float, longitude: float ) -> pd.DataFrame:
 			'Day/Night': get_row_value( row, [ 'daynight', 'Day/Night' ] ),
 			'Version': get_row_value( row, [ 'version', 'Version' ] ),
 		}
-		entity_id = f'FIRMS-{source}-{acq_date}-{acq_time}-{index + 1}'
+		entity_id = (
+			f'FIRMS-{source}-{acq_date}-{acq_time}-{lat:.5f}-{lon:.5f}' )
 		entities.append( GeoEntity(
 			entity_id=entity_id,
 			entity_type='Fire',
@@ -2520,10 +2526,12 @@ def refresh_live_world_data( latitude: float, longitude: float ) -> pd.DataFrame
 			failures.append( f'{label}: {errors.get( source_key, "" )}' )
 		st.session_state[ 'live_world_last_error' ] = '; '.join( failures )
 
-		if st.session_state[ 'live_world_history_persist' ] and not failures:
+		if (st.session_state[ 'live_world_historical_replay' ]
+				and st.session_state[ 'live_world_history_persist' ] and not failures):
 			try:
 				st.session_state[ 'live_world_history_last_saved' ] = persist_live_world_history(
-					df_entities, observed_at, observed_at )
+					df_entities, observed_at, observed_at,
+					int( st.session_state[ 'live_world_history_max_rows_per_source' ] ) )
 				purge_live_world_history(
 					int( st.session_state[ 'live_world_history_retention_days' ] ) )
 				st.session_state[ 'live_world_history_last_error' ] = ''
@@ -2947,10 +2955,10 @@ def render_live_world_map( latitude: float, longitude: float ) -> None:
 		map_style=map_style_options[ st.session_state[ 'live_world_map_style' ] ], tooltip=tooltip )
 	st.pydeck_chart( deck, use_container_width=True )
 
-	entities_tab, aircraft_tab, military_tab, satellites_tab, vessels_tab, earthquakes_tab, fires_tab, infrastructure_tab, cameras_tab, map_layers_tab, tracking_tab, measurements_tab, analysis_tab, geofence_tab, history_tab = st.tabs(
+	entities_tab, aircraft_tab, military_tab, satellites_tab, vessels_tab, earthquakes_tab, fires_tab, infrastructure_tab, cameras_tab, map_layers_tab, tracking_tab, measurements_tab, analysis_tab, geofence_tab, history_tab, agent_tools_tab = st.tabs(
 		[ '🌐 Entities', '✈️ Aircraft', '🛩️ Military', '🛰️ Satellites', '🚢 Vessels',
 			'📈 Earthquakes', '🔥 Fires', '📡 Infrastructure', '📷 Cameras', '🗺️ Map Layers', '🎯 Tracking',
-			'📏 Measurements', '🧭 Analysis', '🛡️ Geofence', '🕓 Historical Replay' ] )
+			'📏 Measurements', '🧭 Analysis', '🛡️ Geofence', '🕓 Historical Replay', '🤖 Agent Tools' ] )
 
 	with entities_tab:
 		st.data_editor( make_live_world_display_frame( df_map ), key='live_world_entities_table',
@@ -3156,6 +3164,56 @@ def render_live_world_map( latitude: float, longitude: float ) -> None:
 				st.data_editor( df_geofence_events, key='live_world_geofence_events_table',
 					use_container_width=True, disabled=True, hide_index=True )
 
+	with history_tab:
+		if not st.session_state[ 'live_world_historical_replay' ]:
+			st.info( 'Enable Historical Replay in AI & Advanced Tools.' )
+		else:
+			history_summary = get_live_world_history_summary( )
+			history_c1, history_c2, history_c3, history_c4 = st.columns( 4, border=True )
+			history_c1.metric( 'Observations', f'{int( history_summary[ "ObservationCount" ] ):,}' )
+			history_c2.metric( 'Snapshots', f'{int( history_summary[ "SnapshotCount" ] ):,}' )
+			history_c3.metric( 'Replay Records', f'{len( df_history ):,}' )
+			history_c4.metric( 'Replay Entities', f'{len( df_history_latest ):,}' )
+			if st.session_state[ 'live_world_history_last_error' ]:
+				st.error( f'Historical Replay failed: {st.session_state[ "live_world_history_last_error" ]}' )
+			st.caption( f'Replay snapshot: {st.session_state.get( "live_world_history_snapshot", "" ) or "None"}' )
+			st.caption( f'Last refresh inserted {int( st.session_state.get( "live_world_history_last_saved", 0 ) ):,} historical observations.' )
+			if df_history.empty:
+				st.info( 'No persisted observations match the selected replay window and entity types.' )
+			else:
+				st.markdown( '**Replay Positions**' )
+				st.data_editor( make_live_world_display_frame( df_history_latest ),
+					key='live_world_history_latest_table', use_container_width=True,
+					disabled=True, hide_index=True )
+				st.markdown( '**Historical Observations**' )
+				st.data_editor( make_live_world_display_frame( df_history ),
+					key='live_world_history_table', use_container_width=True,
+					disabled=True, hide_index=True )
+
+	with agent_tools_tab:
+		if not st.session_state[ 'live_world_agent_tools' ]:
+			st.info( 'Enable Agent Tools in AI & Advanced Tools.' )
+		else:
+			provider_status = LIVE_WORLD_AGENT_TOOLS[ 'get_live_world_source_status' ]( )
+			agent_c1, agent_c2, agent_c3 = st.columns( 3, border=True )
+			agent_c1.metric( 'Callable Tools', f'{len( LIVE_WORLD_AGENT_TOOLS ):,}' )
+			agent_c2.metric( 'Entity Types', '9' )
+			agent_c3.metric( 'Provider Sources', f'{len( provider_status ):,}' )
+			st.markdown( '**Available Callable Tools**' )
+			df_agent_tools = pd.DataFrame( [ {
+				'Tool': name,
+				'Callable': callable( tool ),
+			} for name, tool in LIVE_WORLD_AGENT_TOOLS.items( ) ] )
+			st.data_editor( df_agent_tools, key='live_world_agent_tools_table',
+				width='stretch', disabled=True, hide_index=True )
+			st.markdown( '**Provider Status**' )
+			st.data_editor( pd.DataFrame( provider_status ),
+				key='live_world_agent_provider_status_table', width='stretch',
+				disabled=True, hide_index=True )
+			st.caption(
+				'Provider-neutral tools operate on normalized Live World state and return '
+				'JSON-serializable results for external agent frameworks.' )
+
 
 def get_metadata_number( metadata: object, key: str, default: float=0.0 ) -> float:
 	'''
@@ -3209,30 +3267,3 @@ def make_live_world_display_frame( df_frame: pd.DataFrame ) -> pd.DataFrame:
 		if column in df_display.columns:
 			df_display = df_display.drop( columns=[ column ] )
 	return df_display
-
-	with history_tab:
-		if not st.session_state[ 'live_world_historical_replay' ]:
-			st.info( 'Enable Historical Replay in AI & Advanced Tools.' )
-		else:
-			history_summary = get_live_world_history_summary( )
-			history_c1, history_c2, history_c3, history_c4 = st.columns( 4, border=True )
-			history_c1.metric( 'Observations', f'{int( history_summary[ "ObservationCount" ] ):,}' )
-			history_c2.metric( 'Snapshots', f'{int( history_summary[ "SnapshotCount" ] ):,}' )
-			history_c3.metric( 'Replay Records', f'{len( df_history ):,}' )
-			history_c4.metric( 'Replay Entities', f'{len( df_history_latest ):,}' )
-			if st.session_state[ 'live_world_history_last_error' ]:
-				st.error( f'Historical Replay failed: {st.session_state[ "live_world_history_last_error" ]}' )
-			st.caption( f'Replay snapshot: {st.session_state.get( "live_world_history_snapshot", "" ) or "None"}' )
-			st.caption( f'Last refresh inserted {int( st.session_state.get( "live_world_history_last_saved", 0 ) ):,} historical observations.' )
-			if df_history.empty:
-				st.info( 'No persisted observations match the selected replay window and entity types.' )
-			else:
-				st.markdown( '**Replay Positions**' )
-				st.data_editor( make_live_world_display_frame( df_history_latest ),
-					key='live_world_history_latest_table', use_container_width=True,
-					disabled=True, hide_index=True )
-				st.markdown( '**Historical Observations**' )
-				st.data_editor( make_live_world_display_frame( df_history ),
-					key='live_world_history_table', use_container_width=True,
-					disabled=True, hide_index=True )
-
