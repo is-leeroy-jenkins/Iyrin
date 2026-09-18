@@ -8385,7 +8385,8 @@ elif mode == 'Astronomical Data':
 						st.session_state[ 'astro_last_url' ] = ''
 			
 				st.divider( )
-				render_source_processing_controls( 'astro', 'astro_last_result', 'astro_last_source', 'Naval Observatory', 'astro_naval_observatory' )
+				render_source_processing_controls( 'astro', 'astro_last_result',
+					'astro_last_source', 'Naval Observatory', 'astro_naval_observatory' )
 			
 			# --------- SPACE WEATHER
 			with st.expander( '☀️ Space Weather', expanded=False ):
