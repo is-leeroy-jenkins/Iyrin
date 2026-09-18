@@ -8762,23 +8762,14 @@ elif mode == 'Astronomical Data':
 					help='Optional comma-separated or newline-separated key=value arguments.',
 					key='astro_catalog_arguments' )
 				
-				catalog_data_format = st.selectbox(
-					'Data Format',
-					options=[ 'json', 'csv' ],
+				catalog_data_format = st.selectbox( 'Data Format', options=[ 'json', 'csv' ],
 					key='astro_catalog_data_format' )
 				
-				catalog_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=60,
-					value=20,
-					step=1,
-					key='astro_catalog_timeout' )
+				catalog_timeout = st.number_input( 'Timeout', min_value=1, max_value=60, value=20,
+					step=1, key='astro_catalog_timeout' )
 				
 				if catalog_mode == 'object_query':
-					catalog_query = st.text_input(
-						'Object Name',
-						value='SN2011fe',
+					catalog_query = st.text_input( 'Object Name', value='SN2011fe',
 						key='astro_catalog_query' )
 					
 					catalog_ra = ''
@@ -8787,23 +8778,15 @@ elif mode == 'Astronomical Data':
 				
 				else:
 					catalog_query = ''
-					catalog_ra = st.text_input(
-						'Right Ascension',
-						value='10:00:00',
+					catalog_ra = st.text_input( 'Right Ascension', value='10:00:00',
 						key='astro_catalog_ra' )
 					
-					catalog_dec = st.text_input(
-						'Declination',
-						value='+10:00:00',
+					catalog_dec = st.text_input( 'Declination', value='+10:00:00',
 						key='astro_catalog_dec' )
 					
-					catalog_radius = st.number_input(
-						'Radius',
-						min_value=1,
-						max_value=360,
+					catalog_radius = st.number_input( 'Radius', min_value=1, max_value=360,
 						value=2,
-						step=1,
-						key='astro_catalog_radius' )
+						step=1, key='astro_catalog_radius' )
 				
 				catalog_btn_c1, catalog_btn_c2 = st.columns( 2 )
 				
@@ -8844,7 +8827,8 @@ elif mode == 'Astronomical Data':
 						st.session_state[ 'astro_last_url' ] = ''
 			
 				st.divider( )
-				render_source_processing_controls( 'astro', 'astro_last_result', 'astro_last_source', 'Astro Catalog', 'astro_astro_catalog' )
+				render_source_processing_controls( 'astro', 'astro_last_result', 'astro_last_source',
+					'Astro Catalog', 'astro_astro_catalog' )
 			
 			# --------- ASTROQUERY / SIMBAD
 			with st.expander( '🌌 AstroQuery / SIMBAD', expanded=False ):
@@ -9034,7 +9018,6 @@ elif mode == 'Astronomical Data':
 				render_source_processing_controls( 'astro', 'astro_last_result',
 					'astro_last_source', 'Star Map', 'astro_star_map' )
 				
-
 			# --------- JPL NEARBY OBJECTS
 			with st.expander( '☄️ JPL Nearby Objects', expanded=False ):
 				st.caption( 'API', help=cfg.NASA_EONET )
