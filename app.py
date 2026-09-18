@@ -8519,39 +8519,22 @@ elif mode == 'Astronomical Data':
 					chart_show_lines = st.checkbox( 'Show Lines', value=True,
 						key='astro_chart_show_lines' )
 					
-					chart_show_boundaries = st.checkbox(
-						'Show Boundaries',
-						value=True,
+					chart_show_boundaries = st.checkbox( 'Show Boundaries', value=True,
 						key='astro_chart_show_boundaries' )
 				
 				if chart_mode == 'Static Chart':
 					static_c1, static_c2 = st.columns( 2 )
 					with static_c1:
-						chart_width = st.number_input(
-							'Width',
-							min_value=250,
-							max_value=2500,
-							value=900,
-							step=50,
-							key='astro_chart_width' )
+						chart_width = st.number_input( 'Width', min_value=250, max_value=2500,
+							value=900, step=50, key='astro_chart_width' )
 						
-						chart_magnitude = st.number_input(
-							'Magnitude',
-							min_value=0.0,
-							max_value=20.0,
-							value=7.5,
-							step=0.1,
-							format='%.1f',
+						chart_magnitude = st.number_input( 'Magnitude', min_value=0.0,
+							max_value=20.0, value=7.5, step=0.1, format='%.1f',
 							key='astro_chart_magnitude' )
 					
 					with static_c2:
-						chart_height = st.number_input(
-							'Height',
-							min_value=250,
-							max_value=2500,
-							value=450,
-							step=50,
-							key='astro_chart_height' )
+						chart_height = st.number_input( 'Height', min_value=250, max_value=2500,
+							value=450, step=50, key='astro_chart_height' )
 						
 						chart_show_const_names = st.checkbox(
 							'Show Constellation Names',
@@ -8564,16 +8547,10 @@ elif mode == 'Astronomical Data':
 					chart_magnitude = 7.5
 					chart_show_const_names = False
 				
-				chart_timeout = st.number_input(
-					'Timeout',
-					min_value=1,
-					max_value=60,
-					value=20,
-					step=1,
-					key='astro_chart_timeout' )
+				chart_timeout = st.number_input( 'Timeout', min_value=1, max_value=60, value=20,
+					step=1, key='astro_chart_timeout' )
 				
 				chart_btn_c1, chart_btn_c2 = st.columns( 2 )
-				
 				with chart_btn_c1:
 					if st.button( label='Run', icon='🏃', key='astro_chart_run',
 							use_container_width=True ):
@@ -8585,50 +8562,40 @@ elif mode == 'Astronomical Data':
 									st.warning( 'Enter an object name.' )
 									result = None
 								else:
-									result = service.fetch_object_chart(
-										name=chart_object_name,
-										zoom=int( chart_zoom ),
-										box_color=chart_box_color,
+									result = service.fetch_object_chart( name=chart_object_name,
+										zoom=int( chart_zoom ), box_color=chart_box_color,
 										show_box=bool( chart_show_box ),
 										image_source=chart_image_source,
 										time=int( chart_timeout ) )
 							
 							elif chart_mode == 'Coordinate Chart':
-								result = service.fetch_coordinate_chart(
-									ra=float( chart_ra ),
-									dec=float( chart_dec ),
-									zoom=int( chart_zoom ),
-									box_color=chart_box_color,
-									show_box=bool( chart_show_box ),
+								result = service.fetch_coordinate_chart( ra=float( chart_ra ),
+									dec=float( chart_dec ), zoom=int( chart_zoom ),
+									box_color=chart_box_color, show_box=bool( chart_show_box ),
 									show_grid=bool( chart_show_grid ),
 									show_lines=bool( chart_show_lines ),
 									show_boundaries=bool( chart_show_boundaries ),
 									image_source=chart_image_source )
 							
 							else:
-								result = service.fetch_static_chart(
-									ra=float( chart_ra ),
-									dec=float( chart_dec ),
-									zoom=int( chart_zoom ),
+								result = service.fetch_static_chart( ra=float( chart_ra ),
+									dec=float( chart_dec ), zoom=int( chart_zoom ),
 									image_source=chart_image_source,
 									show_grid=bool( chart_show_grid ),
 									show_lines=bool( chart_show_lines ),
 									show_boundaries=bool( chart_show_boundaries ),
 									show_const_names=bool( chart_show_const_names ),
-									width=int( chart_width ),
-									height=int( chart_height ),
+									width=int( chart_width ), height=int( chart_height ),
 									magnitude=float( chart_magnitude ) )
 							
 							if result is not None:
 								result_url = ''
 								if isinstance( result, dict ):
-									result_url = (
-											result.get( 'chart_url', '' )
+									result_url = ( result.get( 'chart_url', '' )
 											or result.get( 'image_url', '' )
 											or result.get( 'static_chart_url', '' )
 											or result.get( 'preferred_image_url', '' )
-											or result.get( 'snapshot_page_url', '' )
-									)
+											or result.get( 'snapshot_page_url', '' ) )
 								
 								st.session_state[ 'astro_last_source' ] = 'Star Chart'
 								st.session_state[ 'astro_last_result' ] = result or { }
@@ -8700,7 +8667,6 @@ elif mode == 'Astronomical Data':
 					satellite_resolution_factor = 1
 				
 				satellite_btn_c1, satellite_btn_c2 = st.columns( 2 )
-				
 				with satellite_btn_c1:
 					if st.button( label='Run', icon='🏃', key='astro_satellite_run',
 							use_container_width=True ):
@@ -8785,8 +8751,7 @@ elif mode == 'Astronomical Data':
 						key='astro_catalog_dec' )
 					
 					catalog_radius = st.number_input( 'Radius', min_value=1, max_value=360,
-						value=2,
-						step=1, key='astro_catalog_radius' )
+						value=2, step=1, key='astro_catalog_radius' )
 				
 				catalog_btn_c1, catalog_btn_c2 = st.columns( 2 )
 				
