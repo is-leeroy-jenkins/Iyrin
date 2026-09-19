@@ -8758,16 +8758,10 @@ elif mode == 'Astronomical Data':
 							use_container_width=True ):
 						try:
 							service = AstroCatalog( )
-							result = service.fetch(
-								mode=catalog_mode,
-								query=catalog_query,
-								quantity=catalog_quantity,
-								attributes=catalog_attributes,
-								arguments=catalog_arguments,
-								ra=catalog_ra,
-								dec=catalog_dec,
-								radius=int( catalog_radius ),
-								data_format=catalog_data_format,
+							result = service.fetch( mode=catalog_mode, query=catalog_query,
+								quantity=catalog_quantity, attributes=catalog_attributes,
+								arguments=catalog_arguments, ra=catalog_ra, dec=catalog_dec,
+								radius=int( catalog_radius ), data_format=catalog_data_format,
 								time=int( catalog_timeout ) )
 							
 							st.session_state[ 'astro_last_source' ] = 'Astro Catalog'
@@ -8814,29 +8808,18 @@ elif mode == 'Astronomical Data':
 				
 				else:
 					astroquery_query = ''
-					astroquery_ra = st.text_input(
-						'Right Ascension',
-						value='10.6847083',
+					astroquery_ra = st.text_input( 'Right Ascension', value='10.6847083',
 						key='astro_astroquery_ra' )
 					
-					astroquery_dec = st.text_input(
-						'Declination',
-						value='41.2687500',
+					astroquery_dec = st.text_input( 'Declination', value='41.2687500',
 						key='astro_astroquery_dec' )
 					
-					astroquery_radius = st.number_input(
-						'Radius',
-						min_value=0.001,
+					astroquery_radius = st.number_input( 'Radius', min_value=0.001,
 						max_value=180.0,
-						value=0.5,
-						step=0.1,
-						format='%.3f',
-						key='astro_astroquery_radius' )
+						value=0.5, step=0.1, format='%.3f', key='astro_astroquery_radius' )
 					
-					astroquery_radius_unit = st.selectbox(
-						'Radius Unit',
-						options=[ 'deg', 'arcmin', 'arcsec' ],
-						key='astro_astroquery_radius_unit' )
+					astroquery_radius_unit = st.selectbox( 'Radius Unit',
+						options=[ 'deg', 'arcmin', 'arcsec' ], key='astro_astroquery_radius_unit' )
 				
 				astroquery_btn_c1, astroquery_btn_c2 = st.columns( 2 )
 				
