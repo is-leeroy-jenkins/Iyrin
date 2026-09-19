@@ -80,22 +80,9 @@ class Maps( ):
 	        limiting, retry-with-backoff, API-key injection, response diagnostics,
 	        and Google payload-status normalization.
 
-	    Parameters:
-	        api_key (str):
-	            Google Maps Platform API key.
-	        qps (Optional[float]):
-	            Max queries per second. None or <= 0 disables throttling.
-	        retries (int):
-	            Maximum number of retry attempts for transient failures.
-	        min (float):
-	            Initial backoff seconds.
-	        max (float):
-	            Maximum backoff seconds.
-	        timeout (float):
-	            Request timeout in seconds.
-
-	    Returns:
-	        Ready-to-use gateway. Use .request("geocode/json", {...}) etc.
+	    The Google Maps API key is loaded from configuration during initialization.
+	    Use .request("geocode/json", {...}) or another supported endpoint path to
+	    execute requests through the configured gateway.
 
     """
 	base_url: Optional[ str ]
