@@ -26,6 +26,9 @@
 
 ___
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-0078FC?style=for-the-badge&logo=github)](https://is-leeroy-jenkins.github.io/Iyrin/)
+
+
 Iyrin is a Streamlit-based geospatial, scientific-data, document-processing, and agentic-analysis application. It combines mapping services, environmental and scientific APIs, live-world operational data, document chunking, embeddings, vector storage, geospatial analytics, and provider-neutral tool interfaces in a single application.
 
 <a id="core-capabilities"></a>
