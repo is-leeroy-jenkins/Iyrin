@@ -77,12 +77,7 @@ class Timezone:
 			Wrap Google Time Zone API for coordinate lookups, full payload retrieval,
 			UTC offset extraction, local-time conversion, and batch enrichment.
 
-		Parameters:
-			maps (Maps):
-				Maps gateway instance.
-
-		Returns:
-			Timezone with get_id, lookup, offset_hours, local_time, and batch_lookup.
+		The instance exposes get_id, lookup, offset_hours, local_time, and batch_lookup.
 			
 	"""
 	timestamp: Optional[ int ]
