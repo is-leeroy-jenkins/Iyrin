@@ -75,13 +75,8 @@ class StaticMap( ):
 		Purpose:
 			Generate Google Static Maps URLs for single-point previews, multi-point
 			previews, paths, and bounding-box previews.
-	
-		Parameters:
-			api_key (str):
-				Google Maps Platform API key.
-	
-		Returns:
-			StaticMap instance with URL-building helpers.
+
+		The Google Maps API key is loaded from configuration during initialization.
 		
 	"""
 	api_key: Optional[ str ]
