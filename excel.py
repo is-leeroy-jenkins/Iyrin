@@ -225,9 +225,6 @@ class Excel:
 			Purpose:
 				Create the standard geocode enrichment output-column container.
 
-			Parameters:
-				None.
-
 			Returns:
 				Dict[str, List]:
 					Dictionary of output column names and empty value lists.
