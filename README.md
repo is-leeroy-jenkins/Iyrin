@@ -2,9 +2,33 @@
 
 ![](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/images/iyrin-project.png)
 
+<p align="left">
+  <a href="#core-capabilities">Core Capabilities</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#application-modes">Application Modes</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#live-world-data">Live World</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#ai--ml-functionality">AI / ML</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#scientific--operational-data-sources">Data Sources</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#installation">Installation</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#configuration">Configuration</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#project-structure">Project Structure</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#requirements">Requirements</a>
+  &nbsp;&bull;&nbsp;
+  <a href="#license">License</a>
+</p>
+
 ___
 
 Iyrin is a Streamlit-based geospatial, scientific-data, document-processing, and agentic-analysis application. It combines mapping services, environmental and scientific APIs, live-world operational data, document chunking, embeddings, vector storage, geospatial analytics, and provider-neutral tool interfaces in a single application.
+
+<a id="core-capabilities"></a>
 
 ## ✨ Core Capabilities
 
@@ -27,18 +51,25 @@ Iyrin is a Streamlit-based geospatial, scientific-data, document-processing, and
 
 Live World Data extends Iyrin with a normalized operational geospatial layer built around the `GeoEntity` contract. Heterogeneous providers are converted into a common schema containing entity identity, type, name, latitude, longitude, altitude, heading, speed, timestamp, source, and provider-specific metadata.
 
+<a id="application-modes"></a>
+
 ### 🕹️ Application Modes
 
-| Mode                | Purpose                                                                                      | Major Components                                                                                                                                                                                                                               |
-| ------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Loading**         | Load local, web, corpus, repository, and cloud documents into shared document/session state. | Text, NLTK corpora, CSV, XML, PDF, Markdown, HTML, JSON, PowerPoint, Excel, arXiv, Wikipedia, GitHub, Web Loader, Web Crawler.                                                                                                                 |
-| **Scraping**        | Scrape a target URL or recursively crawl pages and extract structured web content.           | Page title, basic text, raw HTML, headings, paragraphs, lists, tables, articles, sections, divisions, blockquotes, hyperlinks, images.                                                                                                         |
-| **Retrieval**       | Query public collections, archives, search services, cloud files, and cloud buckets.         | arXiv, Google Drive, Wikipedia, Google Search, NASA Open Science, GovInfo, U.S. Congress, Internet Archive, Grokipedia, Jupyter Notebook, Google Cloud File, AWS S3 File, OneDrive, Google Speech-to-Text, AWS S3 Bucket, Google Cloud Bucket. |
-| **Geospatial**      | Retrieve location, weather, map, flight, and earth-science data.                             | Geocoding, Google Maps, Google Weather, OpenWeather, Historical Weather, USGS Earthquakes, NASA Earth Observatory, USGS National Map, USGS ScienceBase, OpenSky.                                                                               |
-| **Environmental**   | Retrieve environmental, climate, water, fire, air-quality, UV, and sensor data.              | AirNow, NOAA Climate Data, NASA EONET, EPA EnviroFacts, NOAA Tides and Currents, EPA UV Index, PurpleAir, OpenAQ, NASA FIRMS, USGS Water Data.                                                                                                 |
-| **Astronomical**    | Retrieve astronomical, satellite, star, space-weather, and near-Earth object data.           | U.S. Naval Observatory, Satellite Center, Astro Catalog, AstroQuery, StarMap, SIMBAD, Space Weather, Star Chart, Near-Earth Objects.                                                                                                           |
-| **Demographic**     | Retrieve demographic, health, population, city, and public-health records.                   | U.S. Census, CDC Socrata, U.S. Health, WHO Global, United Nations, World Population, CDC WONDER, PubMed Search, Open City Data.                                                                                                                |
-| **Generation**      | Generate or analyze text using multiple AI providers.                                        | ChatGPT, Grok, Claude, Gemini, Mistral.                                                                                                                                                                                                        |
+| Mode | Purpose | Major Components |
+|------|---------|------------------|
+| **Mapping Tools** | Resolve locations and perform direct geospatial utility operations. | Geocoding, place lookup, distance and travel-time calculations, coordinate-based time zones, and static maps. |
+| **Interactive Map** | Explore interactive geographic and operational data on a shared map surface. | PyDeck mapping, configurable map styles, Live World layers, tracking, measurements, cross-layer analysis, geofencing, replay, and Agent Tools. |
+| **Site Crawler** | Retrieve and inspect web content from individual pages or recursive crawls. | HTTP/web retrieval, Crawl4AI, BeautifulSoup extraction, links, text, HTML, and document preparation. |
+| **Document Data** | Load document-oriented and public information sources for inspection and processing. | Text and document loaders, arXiv, Wikipedia, GitHub, cloud files, corpora, chunking, embeddings, and vector storage. |
+| **Geoscience Data** | Retrieve geographic, weather, climate, environmental, water, fire, and earth-science information. | Google Weather, Open-Meteo, NOAA, EPA, NASA, USGS, OpenSky, mapping, and environmental APIs. |
+| **Astronomical Data** | Query astronomical catalogs, orbital data, solar/space-weather sources, and related scientific services. | Astroquery, SIMBAD, CelesTrak, near-Earth objects, satellite data, space weather, and U.S. Naval Observatory data. |
+| **Celestial Map** | Render and interact with star and sky visualizations. | Star charts, coordinate/object charts, configurable rendering controls, and What's Up Tonight interactions. |
+| **Public Health** | Retrieve demographic, population, biomedical, and public-health data. | U.S. Census, CDC Socrata, CDC WONDER, HHS, WHO, United Nations, PubMed, World Population, and Open City Data. |
+| **Artificial Intelligence** | Generate or analyze content with multiple AI providers and reusable AI processing workflows. | OpenAI, Gemini, Grok/xAI, Claude, Mistral, embeddings, vector-ready context, and provider credentials. |
+| **File Upload** | Upload supported local files for preview, extraction, and downstream processing. | CSV, Excel, PDF, Word, PowerPoint, Markdown, HTML, JSON, XML, text, chunking, embeddings, and vector storage. |
+| **Data Management** | Manage local application data and tabular persistence workflows. | SQLite, CSV/Excel-backed data, dataframe inspection, SQL execution, visualization, import/export, and stored application datasets. |
+
+<a id="live-world-data"></a>
 
 ### Live Layers
 
@@ -55,6 +86,22 @@ Live World Data extends Iyrin with a normalized operational geospatial layer bui
 | 🗺️ Additional Map Layers      | Public transit, bike share, emergency services, healthcare, EV charging, communications, and launch sites.                              |
 | 🎯 Tracking & Trails          | Selected moving-entity tracking with persisted in-session path history and optional map following.                                      |
 | 📏 Measurements & Annotations | Great-circle distance, bearing, custom points, entity-to-entity measurements, and map annotations.                                      |
+
+### Live World Reliability
+
+The Live World execution path is designed to keep independent providers operational even when one source fails or becomes unavailable.
+
+- Independent refresh execution for the nine provider-backed Live World sources.
+- Per-source status, last-attempt, last-success, error, and stale-data state.
+- Previous provider data is retained and explicitly marked stale when a refresh fails.
+- Provider failures do not stop later enabled providers from refreshing.
+- Partial or stale refreshes are not persisted as new Historical Replay snapshots.
+- Shared Overpass client behavior for Infrastructure, Cameras, and Map Features, including identifying headers, bounded retry, and fallback endpoints.
+- OpenSky OAuth client-credential configuration with backward-compatible legacy environment aliases.
+- Bounded Historical Replay persistence with configurable retention and per-source row limits.
+- State-fingerprint deduplication for Earthquakes, Fires, Infrastructure, Cameras, and Map Features while moving entities continue to persist for trajectory replay.
+- Historical replay limits select the newest records through the chosen snapshot and return them chronologically.
+- Agent Tools and Historical Replay are rendered on the active Live World UI path with provider diagnostics and callable-tool inventory.
 
 
 ## 🏛️ Data                                                                                                                                                                                
@@ -93,6 +140,8 @@ Live World Data extends Iyrin with a normalized operational geospatial layer bui
 - Snapshot selection from persisted observation timestamps.
 - Historical moving-entity paths for aircraft, military aircraft, satellites, and vessels.
 - Historical position overlays for static and moving entities.
+
+<a id="ai--ml-functionality"></a>
 
 ## 🧠 AI / ML Functionality
 
@@ -200,6 +249,8 @@ Available features include:
 
 These features support downstream clustering, anomaly detection, classification, trajectory analysis, spatial-temporal modeling, semantic retrieval, and agentic decision-support workflows. Iyrin provides the data normalization, embedding, vectorization, spatial-analysis, persistence, and tool interfaces required for these workflows; supervised model training is not performed automatically by the application.
 
+<a id="scientific--operational-data-sources"></a>
+
 ## 🔬 Scientific & Operational Data Sources
 
 ### Weather & Climate
@@ -261,6 +312,8 @@ OpenStreetMap/Overpass map-feature retrieval supports:
 
 Additional map features are normalized as `Map Feature` entities and participate in the same Cross-Layer Analysis, Geofencing, Historical Replay, SQLite persistence, and map-rendering paths used by the other Live World layers.
 
+<a id="installation"></a>
+
 ## 📦 Installation
 
 ```powershell
@@ -279,6 +332,8 @@ streamlit run app.py
 ```
 
 
+<a id="configuration"></a>
+
 ## ⚙️ Configuration 
 
 Iyrin reads provider credentials from environment variables where required. Legacy `OPENSKY_API_CLIENT_ID`, `OPENSKY_API_CREDENTIALS`, and `NASA_FIRMS_MAP_KEY` names remain accepted as compatibility aliases.
@@ -288,6 +343,11 @@ Iyrin reads provider credentials from environment variables where required. Lega
 | `GOOGLE_API_KEY`          | Google APIs                      |
 | `GOOGLEMAPS_API_KEY`      | Google Maps                      |
 | `GOOGLE_WEATHER_API_KEY`  | Google Weather                   |
+| `OPENAI_API_KEY`           | OpenAI                           |
+| `GEMINI_API_KEY`           | Google Gemini                    |
+| `XAI_API_KEY`              | Grok / xAI                       |
+| `CLAUDE_API_KEY`           | Anthropic Claude                 |
+| `MISTRAL_API_KEY`          | Mistral AI                       |
 | `NASA_API_KEY`            | NASA APIs                        |
 | `NASA_EARTHDATA_TOKEN`    | NASA Earthdata                   |
 | `FIRMS_MAP_KEY`           | NASA FIRMS                       |
@@ -301,12 +361,14 @@ Iyrin reads provider credentials from environment variables where required. Lega
 
 ## 🔑 API 
 
-- [Science APIs](https://github.com/is-leeroy-jenkins/foo/blob/main/resources/setup/API-Setup.md) 
-- [OpenAI](https://github.com/is-leeroy-jenkins/foo/blob/main/resources/setup/environments.md) 
-- [Gemini AI](https://github.com/is-leeroy-jenkins/foo/blob/main/resources/setup/gemini.md) 
-- [Grok AI](https://github.com/is-leeroy-jenkins/foo/blob/main/resources/setup/xai.md) 
-- [Mistral AI](https://github.com/is-leeroy-jenkins/foo/blob/main/resources/setup/mistral.md) 
-- [Claude AI](https://github.com/is-leeroy-jenkins/foo/blob/main/resources/setup/claude.md) 
+- [Science APIs](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/setup/API-Setup.md) 
+- [OpenAI](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/setup/environments.md) 
+- [Gemini AI](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/setup/gemini.md) 
+- [Grok AI](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/setup/xai.md) 
+- [Mistral AI](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/setup/mistral.md) 
+- [Claude AI](https://github.com/is-leeroy-jenkins/iyr/blob/main/resources/setup/claude.md) 
+
+<a id="project-structure"></a>
 
 ## 📂 Project Structure
 
@@ -379,6 +441,8 @@ Scientific / Operational APIs
 - Vector-search dataset creation with Chroma or Pinecone.
 - Spreadsheet and reporting enrichment.
 
+<a id="requirements"></a>
+
 ## 📦 Requirements
 
 The table below reflects the requirements implied by the active imports, loaders, fetchers, and UI
@@ -416,6 +480,8 @@ cloud SDKs depending on deployment.
 | Streamlit Runtime Extras | `watchdog`                            | Optional local development file watching.                             | Local Streamlit development.                            |
 | Environment Variables    | `python-dotenv`                       | Optional `.env` loading for API keys.                                 | Local configuration.                                    |
 | Typing Extensions        | `typing-extensions`                   | Backported typing support where needed.                               | Compatibility support.                                  |
+
+<a id="license"></a>
 
 ## 📜 License
 
