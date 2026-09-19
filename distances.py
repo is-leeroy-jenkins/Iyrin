@@ -98,13 +98,8 @@ class DistanceMatrix( ):
 		Purpose:
 			Provide route, route-comparison, and matrix wrappers around the Google
 			Distance Matrix API.
-	
-		Parameters:
-			maps (Maps):
-				Maps gateway instance.
-	
-		Returns:
-			DistanceMatrix with summary, matrix, compare_modes, and DataFrame helpers.
+
+		The instance exposes summary, matrix, compare_modes, and DataFrame helpers.
 			
 	"""
 	_maps: Maps
