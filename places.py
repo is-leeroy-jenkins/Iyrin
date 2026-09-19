@@ -359,7 +359,7 @@ class Place( ):
 					Free-text search query.
 				country (str):
 					ISO-2 region bias.
-				limit (int):
+				lmt (int):
 					Maximum candidates to return.
 
 			Returns:
