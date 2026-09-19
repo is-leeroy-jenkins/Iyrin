@@ -8348,8 +8348,7 @@ elif mode == 'Astronomical Data':
 							try:
 								service = NavalObservatory( )
 								
-								result = service.fetch(
-									mode='celnav',
+								result = service.fetch( mode='celnav',
 									date_value=naval_date.isoformat( ),
 									time_value=naval_time_value,
 									latitude=float( naval_latitude ),
@@ -8364,10 +8363,8 @@ elif mode == 'Astronomical Data':
 									naval_longitude )
 								st.session_state[ 'astro_last_url' ] = ''
 								
-								set_global_coordinates_from_result(
-									naval_latitude,
-									naval_longitude,
-									location=naval_location_label,
+								set_global_coordinates_from_result( naval_latitude,
+									naval_longitude, location=naval_location_label,
 									description='Naval Observatory observer location' )
 								
 								st.success( 'Naval Observatory request completed.' )
