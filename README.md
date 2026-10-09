@@ -210,7 +210,9 @@ Vectorized content is prepared for semantic retrieval, RAG pipelines, contextual
 
 ### Agentic Tool Surface
 
-`tools.py` exposes provider-neutral, JSON-serializable geospatial functions suitable for tool-calling integrations. The tool layer operates against normalized Live World session state rather than provider-specific payload formats.
+`tools.py` exposes provider-neutral, JSON-serializable geospatial functions suitable for tool-calling 
+integrations. The tool layer operates against normalized Live World session state rather 
+than provider-specific payload formats.
 
 Supported tool-oriented operations include:
 
