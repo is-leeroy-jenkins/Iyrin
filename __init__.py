@@ -43,16 +43,37 @@
 	******************************************************************************************
 '''
 
-from .exceptions import IyrinError, GatewayError, NotFound  # noqa: F401
-from .rates import RateLimiter  # noqa: F401
-from .caches import BaseCache, InMemoryCache, SQLiteCache  # noqa: F401
-from .maps import Maps  # noqa: F401
-from .geocode import Geocoder  # noqa: F401
-from .places import Place  # noqa: F401
-from .distances import DistanceMatrix  # noqa: F401
-from .timezones import Timezone  # noqa: F401
-from .staticmaps import StaticMap  # noqa: F401
-from .excel import Excel  # noqa: F401
+from importlib import import_module
+from pathlib import Path
+import sys
+
+# Existing script modules resolve their application-local imports from the package root.
+sys.path.insert( 0, str( Path( __file__ ).resolve( ).parent ) )
+
+EXPORTS = {'IyrinError': 'exceptions', 'GatewayError': 'exceptions', 'NotFound': 'exceptions', 'RateLimiter': 'rates', 'BaseCache': 'caches', 'InMemoryCache': 'caches', 'SQLiteCache': 'caches', 'Maps': 'maps', 'Geocoder': 'geocode', 'Place': 'places', 'DistanceMatrix': 'distances', 'Timezone': 'timezones', 'StaticMap': 'staticmaps', 'Excel': 'excel'}
+__all__ = list( EXPORTS )
+
+
+def __getattr__( name: str ) -> object:
+    """Load an existing public application class on demand.
+
+    Purpose:
+        Preserves public exports without importing runtime dependencies at launcher startup.
+
+    Args:
+        name (str): Public export name requested by the caller.
+
+    Returns:
+        object: Requested exported class.
+
+    Raises:
+        AttributeError: The requested export is not defined.
+    """
+    if name not in EXPORTS:
+        raise AttributeError( f'Module {__name__!r} has no attribute {name!r}' )
+    value = getattr( import_module( f'.{EXPORTS[ name ]}', __name__ ), name )
+    globals( )[ name ] = value
+    return value
 
 __version__ = "0.2.0"
 

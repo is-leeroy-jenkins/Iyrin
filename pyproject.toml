@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iyrin-py"
+version = "0.2.0"
+description = "Streamlit geospatial toolkit for mapping, scientific data, AI processing, and vector retrieval"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+authors = [{name = "Terry Eppler"}]
+license = "MIT"
+license-files = ["LICENSE.txt"]
+dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/is-leeroy-jenkins/Iyrin"
+Documentation = "https://is-leeroy-jenkins.github.io/iyrin/"
+Issues = "https://github.com/is-leeroy-jenkins/Iyrin/issues"
+
+[project.scripts]
+iyrin = "iyrin.cli:desktop"
+iyrin-browser = "iyrin.cli:main"
+
+[tool.setuptools]
+packages = ["iyrin", "iyrin.stores"]
+package-dir = {iyrin = "."}
+include-package-data = false
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements-runtime.txt"]}
+
+[tool.setuptools.package-data]
+iyrin = ["resources/**/*.png", "resources/**/*.ico", "resources/**/*.jpg", "static/fonts/ttf/*.ttf", ".streamlit/config.toml"]
+

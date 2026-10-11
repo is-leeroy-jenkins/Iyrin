@@ -13,7 +13,7 @@
   &nbsp;&bull;&nbsp;
   <a href="#scientific--operational-data-sources">Data Sources</a>
   &nbsp;&bull;&nbsp;
-  <a href="#installation">Installation</a>
+  <a href="resources/installation.md">Installation</a>
   &nbsp;&bull;&nbsp;
   <a href="#configuration">Configuration</a>
   &nbsp;&bull;&nbsp;
